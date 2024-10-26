@@ -8,7 +8,7 @@
  */
 
 const API = async (URL, metode ,headers) => {
-    const URL = new URL(URL, "http://localhost:3000"); // Param 1 : URL, Param 2 : Base URL
+    // const URL = new URL(URL, "http://localhost:3000"); // Param 1 : URL, Param 2 : Base URL
     try {
         const response = await fetch(URL, {
             method: metode,
