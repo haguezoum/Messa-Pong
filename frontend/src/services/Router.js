@@ -19,7 +19,7 @@ const routerCore = async () => {
         match = { route: { path: "/404",
         view: async()=>{
             await import("./pages/404.js");
-            return ('<notfound-page></notfound-page>')
+            return ('lol')
         } 
         }};
     }
@@ -41,19 +41,9 @@ const Router = {
     }
 };
 
+// when the back or forward button is clicked
 window.addEventListener("popstate", ()=>{
-    // when the back or forward button is clicked
     routerCore();
 });
 
 export default Router
-
-// document.addEventListener("DOMContentLoaded", () => {
-//     document.body.addEventListener("click", (e) => {
-//         if (e.target.matches("[data-route]")) {
-//             e.preventDefault();
-//             navigateTo(e.target.href);
-//         }
-//     });
-//     router();
-// });

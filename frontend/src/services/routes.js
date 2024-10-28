@@ -2,38 +2,17 @@ const routes = [
     { 
         path: "/",
         view: async()=>{
-            // await import("./pages/home.js");
-            // return ('<home-page></home-page>')
+            await import("../pages/home.js");
+            return ('<home-page></home-page>')
         }
     },
     { 
-        path: "/about",
+        path: "/login",
         view: async()=>{
-            // await import("./pages/about.js");
-            // return ('<about-page></about-page>')
+            await import("../pages/login.js");
+            return ('<login-page></login-page>')
         }
     },
-    { 
-        path: "/contact",
-        view: async()=>{
-            // await import("./pages/contact.js");
-            // return ('<contact-page></contact-page>')
-        }
-    },
-    { 
-        path: "/waiting-list",
-        view: async()=>{
-            // await import("./pages/waitinglist.js");
-            // return ('<waitinglist-page></waitinglist-page>')
-        }
-    },
-    // {
-    //     path: "/404",
-    //     view: async()=>{
-    //         await import("./pages/404.js");
-    //         return ('<404-page></404-page>')
-    //     }
-    // }
 ];
 
 
