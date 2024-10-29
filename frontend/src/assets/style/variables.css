@@ -1,0 +1,10 @@
+:root {
+    --primary-blue: rgb(24, 165, 226);
+    --dead-blue: rgb(204, 232, 243);
+    --white: rgb(255, 255, 255);
+    --black: rgb(0, 0, 0);
+    --primary-black: rgba(0, 0, 0, 0.8);
+    --socondry-black: rgb(138, 146, 160);
+    --primary-font: "Righteous", sans-serif;
+    --socondry-font: "ABeeZee", sans-serif;
+}
