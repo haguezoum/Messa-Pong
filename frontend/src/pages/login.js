@@ -1,20 +1,11 @@
 let template = document.createElement("template");
 
 template.innerHTML =
-  `<div id="login-page"> 
-    <form class="form">
-      
-        <label for="nome">Name:</label>
-        
-          <input type="text" class="infos" id="nome" name="nome">
-        <div class="mario"></div>
-          <label for="email">E-mail:</label>
-          <input type="email" id="email" name="email">
-
-          <button type="submit">Send</button>
-          <button type="reset" id="limpar">Clear</button>
-
-
+  `<div id="login-page" class="loginPage" > 
+    <form class="form shadow">
+      <div class="form-header">
+        lol
+      </div>
     </form>
   </div>`;
 
