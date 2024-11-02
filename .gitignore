@@ -1,0 +1,8 @@
+.config.dev.json
+# Ignore all files in the project
+node_modules/
+package-lock.json
+
+# Ignore hidden files on macOS
+.DS_Store
+*/.DS_Store
