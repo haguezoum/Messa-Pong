@@ -8,9 +8,10 @@
 @import url('https://fonts.googleapis.com/css2?family=ABeeZee&family=Righteous&display=swap'); /* Importing the ABeeZee font from Google Fonts */
 @import '../src/assets/style/variables.css'; /* Importing the variables.css file to use the global variables */
 *{
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+   
 }
 
 #app{
