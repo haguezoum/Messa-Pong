@@ -25,8 +25,12 @@ app.Router = Router;
 // API, Global object ------
 app.API = API;
 
-// sleep function
-
+/**
+ * Sleep function to pause execution for a specified duration.
+ * @memberof app
+ * @param {number} ms - The number of milliseconds to sleep.
+ * @returns {Promise<void>} A promise that resolves after the specified duration.
+ */
 app.sleep = (ms) => {
   return new Promise((resolve) => setTimeout(resolve, ms));
 };
