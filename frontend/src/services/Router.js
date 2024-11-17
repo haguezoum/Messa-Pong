@@ -38,23 +38,9 @@ const routerCore = async () => {
 
 const Router = {
   init: () => {
-    console.log("Router is here");
-    // document.shadowRoot.addEventListener("click", (e) => {
-    // document.body.addEventListener("click", (e) => {
-    // if (e.target.matches("[data-route]")) {
-    //     e.preventDefault();
-    //     navigateTo(e.target.href);
-    // }
-    // });
-    // routerCore();
-
-    function addClickListener(element) {
-      element.addEventListener("click", (e) => {
-        if (e.target.matches("[data-route]")) {
-          e.preventDefault();
-          navigateTo(e.target.href);
-        }
-      });
+    window.addEventListener("stateChanged", (e) => {
+      navigateTo(e.detail.value);
+    });
     }
 
     function traverseShadowRoots(node) {
