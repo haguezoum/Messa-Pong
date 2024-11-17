@@ -16,6 +16,7 @@
   width: 100vw;
   background-color: transparent;
   box-sizing: border-box !important;
+  /* position: relative; for the cloud moving */
 }
 
 .container {
@@ -38,6 +39,7 @@
     126px 108px 270px -30px rgba(0, 0, 0, 0.06);
   /* Opera 10.5, IE 9, Firefox 4+, Chrome 6+, iOS 5 */
   border-radius: 50px;
+  z-index: 1;
 }
 
 .form {
@@ -168,6 +170,7 @@
   margin: auto;
   transition: opacity 0.2s ease;
 }
+
 .form .form-body .form-group .form-field>button.btn_submit:hover {
   /* background-color: var(--alive-blue); */
   opacity: 0.9;
@@ -249,18 +252,20 @@
   color: var(--gray);
   font-size: 18px;
   font-weight: 400;
-  margin: 40px 0 ;
+  margin: 40px 0;
   letter-spacing: 1.2px;
   cursor: pointer;
   width: 100%;
   /* text-align: right; */
   /* background-color: tomato; */
 }
-.loginPage .form-footer .signup > p{
+
+.loginPage .form-footer .signup>p {
   display: block;
   text-align: left;
   width: 100%;
 }
+
 .loginPage .form-footer .signup a {
   color: var(--primary-black);
 }

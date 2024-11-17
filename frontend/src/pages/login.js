@@ -14,8 +14,9 @@ template.innerHTML = /*html*/ `
         <div class="form-body">
           <div class="form-group">
               <div class="form-field">
-                <label for="email">Username</label>
-                <input type="email" class="email" id="email" name="email" placeholder="Username or email" autocomplete="email" required>
+                <label for="email">Email</label>
+                <input type="email" class="email" id="email" autofocus name="email" placeholder="Username or email" autocomplete="email" pattern=".+@[a-z]+.[a-z]"
+                        title="Please provide only a Best Startup Ever corporate email address" required>
                 <p class="error" id="email-error" hidden>Error</p>
               </div>
               <div class="form-field">
@@ -41,10 +42,15 @@ template.innerHTML = /*html*/ `
             </button>
         </div>
         <div class="signup">
-          <p>Don't have an account? <a href="/home">Sign up</a></p>
+          <p>
+            <router-link to="/home" kind="route">
+                Don't have an account? Sign up
+            </router-link>
+          </p>
         </div>
       </div>
     </div>
+    <cloud-moving></cloud-moving>
   </div>
   `;
 
@@ -63,7 +69,7 @@ class LOGIN extends HTMLElement {
   connectedCallback() {
     console.log("LOGIN is Connected");
     console.log(this.shadow);
-    this.shadow.addEventListener("click", (e) => { 
+    this.shadow.addEventListener("click", (e) => {
       e.preventDefault();
       console.log(e.target);
     });
