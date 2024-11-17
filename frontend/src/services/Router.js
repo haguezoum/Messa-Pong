@@ -16,6 +16,10 @@ const routerCore = async () => {
   let match = potentialMatches.find((potentialMatch) => potentialMatch.isMatch);
 
   if (!match) {
+    if (location.pathname === "/") {
+      location.pathname = "/home";
+      return;
+    }
     match = {
       route: {
         path: "/404",
