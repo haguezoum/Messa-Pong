@@ -1,0 +1,34 @@
+/****** cloud-moving.css ******/
+:host {
+    position: absolute;
+    z-index: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.cloud-moving {
+    /* width: 100dvw; */
+    box-sizing: border-box;
+    height: 100%;
+    background-color: transparent;
+    z-index: 0;
+    position: relative;
+    overflow: hidden !important;
+    /* border: 1px solid red;    */
+    user-select: none;
+}
+
+.cloud {
+    position: absolute;
+    animation-timing-function: ease-in-out;
+}
+
+@keyframes moveClouds {
+    from {
+        transform: translateX(0);
+    }
+
+    to {
+        transform: translateX(-100%);
+    }
+}
