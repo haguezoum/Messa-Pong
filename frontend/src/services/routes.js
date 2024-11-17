@@ -1,6 +1,6 @@
 const routes = [
   {
-    path: "/" || "/home",
+    path: "/home",
     view: async () => {
       await import("../pages/home.js");
       return "<home-page></home-page>";
