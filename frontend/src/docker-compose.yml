@@ -1,0 +1,86 @@
+name: transcendence
+
+services:
+    
+    nginx:
+        container_name: nginx
+        build:
+            context: ./nginx
+        ports:
+            - "443:443/tcp"
+            - "80:80/tcp"
+        networks:
+            - transcendence_network
+        restart: always
+
+    dataBase:
+        container_name: dataBase
+        build:
+            context: ./postgres
+        networks:
+            - transcendence_network
+
+    core:
+        container_name: ApiGateway
+        build:
+            context: ./core
+        depends_on:
+            - dataBase
+        # ports:
+        #     - "8080:8080/tcp"
+        networks:
+            - transcendence_network
+        restart: always
+
+    auth:
+        container_name: UserService
+        build: 
+            context: ./auth
+        depends_on:
+            - dataBase
+        # ports:
+        #     - "3001:3000/tcp"
+        networks:
+            - transcendence_network
+        restart: always
+
+    Game:
+        container_name: GameService
+        build:
+            context: ./Game
+        # ports:
+        #     - "3002:3000/tcp"
+        networks:
+            - transcendence_network
+        restart: always
+
+    Chat:
+        container_name: ChatService
+        build:
+            context: ./Chat
+        # ports:
+        #     - "3003:3000/tcp"
+        networks:
+            - transcendence_network
+        restart: always
+
+    UI:
+        container_name: frontend
+        build:
+            context: ./UI
+        ports:
+            - "80:80/tcp"
+        networks:
+            - transcendence_network
+        restart: always
+
+
+networks:
+    
+    transcendence_network:
+        name: transcendence_network
+        driver: bridge
+
+
+# volumes:
+#     dataBase:
