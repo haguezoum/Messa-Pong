@@ -1,0 +1,37 @@
+/* 
+* This file contains the global styles for the application.
+* Please refer to the comments within the code for specific details on each style.
+*/
+
+@import '../src/assets/style/normalize.css'; /* Importing the normalize.css file to reset the default browser styles */
+@import url('https://fonts.googleapis.com/css2?family=Righteous&display=swap'); /* Importing the Righteous font from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=ABeeZee&family=Righteous&display=swap'); /* Importing the ABeeZee font from Google Fonts */
+@import '../src/assets/style/variables.css'; /* Importing the variables.css file to use the global variables */
+*{
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+   
+}
+
+#app{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    width: 100vw;
+    background-image: radial-gradient(
+        farthest-corner at 30% 80%,
+        var(--primary-blue),
+        var(--dead-blue)
+    );
+}
+
+.shadow {
+    -webkit-box-shadow: 54.7px 46.9px 60.7px -30px rgba(0, 0, 0, 0.025), 126px 108px 270px -30px rgba(0, 0, 0, 0.06);
+    /* Safari 3-4, iOS 4.0.2 - 4.2, Android 2.3+ */
+    -moz-box-shadow: 54.7px 46.9px 60.7px -30px rgba(0, 0, 0, 0.025), 126px 108px 270px -30px rgba(0, 0, 0, 0.06);
+    /* Firefox 3.5 - 3.6 */
+    box-shadow: 54.7px 46.9px 60.7px -30px rgba(0, 0, 0, 0.025), 126px 108px 270px -30px rgba(0, 0, 0, 0.06);
+    /* Opera 10.5, IE 9, Firefox 4+, Chrome 6+, iOS 5 */
+}
