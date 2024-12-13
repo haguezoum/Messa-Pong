@@ -43,7 +43,7 @@ template.innerHTML = /*html*/ `
         </div>
         <div class="signup">
           <p>
-            <router-link to="/home" kind="route">
+            <router-link to="/signup" kind="route">
                <span slot="title"> Don't have an account? Sign up</span>
                <span slot="icon">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
