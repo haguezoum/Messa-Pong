@@ -7,6 +7,7 @@ class Routerlink extends HTMLElement {
     linkElem.setAttribute("rel", "stylesheet");
     linkElem.setAttribute("href", "src/assets/style/router-link.css");
     this.shadow.appendChild(linkElem);
+    this.addEventListener("keydown", this.handelkeydown.bind(this));
   }
 
   connectedCallback() {
@@ -29,7 +30,11 @@ class Routerlink extends HTMLElement {
       console.log("Routerlink clicked");
     });
   }
-
+  handelkeydown(e) { // handle enter key press
+    if (e.key === "Enter") {
+      this.click();
+    }
+  }
   disconnectedCallback() {
     console.log("Routerlink is Disonnected");
   }
