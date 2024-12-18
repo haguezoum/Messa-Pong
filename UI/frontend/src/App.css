@@ -35,3 +35,7 @@
     box-shadow: 54.7px 46.9px 60.7px -30px rgba(0, 0, 0, 0.025), 126px 108px 270px -30px rgba(0, 0, 0, 0.06);
     /* Opera 10.5, IE 9, Firefox 4+, Chrome 6+, iOS 5 */
 }
+
+signup-page {
+    overflow: hidden;
+}
