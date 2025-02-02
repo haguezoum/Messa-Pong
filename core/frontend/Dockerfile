@@ -5,9 +5,13 @@
 #                                                     +:+ +:+         +:+      #
 #    By: elakhfif <marvin@42.fr>                    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
-#    Created: 2024/11/26 07:56:44 by elakhfif          #+#    #+#              #
-#    Updated: 2024/11/26 07:56:51 by elakhfif         ###   ########.fr        #
+#    Created: 2024/11/26 07:57:19 by elakhfif          #+#    #+#              #
+#    Updated: 2025/02/02 16:21:47 by tarzan           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
-FROM		alpine:3.19
+FROM	alpine:3.19 AS frontend-builder
+
+COPY	. /www
+
+WORKDIR	/www

@@ -1,0 +1,109 @@
+name: 42_transcendence
+
+services:
+    nginx:
+        image: nginx:alpine
+        container_name: nginx
+        build:
+            context: ./infrastructure/nginx
+        ports:
+            - 80:80/tcp
+            - 443:443/tcp
+        volumes:
+            - nginx-conf:/etc/nginx/http.d:ro
+            - modsecurity-crs:/etc/nginx/modsec:ro
+            - frontend-assets:/www:ro
+            - nginx-log:/var/log/nginx
+        networks:
+            42network:
+                aliases:
+                    - nginx
+        depends_on:
+            database:
+                condition: service_healthy
+        restart: always
+
+    frontend:
+        image: node:alpine
+        container_name: frontend
+        build:
+            context: ./frontend
+        volumes:
+            - frontend-assets:/www:ro
+        networks:
+            42network:
+                aliases:
+                    - frontend
+        depends_on:
+            database:
+                condition: service_healthy
+        restart: always
+
+    database:
+        image: postgres:alpine
+        container_name: database
+        build:
+            context: ./infrastructure/postgres
+        volumes:
+            - database-data:/data
+        networks:
+            42network:
+                aliases:
+                    - database
+                    - postgres
+        secrets:
+            - database-credentials
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+        restart: always
+
+
+volumes:
+    nginx-conf:
+        driver: local
+        driver_opts:
+            type: none
+            device: ./infrastructure/nginx/configuration
+            o: bind
+
+    modsecurity-crs:
+        driver: local
+        driver_opts:
+            type: none
+            device: ./infrastructure/nginx/crs
+            o: bind
+
+    frontend-assets:
+        driver: local
+        driver_opts:
+            type: none
+            device: ./frontend/distribution
+            o: bind
+
+    nginx-log:
+        driver: local
+        driver_opts:
+            type: none
+            device: ./logs/nginx
+            o: bind
+
+    database-data:
+        driver: local
+        driver_opts:
+            type: none
+            device: /home/$USER/data/database
+            o: bind
+
+
+networks:
+    42network:
+        name: 42network
+        driver: bridge
+
+
+secrets:
+    database-credentials:
+        file: ../secrets/database-credentials.env
