@@ -44,6 +44,8 @@ services:
         container_name: database
         build:
             context: ./infrastructure/postgres
+        ports:
+            - 5432:5432/tcp
         volumes:
             - database-data:/data
         networks:
@@ -58,6 +60,24 @@ services:
             interval: 10s
             timeout: 5s
             retries: 5
+        restart: always
+
+    redis:
+        image: redis:alpine
+        container_name: redis
+        build:
+            context: ./infrastructure/redis
+        ports:
+            - 6379:6379/tcp
+        volumes:
+            - redis-data:/data
+        networks:
+            42network:
+                aliases:
+                    - redis
+        depends_on:
+            database:
+                condition: service_healthy
         restart: always
 
 
@@ -95,6 +115,13 @@ volumes:
         driver_opts:
             type: none
             device: /home/$USER/data/database
+            o: bind
+
+    redis-data:
+        driver: local
+        driver_opts:
+            type: none
+            device: /home/$USER/data/redis
             o: bind
 
 

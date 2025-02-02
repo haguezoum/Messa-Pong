@@ -2,6 +2,7 @@ if [ ! -d "/home/$USER/data" ]; then
 	echo "Creating directories..."
 
 	mkdir -p "/home/$USER/data/database"
+	mkdir -p "/home/$USER/data/redis"
 
     	echo "Directories created successfully!"
 else
