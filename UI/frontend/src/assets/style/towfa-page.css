@@ -1,0 +1,7 @@
+/****** TOWFA.css ******/
+
+* {
+  box-sizing: border-box;
+  cursor: url(../images/cursor.png), auto !important;
+    caret-color: transparent;
+}
