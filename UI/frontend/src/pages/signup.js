@@ -4,7 +4,7 @@ template.innerHTML =
   /*html*/
   `<div id="signup-page" class="signupPage"> <!-- take the whole window size -->
     <div  class="container">
-      <form class="form shadow">
+      <form class="form shadow" novalidate>
         <div class="form-header">
           <span>
             <img src="src/assets/images/42_logo.svg" alt="logo" />
@@ -17,42 +17,46 @@ template.innerHTML =
               <!-- first name -->
               <div class="form-field">
                 <label for="firstname">First Name</label>
-                <input type="text" class="firstname" id="firstname" autofocus name="firstname" placeholder="Firstname" autocomplete="firstname" pattern="[a-zA-Z]{3,20}"
+                <input type="text" class="firstname" id="firstname" autofocus name="firstname" placeholder="Firstname" autocomplete="given-name" pattern="[a-zA-Z]{3,20}"
                         title="Enter your first name" required tabindex="1">
-                <p class="error" id="firstname-error" hidden>Error</p>
+                <p class="error" id="firstname-error" hidden>
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="error-icon">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-7-4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM9 9a.75.75 0 0 0 0 1.5h.253a.25.25 0 0 1 .244.304l-.459 2.066A1.75 1.75 0 0 0 10.747 15H11a.75.75 0 0 0 0-1.5h-.253a.25.25 0 0 1-.244-.304l.459-2.066A1.75 1.75 0 0 0 9.253 9H9Z" clip-rule="evenodd" />
+                  </svg>
+                Please choose a firstname !</p>
               </div>
               <!-- last name -->
               <div class="form-field">
                 <label for="lastname">Last Name</label>
-                <input type="text" class="lastname" id="lastname" autofocus name="lastname" placeholder="lastname" autocomplete="lastname" pattern="[a-zA-Z]{3,20}"
+                <input type="text" class="lastname" id="lastname" name="lastname" placeholder="lastname" autocomplete="family-name" pattern="[a-zA-Z]{3,20}"
                         title="Enter your last name" required tabindex="2">
-                <p class="error" id="lastname-error" hidden>Error</p>
+                <p class="error" id="lastname-error" hidden>Please choose a lastname !</p>
               </div>
               <!-- username -->
               <div class="form-field">
                 <label for="username">Username</label>
-                <input type="text" class="username" id="username" autofocus name="username" placeholder="username" autocomplete="username" pattern="[a-zA-Z0-9]{2,20}"
+                <input type="text" class="username" id="username" name="username" placeholder="username" autocomplete="username" pattern="[a-zA-Z0-9]{2,20}"
                         title="Chose a username" required tabindex="2">
-                <p class="error" id="username-error" hidden>Error</p>
+                <p class="error" id="username-error" hidden>Please choose a username !</p>
               </div>
               <!-- user email -->
               <div class="form-field">
                 <label for="email">Email</label>
-                <input type="email" class="email" id="email" name="email" placeholder="Username or email" autocomplete="email" pattern=".+@[a-z]+\.[a-z]{2,4}"
+                <input type="email" class="email" id="email" name="email" placeholder="Username or email" autocomplete="email" pattern=".+@.[a-z]+\.[a-z]{2,4}"
                         title="Enter your email address" required tabindex="4">
-                <p class="error" id="email-error" hidden>Error</p>
+                <p class="error" id="email-error" hidden>Please choose a valid email !</p>
               </div>
               <!-- password -->
               <div class="form-field">
                 <label for="password">Password</label>
-                <input type="password" class="password" id="password" name="password" placeholder="Password" autocomplete="current-password" required minlength="10" tabindex="5" pattern="[a-zA-Z0-9]{7,200}">
-                <p class="error" id="password-error" hidden>Error</p>
+                <input type="password" class="password" id="password" name="password" placeholder="Password" autocomplete="current-password" required minlength="10" tabindex="5" pattern=".{7,200}">
+                <p class="error" id="password-error" hidden>Please choose  strong Password !</p>
               </div>
               <!-- confirm password -->
               <div class="form-field">
-                <label for="confirm-password">Confirme Password</label>
-                <input type="password" class="password" id="confirm-password" name="confirm_password" placeholder="Password" autocomplete="confirm-password" required minlength="10" tabindex="6">
-                <p class="error" id="confirm-password-error" hidden>Error</p>
+                <label for="confirm_password">Confirme Password</label>
+                <input type="password" class="password" id="confirm_password" name="confirm_password" placeholder="Password" autocomplete="current-password" required minlength="10" tabindex="6" pattern=".{7,200}">
+                <p class="error" id="confirm_password-error" hidden>not the same Password !</p>
               </div>
 
               <div class="form-field">
@@ -88,6 +92,7 @@ template.innerHTML =
     <cloud-moving></cloud-moving>
   </div>`;
 
+
 class SIGNUP extends HTMLElement {
   #newUser = {
     firstname: "",
@@ -97,15 +102,18 @@ class SIGNUP extends HTMLElement {
     password: "",
     confirm_password: "",
   };
-
+  
   constructor() {
-    super();
-    this.shadow = this.attachShadow({ mode: "open" });
-    this.shadow.appendChild(template.content.cloneNode(true));
+    super(); 
+    
     const linkElem = document.createElement("link");
-    linkElem.setAttribute("rel", "stylesheet");
+    linkElem.setAttribute("rel", "preload");
+    linkElem.setAttribute("as", "style");
+    linkElem.setAttribute("onload", "this.onload=null;this.rel='stylesheet'");
     linkElem.setAttribute("href", "src/assets/style/signup-page.css");
+    this.shadow = this.attachShadow({ mode: "open" });
     this.shadow.appendChild(linkElem);
+    this.shadow.appendChild(template.content.cloneNode(true));
     this.setFormBinging(this.shadow.querySelector("form"));
   }
 
@@ -131,43 +139,76 @@ class SIGNUP extends HTMLElement {
     return this.#newUser;
   }
 
+  /**
+   * Binds form validation and submission logic to the provided form element.
+   * @param {HTMLFormElement} form - The form element to bind.
+   */
   setFormBinging(form) {
-    console.log("setFormBinging");
+    this.errors = {
+      firstname: this.shadow.querySelector("#firstname-error"),
+      lastname: this.shadow.querySelector("#lastname-error"),
+      username: this.shadow.querySelector("#username-error"),
+      email: this.shadow.querySelector("#email-error"),
+      password: this.shadow.querySelector("#password-error"),
+      confirm_password: this.shadow.querySelector("#confirm_password-error"),
+    };
+    
     if (form) {
       form.addEventListener("submit", (event) => {
         event.preventDefault();
-        console.log("submit");
-        console.log("Thank you " + this.#newUser.firstname);
-        this.#newUser.firstname = "";
-        this.#newUser.lastname = "";
-        this.#newUser.username = "";
-        this.#newUser.email = "";
-        this.#newUser.password = "";
-        this.#newUser.confirm_password = "";
+        if (form.checkValidity() === false) {
+          this.shadow.querySelector(".signupPage").classList.add("shake");
+          setTimeout(() => {
+            this.shadow.querySelector(".signupPage").classList.remove("shake");
+          }, 155);
+          return;
+        }
+        //  SUBMIT FORM TO THE SERVER FROM HERE
+        for (let key in this.#newUser) {
+          this.#newUser[key] = "";
+        }
       });
     }
     this.#newUser = new Proxy(this.#newUser, {
       set: (target, key, value) => {
         target[key] = value;
         form.elements[key].value = value;
-        console.log(`Target : ${target} | Key : ${key} | Value : ${value}`);
         return true;
       },
     });
 
-    // iterate over form fields and bind them to newUser
     Array.from(form.elements).forEach((element) => {
       if (element.name) {
         element.addEventListener("change", () => {
+          const error = this.errors[element.name];
+          if (element.name === "confirm_password") {
+            if (element.value !== form.elements["password"].value) {
+              error.hidden = false;
+              element.setCustomValidity("not the same Password ✋ !");
+              return;
+            }
+          } else if (element.validity.valid || element.value === "") {
+            error.hidden = true;
+            element.setCustomValidity("");
+            return;
+          } else {
+            error.hidden = false;
+            return;
+          }
+          error.hidden = true;
+          element.setCustomValidity("");
           this.#newUser[element.name] = element.value;
+        });
+        ["input", "change", "paste"].forEach((event) => {
+          element.addEventListener(event, () => {
+            form.checkValidity()
+              ? form.querySelector(".btn_submit").classList.add("active")
+              : form.querySelector(".btn_submit").classList.remove("active");
+          });
         });
       }
     });
   } // end of setFormBinging
-
-  // check if the form is valid is its valid show some chines in the submit button
-  //     box-shadow: 1px 1px 50px 10px rgb(135, 205, 234);
-  // check : https://uiverse.io/MuhammadHasann/silent-lizard-44
 }
 customElements.define("signup-page", SIGNUP);
 
