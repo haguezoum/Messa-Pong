@@ -26,7 +26,7 @@ const routerCore = async () => {
         view: async () => {
           // await import("./pages/404.js");
           console.log("404");
-          return `<router-link to="/home" kind="route"> GO HOME </router-link>`;
+          return /*html*/`<router-link to="/home" kind="route"> GO HOME </router-link>`;
         },
       },
     };
