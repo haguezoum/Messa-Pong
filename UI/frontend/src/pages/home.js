@@ -2,46 +2,73 @@ let template = document.createElement("template");
 
 template.innerHTML =
   /*html*/
-  `<div id="home-page">
-       <router-link to="/login">
-          <span slot="title">go to log in</span>
-       </router-link>
-       <br>
-       <br>
-       <br>
-      <router-link to="https://leytonmaroc.teamtailor.com/" kind="ext">
-        <span slot="title">External page</span>
-      </router-link>
-  </div >`;
+  `<div id="home-page" class="home-page">
+    <div class="container">
+        <header-bar></header-bar>
+        <main class="grid-layout">
+            <div class="grid-item" id="play-now" data-target="game">
+               <img class="selectCardImage"  src="src/assets/images/charachters/home_main/home_characters/l9erd.png" alt="" srcset="" loading="lazy">
+               <div class="selectCardControles">
+                    <h3 class="left">Play now</h3>
+                    <span class="play-btn action-btn">
+                      <ion-icon name="play-circle-outline"></ion-icon>
+                    </span>
+                </div>
+            </div>
+            <div class="grid-item" id="my-store" data-target="store">
+                <img class="selectCardImage"  src="src/assets/images/charachters/home_main/home_characters/store.png" alt="" srcset="" loading="lazy">
+               <div class="selectCardControles">
+                   <h3 class="left">My Store</h3>
+                   <span class="store-btn action-btn">
+                    <ion-icon name="storefront-outline"></ion-icon>
+                    </span>
+                </div>
+            </div>
+            <div class="grid-item" id="dashboard" data-target="dashboard">
+                <img class="selectCardImage" src="src/assets/images/charachters/home_main/home_characters/my_dashboard.png" alt="" srcset="" loading="lazy">
+                <div class="selectCardControles">
+                    <h3 class="left">Dashboard</h3>
+                    <span class="dashboard-btn action-btn">
+                      <ion-icon name="apps-outline"></ion-icon>
+                      </span>
+                </div>
+            </div>
+            <div class="grid-item" id="chat-space" data-target="chat">
+                <img class="selectCardImage" src="src/assets/images/charachters/home_main/home_characters/chat.png" alt="" srcset="" loading="lazy">
+                <div class="selectCardControles">
+                    <h3 class="left">Chat space</h3>
+                    <span class="dashboard-btn action-btn">
+                      <ion-icon name="chatbubbles-outline"></ion-icon>
+                    </span>
+                </div>
+            </div>
+        </main>
+        </div>
+        <cloud-moving cloudCount="10"></cloud-moving> 
+  </div>`;
 
 class HOME extends HTMLElement {
   constructor() {
     super();
-    const shadow = this.attachShadow({ mode: "open" });
-    shadow.appendChild(template.content.cloneNode(true));
+     this.shadow = this.attachShadow({ mode: "open" });
     const linkElem = document.createElement("link");
     linkElem.setAttribute("rel", "stylesheet");
     linkElem.setAttribute("href", "src/assets/style/home-page.css");
-    shadow.appendChild(linkElem);
+    this.shadow.appendChild(linkElem);
   }
-
+  
   connectedCallback() {
-    console.log("HOME is Connected");
+    this.shadow.appendChild(template.content.cloneNode(true));
   }
 
   async disconnectedCallback() {
-    console.log("HOME is Disonnected");
   }
 
   static get observedAttributes() {
-    return [
-      /* array of attribute names to monitor for changes */
-    ];
+    return [];
   }
 
-  attributeChangedCallback(name, oldValue, newValue) {
-    // called when one of attributes listed above is modified
-  }
+  attributeChangedCallback(name, oldValue, newValue) {}
 }
 customElements.define("home-page", HOME);
 
