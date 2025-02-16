@@ -77,7 +77,7 @@ template.innerHTML =
         </div>
         <div class="signup">
           <p>
-            <router-link to="/login" kind="route" tabindex="10" is=>
+            <router-link to="/login" kind="route" tabindex="10" >
                <span slot="title"> Already have an account ? Login</span>
                <span slot="icon">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
