@@ -13,7 +13,8 @@ class Cloudmoving extends HTMLElement {
     this.shadow.appendChild(linkElem);
     this.cloudCount = this.getAttribute("cloudCount");
     if (!this.cloudCount) {
-      this.cloudCount = 30;
+      this.cloudCount = 20;
+      console.log("Cloud Count is not provided, defaulting to 30");
     }
   }
 
@@ -37,17 +38,23 @@ class Cloudmoving extends HTMLElement {
   }
 
   // Function to animate clouds
-
   animateClouds = () => {
     let cloudContainer = this.shadow.querySelector(".cloud-moving");
+    if (!cloudContainer) return; // Ensure the container exists
+
+    // Clear existing clouds to avoid duplication
+    cloudContainer.innerHTML = "";
+
+    // Create new clouds
     for (let i = 0; i < this.cloudCount; i++) {
       let cloud = document.createElement("div");
       cloud.classList.add("cloud");
       cloudContainer.appendChild(cloud);
     }
+
     const randomBetween = (min, max) => Math.random() * (max - min) + min; // Random number between 2 values
     const clouds = this.shadow.querySelectorAll(".cloud-moving .cloud");
-    console.log("animateClouds ... ");
+
     clouds.forEach((cloud) => {
       let img = document.createElement("img");
       img.src = "src/assets/images/cloud.png";
@@ -56,13 +63,21 @@ class Cloudmoving extends HTMLElement {
       img.style.width = `${10 + random * 170}px`;
       img.style.height = "auto";
       cloud.appendChild(img);
+
+      // Set initial position outside the viewport
+      cloud.style.position = "absolute";
+      cloud.style.bottom = `${randomBetween(0, 40)}%`; // Random vertical position
+      cloud.style.left = `${-img.width}px`; // Start outside the left side of the viewport
+
+      // Animation properties
+      const animationDuration = randomBetween(100, 200); // Longer duration for smoother movement
+      const animationDelay = randomBetween(0, 220); // Random delay to stagger clouds
+
       cloud.style.animationName = "moveClouds";
       cloud.style.animationTimingFunction = "linear";
       cloud.style.animationIterationCount = "infinite";
-      cloud.style.animationDuration = `${randomBetween(45, 70)}s`;
-      cloud.style.animationDelay = `${-randomBetween(0, 30)}s`;
-      cloud.style.bottom = `${randomBetween(0, 40)}%`;
-      cloud.style.left = `${randomBetween(-5, 300)}%`;
+      cloud.style.animationDuration = `${animationDuration}s`;
+      cloud.style.animationDelay = `${-animationDelay}s`; // Negative delay to start immediately
     });
   };
 }
