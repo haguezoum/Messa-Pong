@@ -33,7 +33,8 @@ class Loadingprogress extends HTMLElement {
   attributeChangedCallback(name, oldValue, newValue) {
     // called when one of attributes listed above is modified
   }
-
+  // --------------------------------------------
+  
 }
 customElements.define('loading-progress', Loadingprogress);
 
