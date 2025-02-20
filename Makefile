@@ -6,7 +6,7 @@
 #    By: tarzan <elakhfif@student.1337.ma>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/02/02 17:07:10 by tarzan            #+#    #+#              #
-#    Updated: 2025/02/02 17:11:04 by tarzan           ###   ########.fr        #
+#    Updated: 2025/02/14 03:50:49 by elakhfif         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -22,7 +22,7 @@ DOCKER			= docker
 DOCKER_COMPOSE		= docker compose
 COMPOSE_FILE		= core/docker-compose.yml
 SCRIPT_PATH 		= datadir.sh
-REMOVE_SCRIPT		= sudo rm -rf /home/$USER/data
+REMOVE_SCRIPT		= sudo rm -rf /home/$(USER)/data
 
 #---------------------------------- Rules -------------------------------------#
 

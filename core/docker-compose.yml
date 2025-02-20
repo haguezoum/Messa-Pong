@@ -1,127 +1,216 @@
 name: 42_transcendence
 
 services:
-    nginx:
-        image: nginx:alpine
-        container_name: nginx
-        build:
-            context: ./infrastructure/nginx
-        ports:
-            - 80:80/tcp
-            - 443:443/tcp
-        volumes:
-            - nginx-conf:/etc/nginx/http.d:ro
-            - modsecurity-crs:/etc/nginx/modsec:ro
-            - frontend-assets:/www:ro
-            - nginx-log:/var/log/nginx
-        networks:
-            42network:
-                aliases:
-                    - nginx
-        depends_on:
-            database:
-                condition: service_healthy
-        restart: always
+    # nginx:
+    #     image: nginx:alpine
+    #     container_name: nginx
+    #     build:
+    #         context: ./infrastructure/nginx
+    #     ports:
+    #         - 80:80/tcp
+    #         - 443:443/tcp
+    #     volumes:
+    #         - frontend-files:/www:ro
+    #     networks:
+    #         42network:
+    #             aliases:
+    #                 - nginx
+    #     depends_on:
+    #         redis:
+    #             condition: service_healthy
+    #     restart: always
+    #
+    # frontend:
+    #     image: frontend:builder
+    #     container_name: frontend
+    #     build:
+    #         context: ./frontend
+    #     volumes:
+    #         - frontend-files:/www:ro
+    #     networks:
+    #         42network:
+    #             aliases:
+    #                 - frontend
+    #     depends_on:
+    #         database:
+    #             condition: service_healthy
+    #     restart: always
+    #
+    # database:
+    #     image: postgres:alpine
+    #     container_name: database
+    #     build:
+    #         context: ./infrastructure/postgres
+    #     volumes:
+    #         - database-data:/var/lib/postgresql/data
+    #     networks:
+    #         42network:
+    #             aliases:
+    #                 - database
+    #                 - postgres
+    #     secrets:
+    #         - database-credentials
+    #     healthcheck:
+    #         test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+    #         interval: 10s
+    #         timeout: 5s
+    #         retries: 3
+    #         start_period: 60s
+    #     deploy:
+    #         resources:
+    #             limits:
+    #                 cpus: 1.0
+    #                 memory: 1G
+    #     restart: always
+    #
+    # redis:
+    #     image: redis:alpine
+    #     container_name: redis
+    #     build:
+    #         context: ./infrastructure/redis
+    #     ports:
+    #         - 6379:6379/tcp
+    #     networks:
+    #         42network:
+    #             aliases:
+    #                 - redis
+    #     healthcheck:
+    #         test: ["CMD", "redis-cli", "ping"]
+    #         interval: 5s
+    #         timeout: 2s
+    #         retries: 3
+    #         start_period: 10s
+    #     depends_on:
+    #         database:
+    #             condition: service_healthy
+    #     restart: always
 
-    frontend:
-        image: node:alpine
-        container_name: frontend
-        build:
-            context: ./frontend
-        volumes:
-            - frontend-assets:/www:ro
-        networks:
-            42network:
-                aliases:
-                    - frontend
-        depends_on:
-            database:
-                condition: service_healthy
-        restart: always
+    # auth:
+    #     image: auth:alpine
+    #     container_name: auth
+    #     build:
+    #         context: ./auth
+    #     volumes:
+    #         - auth_storage:/api/static
+    #     network:
+    #         42network:
+    #           aliases:
+    #               - authentication
+    #               - api_gateway
+    #     secrets:
+    #         - database-credentials
+    #         - api-credentials
+    #     depends_on:
+    #         database:
+    #             condition: service_healthy
+    #     restart: always
 
-    database:
-        image: postgres:alpine
-        container_name: database
+    elasticsearch:
+        image: elasticsearch:alpine
+        container_name: elasticsearch
         build:
-            context: ./infrastructure/postgres
+            context: ./elk/elasticsearch
         ports:
-            - 5432:5432/tcp
-        volumes:
-            - database-data:/data
+            - 9200:9200/tcp
+            - 9300:9300/tcp
+        ulimits:
+            memlock:
+                soft: -1
+                hard: -1
+            nofile:
+                soft: 65536
+                hard: 65536
+            nproc:
+                soft: 4096
+                hard: 4096
         networks:
-            42network:
+            elknetwork:
                 aliases:
-                    - database
-                    - postgres
+                  - elasticsearch
         secrets:
-            - database-credentials
+            - elk-credentials
         healthcheck:
-            test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER"]
+            test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -vq '\"status\":\"red\"'"]
             interval: 10s
             timeout: 5s
             retries: 5
+            start_period: 30s
         restart: always
 
-    redis:
-        image: redis:alpine
-        container_name: redis
+    logstash:
+        image: logstash:alpine
+        container_name: logstash
         build:
-            context: ./infrastructure/redis
+            context: ./elk/logstash
         ports:
-            - 6379:6379/tcp
-        volumes:
-            - redis-data:/data
+            - 5000:5000/tcp
+            - 9600:9600/tcp
+            - 5140:5140/tcp
         networks:
+            elknetwork:
+                aliases:
+                    - logstash
             42network:
                 aliases:
-                    - redis
+                    - logstash
+        secrets:
+            - elk-credentials
         depends_on:
-            database:
+            elasticsearch:
+                condition: service_healthy
+        restart: always
+
+    kibana:
+        image: kibana:alpine
+        container_name: kibana
+        build:
+            context: ./elk/kibana
+        networks:
+            elknetwork:
+                aliases:
+                    - kibana
+            42network:
+                aliases:
+                    - kibana
+        secrets:
+            - elk-credentials
+        depends_on:
+            elasticsearch:
                 condition: service_healthy
         restart: always
 
 
 volumes:
-    nginx-conf:
-        driver: local
-        driver_opts:
-            type: none
-            device: ./infrastructure/nginx/configuration
-            o: bind
-
-    modsecurity-crs:
-        driver: local
-        driver_opts:
-            type: none
-            device: ./infrastructure/nginx/crs
-            o: bind
-
-    frontend-assets:
-        driver: local
-        driver_opts:
-            type: none
-            device: ./frontend/distribution
-            o: bind
-
-    nginx-log:
-        driver: local
-        driver_opts:
-            type: none
-            device: ./logs/nginx
-            o: bind
-
     database-data:
+        name: database_volume
         driver: local
         driver_opts:
             type: none
-            device: /home/$USER/data/database
+            device: /home/elakhfif/data/database
             o: bind
 
     redis-data:
+        name: redis_volume
         driver: local
         driver_opts:
             type: none
-            device: /home/$USER/data/redis
+            device: /home/elakhfif/data/redis
+            o: bind
+
+    frontend-files:
+        name: frontend_volume
+        driver: local
+        driver_opts:
+            type: none
+            device: /home/elakhfif/data/frontend_files
+            o: bind
+    
+    auth_storage:
+        name: auth_storage
+        driver: local
+        driver_opts:
+            type: none
+            device: /home/elakhfif/data/auth_storage
             o: bind
 
 
@@ -129,8 +218,15 @@ networks:
     42network:
         name: 42network
         driver: bridge
+    elknetwork:
+        name: elknetwork
+        driver: bridge
 
 
 secrets:
     database-credentials:
         file: ../secrets/database-credentials.env
+    api-credentials:
+        file: ../secrets/api-credentials.env
+    elk-credentials:
+        file: ../secrets/elk-credentials.env
