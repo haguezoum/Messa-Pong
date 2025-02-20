@@ -6,7 +6,7 @@
 #    By: tarzan <elakhfif@student.1337.ma>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/02/02 17:07:10 by tarzan            #+#    #+#              #
-#    Updated: 2025/02/14 03:50:49 by elakhfif         ###   ########.fr        #
+#    Updated: 2025/02/20 23:25:42 by elakhfif         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -21,15 +21,12 @@ NC			= \033[0m
 DOCKER			= docker
 DOCKER_COMPOSE		= docker compose
 COMPOSE_FILE		= core/docker-compose.yml
-SCRIPT_PATH 		= datadir.sh
-REMOVE_SCRIPT		= sudo rm -rf /home/$(USER)/data
 
 #---------------------------------- Rules -------------------------------------#
 
 all: up
 
 up: build
-	@bash $(SCRIPT_PATH)
 	@$(DOCKER_COMPOSE) -f $(COMPOSE_FILE) up -d
 	@echo "$(GREEN)Containers are up and running$(NC)"
 
@@ -48,7 +45,6 @@ clean: down
 fclean: clean
 	@$(DOCKER_COMPOSE) -f $(COMPOSE_FILE) down -v
 	@echo "$(RED)Containers and volumes are removed$(NC)"
-	@$(REMOVE_SCRIPT)
 
 prune: fclean
 	@$(DOCKER_COMPOSE) -f $(COMPOSE_FILE) down --rmi all

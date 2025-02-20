@@ -1,25 +1,25 @@
 name: 42_transcendence
 
 services:
-    # nginx:
-    #     image: nginx:alpine
-    #     container_name: nginx
-    #     build:
-    #         context: ./infrastructure/nginx
-    #     ports:
-    #         - 80:80/tcp
-    #         - 443:443/tcp
-    #     volumes:
-    #         - frontend-files:/www:ro
-    #     networks:
-    #         42network:
-    #             aliases:
-    #                 - nginx
-    #     depends_on:
-    #         redis:
-    #             condition: service_healthy
-    #     restart: always
-    #
+    nginx:
+        image: nginx:alpine
+        container_name: nginx
+        build:
+            context: ./infrastructure/nginx
+        ports:
+            - 80:80/tcp
+            - 443:443/tcp
+        volumes:
+            - frontend-files:/www:ro
+        networks:
+            42network:
+                aliases:
+                    - nginx
+        depends_on:
+            redis:
+                condition: service_healthy
+        restart: always
+
     # frontend:
     #     image: frontend:builder
     #     container_name: frontend
@@ -35,55 +35,50 @@ services:
     #         database:
     #             condition: service_healthy
     #     restart: always
-    #
-    # database:
-    #     image: postgres:alpine
-    #     container_name: database
-    #     build:
-    #         context: ./infrastructure/postgres
-    #     volumes:
-    #         - database-data:/var/lib/postgresql/data
-    #     networks:
-    #         42network:
-    #             aliases:
-    #                 - database
-    #                 - postgres
-    #     secrets:
-    #         - database-credentials
-    #     healthcheck:
-    #         test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
-    #         interval: 10s
-    #         timeout: 5s
-    #         retries: 3
-    #         start_period: 60s
-    #     deploy:
-    #         resources:
-    #             limits:
-    #                 cpus: 1.0
-    #                 memory: 1G
-    #     restart: always
-    #
-    # redis:
-    #     image: redis:alpine
-    #     container_name: redis
-    #     build:
-    #         context: ./infrastructure/redis
-    #     ports:
-    #         - 6379:6379/tcp
-    #     networks:
-    #         42network:
-    #             aliases:
-    #                 - redis
-    #     healthcheck:
-    #         test: ["CMD", "redis-cli", "ping"]
-    #         interval: 5s
-    #         timeout: 2s
-    #         retries: 3
-    #         start_period: 10s
-    #     depends_on:
-    #         database:
-    #             condition: service_healthy
-    #     restart: always
+
+    database:
+        image: postgres:alpine
+        container_name: database
+        build:
+            context: ./infrastructure/postgres
+        volumes:
+            - database-data:/var/lib/postgresql/data
+        networks:
+            42network:
+                aliases:
+                    - database
+                    - postgres
+        secrets:
+            - database-credentials
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+            interval: 10s
+            timeout: 5s
+            retries: 3
+            start_period: 60s
+        restart: always
+
+    redis:
+        image: redis:alpine
+        container_name: redis
+        build:
+            context: ./infrastructure/redis
+        ports:
+            - 6379:6379/tcp
+        networks:
+            42network:
+                aliases:
+                    - redis
+        healthcheck:
+            test: ["CMD", "redis-cli", "ping"]
+            interval: 5s
+            timeout: 2s
+            retries: 3
+            start_period: 10s
+        depends_on:
+            database:
+                condition: service_healthy
+        restart: always
 
     # auth:
     #     image: auth:alpine
@@ -183,35 +178,15 @@ services:
 volumes:
     database-data:
         name: database_volume
-        driver: local
-        driver_opts:
-            type: none
-            device: /home/elakhfif/data/database
-            o: bind
 
     redis-data:
         name: redis_volume
-        driver: local
-        driver_opts:
-            type: none
-            device: /home/elakhfif/data/redis
-            o: bind
 
     frontend-files:
         name: frontend_volume
-        driver: local
-        driver_opts:
-            type: none
-            device: /home/elakhfif/data/frontend_files
-            o: bind
     
     auth_storage:
         name: auth_storage
-        driver: local
-        driver_opts:
-            type: none
-            device: /home/elakhfif/data/auth_storage
-            o: bind
 
 
 networks:
