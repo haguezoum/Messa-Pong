@@ -33,6 +33,13 @@ const routes = [
       view: async () => {
       await import('../pages/profile.js');
       return '<profile-page></profile-page>';
+    }
+     },
+    {
+      path: '/',
+      view: async () => {
+      await import('../pages/entrypoint.js');
+      return '<entrypoint-page></entrypoint-page>';
     },
      }
   ]
