@@ -2,7 +2,7 @@ name: 42_transcendence
 
 services:
     nginx:
-        image: nginx:alpine
+        image: nginx:reverse-proxy
         container_name: nginx
         build:
             context: ./infrastructure/nginx
@@ -37,7 +37,7 @@ services:
     #     restart: always
 
     database:
-        image: postgres:alpine
+        image: postgresql:database
         container_name: database
         build:
             context: ./infrastructure/postgres
@@ -47,7 +47,7 @@ services:
             42network:
                 aliases:
                     - database
-                    - postgres
+                    - postgresql
         secrets:
             - database-credentials
         healthcheck:
@@ -59,7 +59,7 @@ services:
         restart: always
 
     redis:
-        image: redis:alpine
+        image: redis:cache
         container_name: redis
         build:
             context: ./infrastructure/redis
@@ -100,80 +100,6 @@ services:
     #             condition: service_healthy
     #     restart: always
 
-    elasticsearch:
-        image: elasticsearch:alpine
-        container_name: elasticsearch
-        build:
-            context: ./elk/elasticsearch
-        ports:
-            - 9200:9200/tcp
-            - 9300:9300/tcp
-        ulimits:
-            memlock:
-                soft: -1
-                hard: -1
-            nofile:
-                soft: 65536
-                hard: 65536
-            nproc:
-                soft: 4096
-                hard: 4096
-        networks:
-            elknetwork:
-                aliases:
-                  - elasticsearch
-        secrets:
-            - elk-credentials
-        healthcheck:
-            test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -vq '\"status\":\"red\"'"]
-            interval: 10s
-            timeout: 5s
-            retries: 5
-            start_period: 30s
-        restart: always
-
-    logstash:
-        image: logstash:alpine
-        container_name: logstash
-        build:
-            context: ./elk/logstash
-        ports:
-            - 5000:5000/tcp
-            - 9600:9600/tcp
-            - 5140:5140/tcp
-        networks:
-            elknetwork:
-                aliases:
-                    - logstash
-            42network:
-                aliases:
-                    - logstash
-        secrets:
-            - elk-credentials
-        depends_on:
-            elasticsearch:
-                condition: service_healthy
-        restart: always
-
-    kibana:
-        image: kibana:alpine
-        container_name: kibana
-        build:
-            context: ./elk/kibana
-        networks:
-            elknetwork:
-                aliases:
-                    - kibana
-            42network:
-                aliases:
-                    - kibana
-        secrets:
-            - elk-credentials
-        depends_on:
-            elasticsearch:
-                condition: service_healthy
-        restart: always
-
 
 volumes:
     database-data:
@@ -188,13 +114,13 @@ volumes:
     auth_storage:
         name: auth_storage
 
+    elk-data:
+        name: elk_volume
+
 
 networks:
     42network:
         name: 42network
-        driver: bridge
-    elknetwork:
-        name: elknetwork
         driver: bridge
 
 

@@ -6,7 +6,7 @@
 #    By: elakhfif <marvin@42.fr>                    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/11/26 07:56:09 by elakhfif          #+#    #+#              #
-#    Updated: 2025/02/17 05:12:23 by elakhfif         ###   ########.fr        #
+#    Updated: 2025/02/21 17:12:35 by elakhfif         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -34,4 +34,4 @@ RUN		pip install --no-cache-dir -r requirements.txt
 
 EXPOSE		8000/tcp
 
-ENTRYPOINT ["/home/tarzan/restapi/launcher.sh"]
+ENTRYPOINT	["/home/tarzan/restapi/launcher.sh"]
