@@ -26,7 +26,7 @@
     justify-content: center;
     align-items: center;
     gap: 1rem;
-    background-color: rgb(255, 255, 255);
+    background-color: var(--secondary-blue);
     border-radius: 1rem;
     padding: 0.1rem 0.5rem;
     width: 30%;
@@ -37,7 +37,7 @@
 }
 
 .header .search_wraper:focus-within {
-    outline-color: var(--primary-blue);
+    outline-color: var(--alive-blue);
 }
 
 .header .search_wraper input {
@@ -48,6 +48,7 @@
     padding: 0.2rem 30px;
     border-radius: 1rem;
     position: relative;
+    background-color: var(--secondary-blue);
 }
 
 .header .search_wraper input::placeholder {
@@ -73,7 +74,7 @@ input:focus .header .search_wraper {
     background-color: var(--dead-blue);
     border-radius: 0.5rem;
     padding: 0.2rem 0.5rem;
-    color: var(--primary-blue);
+    color: var(--white);
     font-family: var(--socondry-font);
     font-size: 1rem;
     font-weight: 800;
@@ -88,7 +89,7 @@ input:focus .header .search_wraper {
 
 .search_wraper ion-icon {
     font-size: 1.5rem;
-    color: VAR(--dead-blue);
+    color: VAR(--white);
     padding: 5px;
     transition: all 0.5s ease-in-out;
     cursor: pointer;
@@ -109,13 +110,13 @@ input:focus .header .search_wraper {
 }
 
 .search_wraper:hover {
-    box-shadow: 0px 0px 20px 0px rgba(0, 0, 0, 0.2);
+    box-shadow: 0px 0px 20px 0px var(--primary-blue);
 }
 
 .search_wraper .search-results {
     position: absolute;
     border-radius: 0.6rem;
-    box-shadow: 0px 0px 20px 0px rgba(0, 0, 0, 0.1);
+    box-shadow: 0px 0px 20px 0px var(--primary-blue);
     display: none;
     width: 100%;
     top: 100%;
@@ -130,7 +131,7 @@ input:focus .header .search_wraper {
     padding: 8px 0px;
     margin: 0;
     border-radius: 0.6rem;
-    background-color: rgba(255, 255, 255, 0.325);
+    background-color: var(--secondary-blue-off);
     backdrop-filter: blur(50px);
 }
 
