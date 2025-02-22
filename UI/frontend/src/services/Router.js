@@ -16,17 +16,13 @@ const routerCore = async () => {
   let match = potentialMatches.find((potentialMatch) => potentialMatch.isMatch);
 
   if (!match) {
-    // if (location.pathname === "/") {
-    //   location.pathname = "/home";
-    //   return;
-    // }
     match = {
       route: {
         path: "/404",
         view: async () => {
           // await import("./pages/404.js");
           console.log("404");
-          return /*html*/`<router-link to="/home" kind="route"> GO HOME </router-link>`;
+          return /*html*/`<router-link to="/" kind="route"> GO HOME </router-link>`;
         },
       },
     };
@@ -46,6 +42,7 @@ const Router = {
 
 // when the back or forward button is clicked
 window.addEventListener("popstate", () => {
+  app.state.currentPage = location.pathname;
   routerCore();
 });
 
