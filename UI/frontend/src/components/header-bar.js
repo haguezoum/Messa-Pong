@@ -83,7 +83,7 @@ class Headerbar extends HTMLElement {
   }
 
   disconnectedCallback() {
-    window.removeEventListener("keydown");
+    // window.removeEventListener("keydown");
   }
 
   keyBinding() { // Keybinding for the search input
