@@ -10,7 +10,7 @@ services:
             - 80:80/tcp
             - 443:443/tcp
         volumes:
-            - frontend-files:/www:ro
+            - frontend-files:/www
         networks:
             42network:
                 aliases:
@@ -20,21 +20,21 @@ services:
                 condition: service_healthy
         restart: always
 
-    # frontend:
-    #     image: frontend:builder
-    #     container_name: frontend
-    #     build:
-    #         context: ./frontend
-    #     volumes:
-    #         - frontend-files:/www:ro
-    #     networks:
-    #         42network:
-    #             aliases:
-    #                 - frontend
-    #     depends_on:
-    #         database:
-    #             condition: service_healthy
-    #     restart: always
+    frontend:
+        image: frontend:builder
+        container_name: frontend
+        build:
+            context: ./frontend
+        volumes:
+            - frontend-files:/www
+        networks:
+            42network:
+                aliases:
+                    - frontend
+        depends_on:
+            database:
+                condition: service_healthy
+        restart: always
 
     database:
         image: postgresql:database
