@@ -1,0 +1,295 @@
+/****** header-bar.css ******/
+
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-radius: 16px;
+    position: relative;
+    z-index: 10;
+}
+
+.header .logo {
+    font-size: 4rem;
+    display: flex;
+    place-items: center;
+}
+
+.header .logo ion-icon {
+    font-size: 4rem;
+}
+
+.header .search_wraper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    background-color: var(--secondary-blue);
+    border-radius: 1rem;
+    padding: 0.1rem 0.5rem;
+    width: 30%;
+    height: 2.5rem;
+    position: relative;
+    transition: all 0.5s ease-in-out;
+    outline: 3px solid transparent;
+}
+
+.header .search_wraper:focus-within {
+    outline-color: var(--alive-blue);
+}
+
+.header .search_wraper input {
+    width: 100%;
+    border: none;
+    outline: none;
+    font-size: 1rem;
+    padding: 0.2rem 30px;
+    border-radius: 1rem;
+    position: relative;
+    background-color: var(--secondary-blue);
+}
+
+.header .search_wraper input::placeholder {
+    color: var(--socondry-black);
+    font-family: var(--socondry-font);
+    font-size: 1rem;
+}
+
+input:focus .header .search_wraper {
+    border: 1px solid var(--primary-blue);
+}
+
+.shortcut {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    gap: 0.1rem;
+}
+.shortcut kbd {
+    background-color: var(--dead-blue);
+    border-radius: 0.5rem;
+    padding: 0.2rem 0.5rem;
+    color: var(--white);
+    font-family: var(--socondry-font);
+    font-size: 1rem;
+    font-weight: 800;
+}
+
+.shortcut.target{
+    visibility: visible;
+}
+.shortcut.clear{
+    visibility: hidden;
+}
+
+.search_wraper ion-icon {
+    font-size: 1.5rem;
+    color: VAR(--white);
+    padding: 5px;
+    transition: all 0.5s ease-in-out;
+    cursor: pointer;
+}
+
+.search_wraper .search-icon {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+}
+
+.search_wraper ion-icon:hover {
+    background-color: var(--dead-blue);
+    border-radius: 50%;
+}
+
+.search_wraper:hover {
+    box-shadow: 0px 0px 20px 0px var(--primary-blue);
+}
+
+.search_wraper .search-results {
+    position: absolute;
+    border-radius: 0.6rem;
+    box-shadow: 0px 0px 20px 0px var(--primary-blue);
+    display: none;
+    width: 100%;
+    top: 100%;
+    left: 0;
+    height: fit-content;
+    transition: all 0.5s ease-in-out;
+    overflow: hidden;
+}
+
+.search_wraper .search-results ul {
+    list-style: none;
+    padding: 8px 0px;
+    margin: 0;
+    border-radius: 0.6rem;
+    background-color: var(--secondary-blue-off);
+    backdrop-filter: blur(50px);
+}
+
+.search_wraper .search-results ul li.search-result-list-item {
+    padding: 0.5rem;
+    text-align: left;
+    border-bottom: 1px solid #0086a841;
+    cursor: pointer;
+    gap: 8px;
+    display: flex;
+    justify-content: start;
+    align-items: end;
+}
+.search_wraper .search-results ul li.searching{
+    text-align: center;
+    color: #4a4a4a;
+    font-family: var(--socondry-font);
+    font-size: medium;
+}
+.search_wraper .search-results ul li.search-result-list-item:hover, .search_wraper .search-results ul li.search-result-list-item.active {
+    background-color: #ffffff41;
+}
+
+.profile-picture {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    background-image: url("../images/charachters/bust-mask-13.svg");
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.profile-name {
+    grid-column: span 3 / span 3;
+    grid-row: span 2 / span 2;
+    grid-column-start: 3;
+    font-size: large;
+    font-weight: 900;
+    text-transform: uppercase;
+    color: var(--primary-blue);
+    font-family: var(--socondry-font);
+    color: rgb(105 105 105);
+    cursor: pointer;
+}
+
+.profile-username {
+    font-family: var(--socondry-font);
+    font-size: 17px;
+    font-weight: 800;
+    color: rgb(25, 37, 49);
+    display: flex;
+}
+
+
+/**************************************** profile **************************************/
+
+.profile-section {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    outline: none;
+    border: 1px solid #5454549c;
+    border-radius: 50%;
+    position: relative;
+}
+
+
+
+.profile-section:hover, .profile-section:focus {
+    outline: 3px solid var(--primary-blue);
+}
+
+
+.avatar {
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 50%;
+    transition: all 0.1s ease-in-out;
+    z-index: 1;
+    position: relative;
+    isolation: isolate;
+    object-fit: contain;
+    object-position: center;
+    background-color: var(--white);
+    overflow: hidden;
+}
+
+.avatar img.avatarImage {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+    transform: scale(1.1);
+}
+
+.dropdown {
+    display: none;
+    position: absolute;
+    top: 104%;
+    right: 0;
+    background-color: rgb(190 228 248);
+    border-radius: 1rem;
+    box-shadow: 0px 0px 20px 0px rgba(0, 42, 93, 0.438);
+    z-index: 10;
+    transition: all 0.5s ease-in-out;
+    width: fit-content;
+    overflow: hidden;
+    outline: 3px solid var(--primary-blue);
+}
+
+.profile-section:focus .dropdown {
+    display: block;
+}
+.dropdown ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.profile-avatar-container{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 2rem;
+    border-bottom: 1px solid #0000005b;
+    cursor: auto;
+}
+.dropdown .profile-avatar-container .profile-avatar {
+    width: 10rem;
+    height: 10rem;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 1px solid var(--dead-blue);
+    margin: auto;
+    box-shadow: 0px 0px 20px 1px rgba(11, 30, 57, 0.1);
+    cursor: pointer;
+}
+
+.dropdown ul li {
+    padding: 0.5rem 0rem;
+    text-align: left;
+    color: #4a4a4a;
+    border-bottom: 1px solid #ffffff41;
+    cursor: pointer;
+    font-family: var(--socondry-font);
+    font-size: medium;
+    transition: all 0.5s ease-in-out;
+}
+router-link{
+    transition: all 0.5s ease-in-out;
+}
+.dropdown ul li:hover router-link {
+    transform: translateX(0.3rem);
+}
+
+.dropdown ul li:hover {
+    background-color: rgba(62, 223, 255, 0.1);
+}

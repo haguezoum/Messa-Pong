@@ -1,0 +1,133 @@
+name: 42_transcendence
+
+services:
+    nginx:
+        image: nginx:reverse-proxy
+        container_name: nginx
+        build:
+            context: ./infrastructure/nginx
+        ports:
+            - 80:80/tcp
+            - 443:443/tcp
+        volumes:
+            - frontend-files:/www
+        networks:
+            42network:
+                aliases:
+                    - nginx
+        depends_on:
+            redis:
+                condition: service_healthy
+        restart: always
+
+    frontend:
+        image: frontend:builder
+        container_name: frontend
+        build:
+            context: ./frontend
+        volumes:
+            - frontend-files:/www
+        networks:
+            42network:
+                aliases:
+                    - frontend
+        depends_on:
+            database:
+                condition: service_healthy
+        restart: always
+
+    database:
+        image: postgresql:database
+        container_name: database
+        build:
+            context: ./infrastructure/postgres
+        volumes:
+            - database-data:/var/lib/postgresql/data
+        networks:
+            42network:
+                aliases:
+                    - database
+                    - postgresql
+        secrets:
+            - database-credentials
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+            interval: 10s
+            timeout: 5s
+            retries: 3
+            start_period: 60s
+        restart: always
+
+    redis:
+        image: redis:cache
+        container_name: redis
+        build:
+            context: ./infrastructure/redis
+        ports:
+            - 6379:6379/tcp
+        networks:
+            42network:
+                aliases:
+                    - redis
+        healthcheck:
+            test: ["CMD", "redis-cli", "ping"]
+            interval: 5s
+            timeout: 2s
+            retries: 3
+            start_period: 10s
+        depends_on:
+            database:
+                condition: service_healthy
+        restart: always
+
+    # auth:
+    #     image: auth:alpine
+    #     container_name: auth
+    #     build:
+    #         context: ./auth
+    #     volumes:
+    #         - auth_storage:/api/static
+    #     network:
+    #         42network:
+    #           aliases:
+    #               - authentication
+    #               - api_gateway
+    #     secrets:
+    #         - database-credentials
+    #         - api-credentials
+    #     depends_on:
+    #         database:
+    #             condition: service_healthy
+    #     restart: always
+
+
+volumes:
+    database-data:
+        name: database_volume
+
+    redis-data:
+        name: redis_volume
+
+    frontend-files:
+        name: frontend_volume
+    
+    auth_storage:
+        name: auth_storage
+
+    elk-data:
+        name: elk_volume
+
+
+networks:
+    42network:
+        name: 42network
+        driver: bridge
+
+
+secrets:
+    database-credentials:
+        file: ../secrets/database-credentials.env
+    api-credentials:
+        file: ../secrets/api-credentials.env
+    elk-credentials:
+        file: ../secrets/elk-credentials.env
