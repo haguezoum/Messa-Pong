@@ -1,1 +1,294 @@
 /****** PROFILE.css ******/
+
+
+.profile-page * {
+    margin: 0%;
+    padding: 0%;
+    box-sizing: border-box !important;
+    /* user-select: none; */
+    user-zoom: none;
+    -webkit-user-drag: none;
+}
+
+.profile-page {
+    height: 100vh;
+    width: 100vw;
+    position: relative;
+    animation: start 0.7s ease-in-out;
+}
+
+img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    animation: fadeIn 0.7s ease-in-out;
+}
+
+
+@keyframes fadeIn {
+
+    /* this is the animation for the image */
+    0% {
+        visibility: hidden;
+    }
+
+    100% {
+        visibility: visible;
+    }
+}
+
+@keyframes start {
+
+    /* this is the animation for the page */
+    0% {
+        opacity: 0;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+.container {
+    width: 1695px;
+    height: 100%;
+    margin: auto;
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    padding-block: 2rem;
+}
+
+.container .profile-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2rem;
+    background-image: linear-gradient(rgba(255, 255, 255, 0.575), rgba(255, 255, 255, 0.398)), url(../../assets/images/noise.png);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 37px;
+    backdrop-filter: blur(20px);
+    flex: 1;
+    margin-inline: 1rem;
+}
+
+.container .profile-content .profile-content-infos {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    grid-template-rows: repeat(10, 1fr);
+    gap: 1rem;
+    width: 100%;
+    height: 100%;
+}
+
+.container .profile-content .profile-content-infos .profile-content-infos-header {
+    grid-column: 2 / 10;
+    grid-row: 1 / 2;
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    flex-direction: column;
+    /* border: 1px solid red; */
+    /* background-color: rosybrown; */
+    color: var(--white);
+    padding-inline: 2rem;
+}
+
+.container .profile-content .profile-content-infos .profile-content-infos-header .profile-content-infos-header-username {
+    font-size: 1.4rem;
+    font-weight: 700;
+    font-family: var(--socondry-font);
+    color: var(--primary-black);
+}
+
+/* background: linear-gradient(to right, #4d4d4d 0, white 10%, #4d4d4d 20%); */
+.ownerName {
+    display: inline-block;
+    font-weight: 900;
+    color: rgb(38, 88, 131);
+    animation: fadeIn 1s ease-in-out;
+    user-select: auto;
+    cursor: pointer;
+}
+
+.container .profile-content .profile-content-infos .profile-content-infos-header .profile-content-infos-header-username .wavingHand {
+    display: inline-block;
+    animation: waving 1s ease-in-out 0.5s 1;
+}
+
+@keyframes waving {
+
+    0%,
+    100% {
+        transform: rotate(0deg) scale(1);
+    }
+
+    25% {
+        transform: rotate(10deg) scale(1.3);
+    }
+
+    50% {
+        transform: rotate(0deg) scale(1.3);
+    }
+
+    75% {
+        transform: rotate(-10deg) scale(1.1);
+    }
+}
+
+@keyframes fadeIn {
+    0% {
+        visibility: hidden;
+    }
+
+    100% {
+        visibility: visible;
+    }
+}
+
+.container .profile-content .profile-content-infos .profile-content-infos-header .profile-content-infos-message {
+    font-size: 1.1rem;
+    font-weight: 400;
+    font-family: var(--socondry-font);
+    color: var(--gray);
+}
+
+/***************************** end of profile header *****************************/
+
+/***************************** start the body ***********************************/
+.container .profile-content .profile-content-infos .profile-content-infos-details {
+    grid-column: 2 / 10;
+    grid-row: 2 / 10;
+    /* background-color: rgb(0, 94, 79); */
+    color: var(--white);
+    /* border: 1px solid red; */
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    grid-template-rows: repeat(10, 1fr);
+    gap: 2rem;
+    padding: 2rem;
+}
+
+.container .profile-content .profile-content-infos .profile-content-infos-details .profilePictureChanger,
+.container .profile-content .profile-content-infos .profile-content-infos-details .profileGeneralInfo,
+.container .profile-content .profile-content-infos .profile-content-infos-details .profileSecurity {
+    border: 1px solid red;
+    border-radius: 35px;
+    border: 2px dashed var(--gray);
+}
+
+.container .profile-content .profile-content-infos .profile-content-infos-details .profilePictureChanger {
+    grid-column: 1/4;
+    grid-row: 1/6;
+    /* background-color: aqua; */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+    align-items: center;
+    padding: 2rem;
+    color: var(--gray);
+    font-family: var(--socondry-font);
+    font-size: 1.2rem;
+}
+
+/* profile picture */
+.container .profile-content .profile-content-infos .profile-content-infos-details .profilePictureChanger .picturChanger {
+    /* flex: 2; */
+    flex-shrink: 3;
+    width: 10rem;
+    height: 10rem;
+    border-radius: 50%;
+    outline: none;
+    border: none;
+    background-color: rgb(226, 226, 226);
+    overflow: hidden;
+    outline: 1px solid var(--gray);
+    position: relative;
+}
+
+.container .profile-content .profile-content-infos .profile-content-infos-details .profilePictureChanger .picturChanger img {
+    width: 100%;
+    height: 104%;
+    object-fit: contain;
+}
+
+.container .profile-content .profile-content-infos .profile-content-infos-details .profilePictureChanger .picturChanger .changePicture {
+    /*** change picture button overly 📷 ***/
+    position: absolute;
+    bottom: -100%;
+    right: 0;
+    background-color: rgb(192 192 192 / 52%);
+    backdrop-filter: blur(12px);
+    color: var(--white);
+    width: 100%;
+    height: 50%;
+    cursor: pointer;
+    transform: bottom 1s ease-in-out 0.5s;
+}
+.container .profile-content .profile-content-infos .profile-content-infos-details .profilePictureChanger .picturChanger .changePicture .changePictureIcon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+.container .profile-content .profile-content-infos .profile-content-infos-details .profilePictureChanger .picturChanger .changePicture .changePictureIcon .file-input {
+    appearance: none;
+    display: none;
+}
+
+.file-input:hover::before {
+    /* border-color: black; */
+}
+
+.file-input:active::before {
+    /* background: -webkit-linear-gradient(top, #e3e3e3, #f9f9f9); */
+}
+
+/* ******** */
+.container .profile-content .profile-content-infos .profile-content-infos-details .profilePictureChanger .picturChanger:hover .changePicture {
+    bottom: 0;
+}
+
+.container .profile-content .profile-content-infos .profile-content-infos-details .profilePictureChanger .picturChanger .changePicture .userBasicInfo {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--gray);
+    font-family: var(--socondry-font);
+    padding: 1rem;
+    border-radius: 50%;
+    background-color: var(--white);
+    cursor: pointer;
+}
+
+.container .profile-content .profile-content-infos .profile-content-infos-details .profilePictureChanger .userFullNmae {
+    flex: 1;
+    background-color: rgba(255, 25, 0, 0.336);
+}
+
+.container .profile-content .profile-content-infos .profile-content-infos-details .profilePictureChanger .userPhoneNumber {
+    flex: 1;
+    background-color: rgba(255, 0, 234, 0.336);
+
+}
+
+.container .profile-content .profile-content-infos .profile-content-infos-details .profileGeneralInfo {
+    grid-column: 4/11;
+    grid-row: 1/6;
+    /* background-color: rgb(255, 225, 0); */
+}
+
+.container .profile-content .profile-content-infos .profile-content-infos-details .profileSecurity {
+    grid-column: 1/11;
+    grid-row: 6/11;
+    /* background-color: rgb(255, 0, 217); */
+}
