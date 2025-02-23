@@ -1,3 +1,6 @@
+#dev confuguration file
+/.config.dev.json
+
 # compiled output
 /dist
 /tmp
