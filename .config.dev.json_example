@@ -1,0 +1,8 @@
+{
+  "projectName": "Trancendence",
+  "version": "1.0.0",
+  "paths": {
+    "project": "PROJECT_PATH/ft_transcendence/core/frontend",
+    "basename": "tran"
+  }
+}
