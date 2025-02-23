@@ -7,7 +7,8 @@ template.innerHTML =
         <header-bar></header-bar>
         <main class="grid-layout">
             <div class="grid-item" id="play-now" data-target="game">
-               <img class="selectCardImage"  src="src/assets/images/charachters/home_main/home_characters/l9erd.png" alt="" srcset="" loading="lazy">
+               <!-- <img class="selectCardImage"  src="src/assets/images/charachters/home_main/home_characters/l9erd.png" alt="" srcset="" loading="lazy"> -->
+                <img class="selectCardImage"  src="src/assets/images/pingpongPlayer.png" alt="" srcset="" loading="lazy">
                <div class="selectCardControles">
                     <h3 class="left">Play now</h3>
                     <span class="play-btn action-btn">
