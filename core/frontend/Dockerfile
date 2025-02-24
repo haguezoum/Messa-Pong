@@ -1,7 +1,13 @@
-FROM	alpine:3.19
+FROM		alpine:3.19
 
-WORKDIR	/www
+RUN		apk add --no-cache inotify-tools bash 
 
-COPY	. /www
+WORKDIR		/www
 
-CMD ["tail", "-F"]
+COPY		. /www
+
+RUN		chmod +x /www/watch.sh
+
+ENTRYPOINT	[ "sh", "/www/watch.sh" ]
+
+CMD		[ "tail", "-f", "/dev/null" ]

@@ -10,7 +10,7 @@ services:
             - 80:80/tcp
             - 443:443/tcp
         volumes:
-            - frontend-files:/www
+          - frontend-files:/www:ro
         networks:
             42network:
                 aliases:
@@ -26,7 +26,7 @@ services:
         build:
             context: ./frontend
         volumes:
-            - frontend-files:/www
+          - frontend-files:/www:cached
         networks:
             42network:
                 aliases:
