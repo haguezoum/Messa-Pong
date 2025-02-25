@@ -6,7 +6,7 @@
 #    By: tarzan <elakhfif@student.1337.ma>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/02/02 17:07:10 by tarzan            #+#    #+#              #
-#    Updated: 2025/02/20 23:25:42 by elakhfif         ###   ########.fr        #
+#    Updated: 2025/02/24 23:25:16 by elakhfif         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -37,6 +37,14 @@ down:
 build:
 	@$(DOCKER_COMPOSE) -f $(COMPOSE_FILE) build
 	@echo "$(GREEN)Containers are built$(NC)"
+
+logs:
+	@$(DOCKER_COMPOSE) -f $(COMPOSE_FILE) logs -f
+	@echo "$(GREEN)Containers logs are displayed$(NC)"
+
+status:
+	@$(DOCKER_COMPOSE) -f $(COMPOSE_FILE) ps
+	@echo "$(GREEN)Containers status is displayed$(NC)"
 
 clean: down
 	@$(DOCKER_COMPOSE) -f $(COMPOSE_FILE) rm

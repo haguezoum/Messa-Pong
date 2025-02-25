@@ -26,7 +26,7 @@ services:
         build:
             context: ./frontend
         volumes:
-          - frontend-files:/www:cached
+            - frontend-files:/www:cached
         networks:
             42network:
                 aliases:
@@ -52,10 +52,10 @@ services:
             - database-credentials
         healthcheck:
             test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
-            interval: 10s
-            timeout: 5s
-            retries: 3
-            start_period: 60s
+            interval: 15s
+            timeout: 10s
+            retries: 5
+            start_period: 50s
         restart: always
 
     redis:
@@ -78,6 +78,30 @@ services:
         depends_on:
             database:
                 condition: service_healthy
+        restart: always
+
+    elk: 
+        image: elk:stack
+        container_name: elk
+        build:
+            context: ./infrastructure/elk
+        ports:
+            - 5601:5601/tcp
+            - 9200:9200/tcp
+        volumes:
+            - elk-data:/var/lib/elasticsearch
+        networks:
+            42network:
+                aliases:
+                    - elk
+        secrets:
+            - elk-credentials
+        healthcheck:
+            test: ["CMD-SHELL", "curl -f http://localhost:9200"]
+            interval: 30s
+            timeout: 10s
+            retries: 5
+            start_period: 50s
         restart: always
 
     # auth:
