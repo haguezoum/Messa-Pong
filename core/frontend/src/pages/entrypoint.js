@@ -4,7 +4,7 @@ template.innerHTML = /*html*/
 `<div id="entrypoint-page" class="entrypoint-page">
   <div class="entrypoint-page__container">
     <div class="entrypoint-page__container__title">
-      <h1>legend of tarzan</h1>
+      <h1>legend of haguezou</h1>
     </div>
     <div class="entrypoint-page__container__content">
         <svg width="2132" height="300" viewBox="0 0 2132 280" fill="none" xmlns="http://www.w3.org/2000/svg">
