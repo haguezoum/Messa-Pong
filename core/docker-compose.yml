@@ -18,6 +18,11 @@ services:
         depends_on:
             redis:
                 condition: service_healthy
+        logging:
+            driver: syslog
+            options:
+                syslog-address: "tcp://elk:5000"
+                tag: "nginx"
         restart: always
 
     frontend:
@@ -31,9 +36,11 @@ services:
             42network:
                 aliases:
                     - frontend
-        depends_on:
-            database:
-                condition: service_healthy
+        logging:
+            driver: syslog
+            options:
+                syslog-address: "tcp://elk:5000"
+                tag: "nginx"
         restart: always
 
     database:
@@ -56,6 +63,11 @@ services:
             timeout: 10s
             retries: 5
             start_period: 50s
+        logging:
+            driver: syslog
+            options:
+                syslog-address: "tcp://elk:5000"
+                tag: "database"
         restart: always
 
     redis:
@@ -63,8 +75,6 @@ services:
         container_name: redis
         build:
             context: ./infrastructure/redis
-        ports:
-            - 6379:6379/tcp
         networks:
             42network:
                 aliases:
@@ -75,77 +85,117 @@ services:
             timeout: 2s
             retries: 3
             start_period: 10s
+        logging:
+            driver: syslog
+            options:
+                syslog-address: "tcp://elk:5000"
+                tag: "redis"
         depends_on:
             database:
                 condition: service_healthy
         restart: always
 
-    # elk: 
-    #     image: elk:stack
-    #     container_name: elk
-    #     build:
-    #         context: ./infrastructure/elk
-    #     ports:
-    #         - 5601:5601/tcp
-    #         - 9200:9200/tcp
-    #     volumes:
-    #         - elk-data:/var/lib/elasticsearch
-    #     networks:
-    #         42network:
-    #             aliases:
-    #                 - elk
-    #     secrets:
-    #         - elk-credentials
-    #     healthcheck:
-    #         test: ["CMD-SHELL", "curl -f http://localhost:9200"]
-    #         interval: 30s
-    #         timeout: 10s
-    #         retries: 5
-    #         start_period: 50s
-    #     restart: always
+    game:
+        image: game:server
+        container_name: game
+        build:
+            context: ./game
+        networks:
+            42network:
+                aliases:
+                    - game
+        depends_on:
+            redis:
+                condition: service_healthy
+        logging:
+            driver: syslog
+            options:
+                syslog-address: "tcp://elk:5000"
+                tag: "game"
+        restart: always
 
-    # auth:
-    #     image: auth:alpine
-    #     container_name: auth
-    #     build:
-    #         context: ./auth
-    #     volumes:
-    #         - auth_storage:/api/static
-    #     network:
-    #         42network:
-    #           aliases:
-    #               - authentication
-    #               - api_gateway
-    #     secrets:
-    #         - database-credentials
-    #         - api-credentials
-    #     depends_on:
-    #         database:
-    #             condition: service_healthy
-    #     restart: always
+    chat:
+        image: chat:messenger
+        container_name: chat
+        build:
+            context: ./chat
+        networks:
+            42network:
+                aliases:
+                    - chat
+        depends_on:
+            redis:
+                condition: service_healthy
+        logging:
+            driver: syslog
+            options:
+                syslog-address: "tcp://elk:5000"
+                tag: "chat"
+        restart: always
+
+    elk: 
+        image: docker.elastic.co/elk/elk:latest
+        container_name: elk
+        ports:
+            - 5601:5601/tcp
+            - 9200:9200/tcp
+            - 5000:5000/tcp
+        volumes:
+            - elk-data:/var/lib/elasticsearch
+        networks:
+            42network:
+                aliases:
+                    - elk
+        secrets:
+            - elk-credentials
+        healthcheck:
+            test: ["CMD-SHELL", "curl -f http://localhost:9200"]
+            interval: 30s
+            timeout: 10s
+            retries: 5
+            start_period: 50s
+        restart: always
+
+    auth:
+        image: auth:server
+        container_name: auth
+        build:
+            context: ./auth
+        volumes:
+            - auth_storage:/api/static
+            - ./infrastructure/elk/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+        network:
+            42network:
+              aliases:
+                  - authentication
+                  - api_gateway
+        secrets:
+            - database-credentials
+            - api-credentials
+        depends_on:
+            database:
+                condition: service_healthy
+        logging:
+            driver: syslog
+            options:
+                syslog-address: "tcp://elk:5000"
+                tag: "auth"
+        restart: always
 
 
 volumes:
     database-data:
-        name: database_volume
-
     redis-data:
-        name: redis_volume
-
     frontend-files:
-        name: frontend_volume
-    
     auth_storage:
-        name: auth_storage
-
     elk-data:
-        name: elk_volume
 
 
 networks:
     42network:
         name: 42network
         driver: bridge
+        internal: true
 
 
 secrets:
