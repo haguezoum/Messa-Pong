@@ -21,7 +21,7 @@ services:
         logging:
             driver: syslog
             options:
-                syslog-address: "tcp://elk:5000"
+                syslog-address: "tcp://logstash:5000"
                 tag: "nginx"
         restart: always
 
@@ -39,8 +39,8 @@ services:
         logging:
             driver: syslog
             options:
-                syslog-address: "tcp://elk:5000"
-                tag: "nginx"
+                syslog-address: "tcp://logstash:5000"
+                tag: "frontend"
         restart: always
 
     database:
@@ -66,7 +66,7 @@ services:
         logging:
             driver: syslog
             options:
-                syslog-address: "tcp://elk:5000"
+                syslog-address: "tcp://logstash:5000"
                 tag: "database"
         restart: always
 
@@ -88,7 +88,7 @@ services:
         logging:
             driver: syslog
             options:
-                syslog-address: "tcp://elk:5000"
+                syslog-address: "tcp://logstash:5000"
                 tag: "redis"
         depends_on:
             database:
@@ -110,7 +110,7 @@ services:
         logging:
             driver: syslog
             options:
-                syslog-address: "tcp://elk:5000"
+                syslog-address: "tcp://logstash:5000"
                 tag: "game"
         restart: always
 
@@ -129,32 +129,74 @@ services:
         logging:
             driver: syslog
             options:
-                syslog-address: "tcp://elk:5000"
+                syslog-address: "tcp://logstash:5000"
                 tag: "chat"
         restart: always
 
-    elk: 
-        image: docker.elastic.co/elk/elk:latest
-        container_name: elk
-        ports:
-            - 5601:5601/tcp
-            - 9200:9200/tcp
-            - 5000:5000/tcp
+    elasticsearch:
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.7.1
+        container_name: elasticsearch
+        environment:
+            - discovery.type=single-node
+            - ES_JAVA_OPTS=-Xms512m -Xmx512m
+            - xpack.security.enabled=false
         volumes:
-            - elk-data:/var/lib/elasticsearch
+            - logstash-data:/usr/share/elasticsearch/data
         networks:
-            42network:
+            - 42network
                 aliases:
-                    - elk
-        secrets:
-            - elk-credentials
+                    - elasticsearch
         healthcheck:
-            test: ["CMD-SHELL", "curl -f http://localhost:9200"]
+            test: ["CMD-SHELL", "curl -sS http://localhost:9200/_cluster/health | grep -q '\"status\":\"green\"'"]
             interval: 30s
             timeout: 10s
             retries: 5
-            start_period: 50s
-        restart: always
+            start_period: 30s
+        deploy:
+            resources:
+                limits:
+                    memory: 512M
+        restart: unless-stopped
+
+    logstash:
+        image: docker.elastic.co/logstash/logstash:8.7.1
+        container_name: logstash
+        volumes:
+            - ./infrastructure/logstash/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+        networks:
+            - 42network
+                aliases:
+                    - logstash
+        depends_on:
+            - elasticsearch:
+                condition: service_healthy
+        environment:
+            - LS_JAVA_OPTS=-Xms256m -Xmx256m
+        deploy:
+            resources:
+                limits:
+                    memory: 256M
+        restart: unless-stopped
+
+    kibana:
+        image: docker.elastic.co/kibana/kibana:8.7.1
+        container_name: kibana
+        ports:
+            - 5601:5601/tcp
+        networks:
+            - 42network
+                aliases:
+                    - kibana
+        depends_on:
+            - elasticsearch:
+                condition: service_healthy
+        environment:
+            - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+        deploy:
+            resources:
+                limits:
+                    memory: 512M
+        restart: unless-stopped
 
     auth:
         image: auth:server
@@ -162,9 +204,8 @@ services:
         build:
             context: ./auth
         volumes:
-            - auth_storage:/api/static
-            - ./infrastructure/elk/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
-        network:
+            - auth_storage:/app/storage
+        networks:
             42network:
               aliases:
                   - authentication
@@ -178,24 +219,29 @@ services:
         logging:
             driver: syslog
             options:
-                syslog-address: "tcp://elk:5000"
+                syslog-address: "tcp://logstash:5000"
                 tag: "auth"
         restart: always
 
 
 volumes:
     database-data:
+        name: database-data
     redis-data:
+        name: redis-data
     frontend-files:
+        name: frontend-files
     auth_storage:
-    elk-data:
+        name: auth_storage
+    logstash-data:
+        name: elk-data
 
 
 networks:
     42network:
         name: 42network
         driver: bridge
-        internal: true
+        internal: false
 
 
 secrets:
@@ -203,5 +249,3 @@ secrets:
         file: ../secrets/database-credentials.env
     api-credentials:
         file: ../secrets/api-credentials.env
-    elk-credentials:
-        file: ../secrets/elk-credentials.env
