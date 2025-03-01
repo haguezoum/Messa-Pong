@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     'corsheaders',
     # Local apps
     'users',
+    'twofa',
 ]
 
 MIDDLEWARE = [
@@ -126,4 +127,8 @@ SIMPLE_JWT = {
 }
 
 # CORS settings
-CORS_ALLOW_ALL_ORIGINS = True 
+CORS_ALLOW_ALL_ORIGINS = True
+
+# Email settings
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # For development
+DEFAULT_FROM_EMAIL = 'noreply@ft-transcendence.com' 

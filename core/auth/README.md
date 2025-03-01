@@ -1,6 +1,6 @@
-# Django REST API with JWT Authentication
+# Django REST API with JWT Authentication and 2FA
 
-This is a Django REST API for authentication with JWT. It provides endpoints for user registration, login, token refresh, and profile retrieval.
+This is a Django REST API for authentication with JWT and Two-Factor Authentication. It provides endpoints for user registration, login, token refresh, profile retrieval, and 2FA setup and verification.
 
 ## Setup
 
@@ -21,7 +21,9 @@ python manage.py runserver
 
 ## API Endpoints
 
-### Register
+### Authentication
+
+#### Register
 - **URL**: `/api/register/`
 - **Method**: `POST`
 - **Body**:
@@ -35,7 +37,7 @@ python manage.py runserver
 ```
 - **Response**: User details and JWT tokens
 
-### Login
+#### Login
 - **URL**: `/api/login/`
 - **Method**: `POST`
 - **Body**:
@@ -47,7 +49,7 @@ python manage.py runserver
 ```
 - **Response**: JWT tokens
 
-### Token Refresh
+#### Token Refresh
 - **URL**: `/api/token/refresh/`
 - **Method**: `POST`
 - **Body**:
@@ -58,7 +60,7 @@ python manage.py runserver
 ```
 - **Response**: New access token
 
-### Profile
+#### Profile
 - **URL**: `/api/profile/`
 - **Method**: `GET`
 - **Headers**:

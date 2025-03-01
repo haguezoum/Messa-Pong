@@ -126,6 +126,146 @@
 				"description": "Refresh access token"
 			},
 			"response": []
+		},
+		{
+			"name": "TOTP Setup",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{access_token}}"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:8000/api/2fa/totp/setup/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"2fa",
+						"totp",
+						"setup",
+						""
+					]
+				},
+				"description": "Get TOTP setup information and QR code"
+			},
+			"response": []
+		},
+		{
+			"name": "TOTP Verify",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{access_token}}"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"token\": \"123456\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8000/api/2fa/totp/verify/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"2fa",
+						"totp",
+						"verify",
+						""
+					]
+				},
+				"description": "Verify TOTP token"
+			},
+			"response": []
+		},
+		{
+			"name": "Email Verification Send",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{access_token}}"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"email\": \"postman@example.com\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8000/api/2fa/email/send/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"2fa",
+						"email",
+						"send",
+						""
+					]
+				},
+				"description": "Send email verification code"
+			},
+			"response": []
+		},
+		{
+			"name": "Email Verification Confirm",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{access_token}}"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"code\": \"123456\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8000/api/2fa/email/verify/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"2fa",
+						"email",
+						"verify",
+						""
+					]
+				},
+				"description": "Verify email verification code"
+			},
+			"response": []
 		}
 	],
 	"event": [
