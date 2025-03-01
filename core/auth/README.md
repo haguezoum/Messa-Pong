@@ -239,7 +239,7 @@ python manage.py runserver
   - Enter the following JSON:
     ```json
     {
-        "token": "123456"
+        "token": "1234568"
     }
     ```
     (Replace "123456" with the 6-digit code from your authenticator app)
