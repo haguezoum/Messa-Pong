@@ -1,0 +1,189 @@
+{
+	"info": {
+		"_postman_id": "a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6",
+		"name": "Django Auth API",
+		"description": "A collection for testing the Django REST API with JWT authentication",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Register",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"username\": \"postman_user\",\n    \"email\": \"postman@example.com\",\n    \"password\": \"testpassword123\",\n    \"password2\": \"testpassword123\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8000/api/register/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"register",
+						""
+					]
+				},
+				"description": "Register a new user"
+			},
+			"response": []
+		},
+		{
+			"name": "Login",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"email\": \"postman@example.com\",\n    \"password\": \"testpassword123\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8000/api/login/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"login",
+						""
+					]
+				},
+				"description": "Login with email and password"
+			},
+			"response": []
+		},
+		{
+			"name": "Profile",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{access_token}}"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:8000/api/profile/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"profile",
+						""
+					]
+				},
+				"description": "Get user profile"
+			},
+			"response": []
+		},
+		{
+			"name": "Token Refresh",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"refresh\": \"{{refresh_token}}\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8000/api/token/refresh/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"token",
+						"refresh",
+						""
+					]
+				},
+				"description": "Refresh access token"
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// For Login and Register requests, save the tokens",
+					"if (pm.response.code === 200 || pm.response.code === 201) {",
+					"    const responseJson = pm.response.json();",
+					"    ",
+					"    // Handle login response",
+					"    if (responseJson.access && responseJson.refresh) {",
+					"        pm.environment.set(\"access_token\", responseJson.access);",
+					"        pm.environment.set(\"refresh_token\", responseJson.refresh);",
+					"        ",
+					"        // Set expiration time (e.g., 55 minutes from now for a 60-minute token)",
+					"        const expirationTime = new Date().getTime() + (55 * 60 * 1000);",
+					"        pm.environment.set(\"token_expiration\", expirationTime);",
+					"    }",
+					"    ",
+					"    // Handle register response",
+					"    if (responseJson.tokens && responseJson.tokens.access && responseJson.tokens.refresh) {",
+					"        pm.environment.set(\"access_token\", responseJson.tokens.access);",
+					"        pm.environment.set(\"refresh_token\", responseJson.tokens.refresh);",
+					"        ",
+					"        // Set expiration time (e.g., 55 minutes from now for a 60-minute token)",
+					"        const expirationTime = new Date().getTime() + (55 * 60 * 1000);",
+					"        pm.environment.set(\"token_expiration\", expirationTime);",
+					"    }",
+					"    ",
+					"    // Handle token refresh response",
+					"    if (pm.request.url.path.includes(\"token/refresh\") && responseJson.access) {",
+					"        pm.environment.set(\"access_token\", responseJson.access);",
+					"        ",
+					"        // Set expiration time (e.g., 55 minutes from now for a 60-minute token)",
+					"        const expirationTime = new Date().getTime() + (55 * 60 * 1000);",
+					"        pm.environment.set(\"token_expiration\", expirationTime);",
+					"    }",
+					"}"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000"
+		}
+	]
+} 
