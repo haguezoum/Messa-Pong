@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Test</title>
+</head>
+<body>
+    <h1>WebSocket Test</h1>
+    <button onclick="sendMessage()">Send Message</button>
+    <p id="messages"></p>
+
+    <script>
+        // Create a new WebSocket connection to the server
+        const socket = new WebSocket("ws://localhost:8000/ws/game/testroom/");
+    
+        socket.onopen = function () {
+            console.log("Connected to WebSocket");
+        };
+    
+        socket.onmessage = function (event) {
+            const data = JSON.parse(event.data);
+            const message = data.message;
+            const clientId = data.client_id || "Not available";  // Ensure fallback
+
+            document.getElementById("messages").innerText += `\nServer: ${message} (Client ID: ${clientId})`;
+            console.log("Message from server:", message, "Client ID:", clientId);
+        };
+
+    
+        function sendMessage() {
+            const messageData = { message: "Hello, WebSocket!" };
+            socket.send(JSON.stringify(messageData));
+        }
+    </script>
+    
+</body>
+</html>
