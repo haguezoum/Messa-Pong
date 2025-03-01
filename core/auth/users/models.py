@@ -1,19 +1,6 @@
- rm /c:/Users/ayoub/Desktop/ft_transcendence/core/auth/Django_Auth_API.postman_collection.json
-rm : Cannot find drive. A drive with the name '/c' does not 
-exist.
-At line:1 char:1
-+ rm /c:/Users/ayoub/Desktop/ft_transcendence/core/auth/Django_
-Auth_API ...
-+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-~~~~~~~~
-    + CategoryInfo          : ObjectNotFound: (/c:String) [Rem 
-   ove-Item], DriveNotFoundException
-    + FullyQualifiedErrorId : DriveNotFound,Microsoft.PowerShe 
-   ll.Commands.RemoveItemCommand
- 
-PS C:\Users\ayoub\Desktop\ft_transcendence> 
 from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.utils.translation import gettext_lazy as _
 
 
 class UserManager(BaseUserManager):
