@@ -174,7 +174,7 @@ class PongGameLogic:
             ball_dx = 0.5 if random.random() > 0.5 else -0.5
             ball_dy = 0.5 if random.random() > 0.5 else -0.5
         
-        # Check for game end
+        # Check for game end - make sure we set the correct winner
         winner_id = None
         if player1_score >= WINNING_SCORE:
             winner_id = game.player1_id

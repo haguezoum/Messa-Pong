@@ -203,50 +203,43 @@
             document.getElementById("game-status").innerText = "Connection lost. Please refresh.";
         };
         
-        // Remove the mousemove event listener and replace with keyboard controls
-        // Initialize keyboard controls
-        let keysPressed = {};
-        let paddlePosition = 50; // Starting position (middle)
-        const PADDLE_SPEED = 2; // Speed of paddle movement
-        
-        // Add keyboard event listeners
+        // Keyboard controls for paddle movement
         document.addEventListener('keydown', function(e) {
-            keysPressed[e.key] = true;
-        });
-        
-        document.addEventListener('keyup', function(e) {
-            keysPressed[e.key] = false;
-        });
-        
-        // Function to handle paddle movement based on keys
-        function updatePaddlePosition() {
-            // Move paddle up with 'w' key
-            if (keysPressed['w'] || keysPressed['W']) {
-                paddlePosition = Math.max(paddlePosition - PADDLE_SPEED, PADDLE_HEIGHT/2);
+            // Only process if we're a player
+            if (!isPlayer1 && !isPlayer2) return;
+            
+            let newPosition = isPlayer1 ? gameState.player1_position : gameState.player2_position;
+            
+            // Move up with w/W key
+            if (e.key.toLowerCase() === 'w') {
+                newPosition = Math.max(newPosition - PADDLE_SPEED, PADDLE_HEIGHT/2);
+                console.log("Moving paddle up to:", newPosition);
+            }
+            // Move down with s/S key
+            else if (e.key.toLowerCase() === 's') {
+                newPosition = Math.min(newPosition + PADDLE_SPEED, 100 - PADDLE_HEIGHT/2);
+                console.log("Moving paddle down to:", newPosition);
+            }
+            else {
+                return; // Not a movement key
             }
             
-            // Move paddle down with 's' key
-            if (keysPressed['s'] || keysPressed['S']) {
-                paddlePosition = Math.min(paddlePosition + PADDLE_SPEED, 100 - PADDLE_HEIGHT/2);
+            // Send paddle position to server
+            socket.send(JSON.stringify({
+                type: 'paddle_move',
+                position: newPosition
+            }));
+            
+            // Update local position immediately for responsiveness
+            if (isPlayer1) {
+                gameState.player1_position = newPosition;
+            } else if (isPlayer2) {
+                gameState.player2_position = newPosition;
             }
             
-            // Only send updates if we're a player and keys are pressed
-            if ((isPlayer1 || isPlayer2) && (keysPressed['w'] || keysPressed['W'] || keysPressed['s'] || keysPressed['S'])) {
-                socket.send(JSON.stringify({
-                    type: 'paddle_move',
-                    position: paddlePosition
-                }));
-            }
-        }
-        
-        // Game animation loop to continuously check for key presses
-        function gameLoop() {
-            updatePaddlePosition();
-            requestAnimationFrame(gameLoop);
-        }
-        
-        // Start the game loop
-        gameLoop();
+            // Redraw game
+            drawGame();
+        });
         
         // Function to update game state
         function updateGameState(state) {
@@ -255,7 +248,9 @@
             // Determine if we're player1 or player2
             if (clientId && state.player1_id === clientId) {
                 isPlayer1 = true;
+                isPlayer2 = false;
             } else if (clientId && state.player2_id === clientId) {
+                isPlayer1 = false;
                 isPlayer2 = true;
             }
             
@@ -342,10 +337,21 @@
             const winnerId = data.winner_id;
             let message = "";
             
-            if (winnerId === clientId) {
+            // Check if we're the winner
+            if (isPlayer1 && winnerId === gameState.player1_id || 
+                isPlayer2 && winnerId === gameState.player2_id) {
                 message = "You win!";
             } else {
                 message = "You lose!";
+            }
+            
+            // For spectators or if winner logic fails
+            if (!isPlayer1 && !isPlayer2) {
+                if (winnerId === gameState.player1_id) {
+                    message = "Player 1 wins!";
+                } else {
+                    message = "Player 2 wins!";
+                }
             }
             
             document.getElementById("game-status").innerText = message;
