@@ -111,7 +111,7 @@
         <div class="status" id="game-status">Waiting for opponent...</div>
         
         <div class="controls">
-            <p>Move your paddle by moving your mouse over the game area</p>
+            <p>Move your paddle: 'W' key to move up, 'S' key to move down</p>
         </div>
     </div>
     
@@ -165,7 +165,6 @@
         socket.onopen = function() {
             console.log("Connected to WebSocket");
             document.getElementById("game-status").innerText = "Connecting to game...";
-            console.log("WebSocket URL:", socket.url);
         };
         
         socket.onmessage = function(event) {
@@ -204,25 +203,55 @@
             document.getElementById("game-status").innerText = "Connection lost. Please refresh.";
         };
         
-        socket.onerror = function(error) {
-            console.error("WebSocket Error:", error);
-        };
+        // Remove or comment out the existing mousemove event listener
+        // canvas.addEventListener('mousemove', function(e) { ... });
+
+        // Add this keyboard control code after the WebSocket setup
+        let keysPressed = {};
+        let paddlePosition = 50; // Starting position (middle)
+        const PADDLE_SPEED = 2; // Speed of paddle movement (adjust as needed)
         
-        // Handle mousemove to control paddle
-        canvas.addEventListener('mousemove', function(e) {
-            // Only send paddle updates if we're a player
-            if (isPlayer1 || isPlayer2) {
-                const rect = canvas.getBoundingClientRect();
-                const mouseY = e.clientY - rect.top;
-                const paddlePosition = (mouseY / canvas.height) * 100;
-                
-                // Send paddle position to server
+        // Add keyboard event listeners
+        document.addEventListener('keydown', function(e) {
+            keysPressed[e.key] = true;
+        });
+        
+        document.addEventListener('keyup', function(e) {
+            keysPressed[e.key] = false;
+        });
+        
+        // Add a function to handle paddle movement based on keys
+        function updatePaddlePosition() {
+            // Move paddle up with 'w' key
+            if (keysPressed['w'] || keysPressed['W']) {
+                paddlePosition = Math.max(paddlePosition - PADDLE_SPEED, PADDLE_HEIGHT/2);
+            }
+            
+            // Move paddle down with 's' key
+            if (keysPressed['s'] || keysPressed['S']) {
+                paddlePosition = Math.min(paddlePosition + PADDLE_SPEED, 100 - PADDLE_HEIGHT/2);
+            }
+            
+            // Only send updates if we're a player
+            if ((isPlayer1 || isPlayer2) && (keysPressed['w'] || keysPressed['W'] || keysPressed['s'] || keysPressed['S'])) {
                 socket.send(JSON.stringify({
                     type: 'paddle_move',
                     position: paddlePosition
                 }));
             }
-        });
+        }
+        
+        // Add a game animation loop to continuously check for key presses
+        function gameLoop() {
+            updatePaddlePosition();
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Start the game loop
+        gameLoop();
+        
+        // Update the controls instructions
+        document.querySelector('.controls p').innerText = "Move your paddle: 'W' key to move up, 'S' key to move down";
         
         // Function to update game state
         function updateGameState(state) {

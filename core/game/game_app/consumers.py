@@ -170,12 +170,11 @@ class PongConsumer(AsyncWebsocketConsumer):
     @sync_to_async
     def get_or_create_session(self):
         """Ensures the session exists and returns its session key."""
-        # Safely check if session exists in scope
-        if "session" not in self.scope:
-            # Generate a unique ID as fallback when session is not available
+        try:
+            session = self.scope["session"]
+            if not session.session_key:
+                session.create()  # Creates a new session in DB
+            return session.session_key
+        except KeyError:
+            # If session is not available, generate a unique ID
             return str(uuid.uuid4())
-        
-        session = self.scope["session"]
-        if not session.session_key:
-            session.create()  # Creates a new session in DB
-        return session.session_key
