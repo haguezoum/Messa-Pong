@@ -165,6 +165,7 @@
         socket.onopen = function() {
             console.log("Connected to WebSocket");
             document.getElementById("game-status").innerText = "Connecting to game...";
+            console.log("WebSocket URL:", socket.url);
         };
         
         socket.onmessage = function(event) {
@@ -201,6 +202,10 @@
         socket.onclose = function() {
             console.log("Disconnected from WebSocket");
             document.getElementById("game-status").innerText = "Connection lost. Please refresh.";
+        };
+        
+        socket.onerror = function(error) {
+            console.error("WebSocket Error:", error);
         };
         
         // Handle mousemove to control paddle
