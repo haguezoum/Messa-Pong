@@ -3,35 +3,354 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebSocket Test</title>
+    <title>Pong Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            background-color: #121212;
+            color: white;
+        }
+        
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        canvas {
+            border: 2px solid white;
+            background-color: #000;
+            margin-bottom: 10px;
+        }
+        
+        .score-board {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+        
+        .score {
+            margin: 0 20px;
+            padding: 5px 15px;
+            background-color: #333;
+            border-radius: 5px;
+        }
+        
+        .controls {
+            margin-bottom: 15px;
+        }
+        
+        .status {
+            margin-bottom: 15px;
+            font-size: 18px;
+            color: #ccc;
+        }
+        
+        .chat-container {
+            width: 100%;
+            max-width: 600px;
+            margin-top: 20px;
+        }
+        
+        .chat-messages {
+            height: 150px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: #1e1e1e;
+            border-radius: 5px;
+        }
+        
+        .chat-input {
+            display: flex;
+            width: 100%;
+        }
+        
+        #chat-message {
+            flex-grow: 1;
+            padding: 8px;
+            margin-right: 5px;
+            background-color: #333;
+            color: white;
+            border: none;
+            border-radius: 3px;
+        }
+        
+        button {
+            padding: 8px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background-color: #3e8e41;
+        }
+    </style>
 </head>
 <body>
-    <h1>WebSocket Test</h1>
-    <button onclick="sendMessage()">Send Message</button>
-    <p id="messages"></p>
+    <h1>Pong Game</h1>
+    
+    <div class="game-container">
+        <div class="score-board">
+            <div class="score" id="player1-score">Player 1: 0</div>
+            <div class="score" id="player2-score">Player 2: 0</div>
+        </div>
+        
+        <canvas id="game-canvas" width="600" height="400"></canvas>
+        
+        <div class="status" id="game-status">Waiting for opponent...</div>
+        
+        <div class="controls">
+            <p>Move your paddle by moving your mouse over the game area</p>
+        </div>
+    </div>
+    
+    <div class="chat-container">
+        <h3>Chat</h3>
+        <div class="chat-messages" id="chat-box"></div>
+        <div class="chat-input">
+            <input type="text" id="chat-message" placeholder="Type your message...">
+            <button onclick="sendChatMessage()">Send</button>
+        </div>
+    </div>
 
     <script>
-        // Create a new WebSocket connection to the server
-        const socket = new WebSocket("ws://localhost:8000/ws/game/testroom/");
-    
-        socket.onopen = function () {
-            console.log("Connected to WebSocket");
+        // Get canvas and context
+        const canvas = document.getElementById("game-canvas");
+        const ctx = canvas.getContext("2d");
+        
+        // Game state
+        let gameState = {
+            ball_x: 50,
+            ball_y: 50,
+            player1_position: 50,
+            player2_position: 50,
+            player1_score: 0,
+            player2_score: 0,
+            is_full: false
         };
-    
-        socket.onmessage = function (event) {
-            const data = JSON.parse(event.data);
-            const message = data.message;
-            const clientId = data.client_id || "Not available";  // Ensure fallback
-
-            document.getElementById("messages").innerText += `\nServer: ${message} (Client ID: ${clientId})`;
-            console.log("Message from server:", message, "Client ID:", clientId);
-        };
-
-    
-        function sendMessage() {
-            const messageData = { message: "Hello, WebSocket!" };
-            socket.send(JSON.stringify(messageData));
+        
+        // Client info
+        let clientId = null;
+        let isPlayer1 = false;
+        let isPlayer2 = false;
+        
+        // Constants for rendering
+        const PADDLE_HEIGHT = 15;
+        const PADDLE_WIDTH = 2;
+        const BALL_SIZE = 2;
+        
+        // Get room name from URL or generate one
+        const urlParams = new URLSearchParams(window.location.search);
+        const roomName = urlParams.get('room') || Math.random().toString(36).substring(2, 8);
+        
+        // Update URL if needed
+        if (!urlParams.has('room')) {
+            window.history.replaceState({}, '', `?room=${roomName}`);
         }
+        
+        // Create WebSocket connection
+        const socket = new WebSocket(`ws://${window.location.host}/ws/game/${roomName}/`);
+        
+        socket.onopen = function() {
+            console.log("Connected to WebSocket");
+            document.getElementById("game-status").innerText = "Connecting to game...";
+        };
+        
+        socket.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            console.log("Received:", data);
+            
+            // Handle different message types
+            switch(data.type) {
+                case 'game_state':
+                    updateGameState(data.state);
+                    break;
+                    
+                case 'player_joined':
+                    handlePlayerJoined(data);
+                    break;
+                    
+                case 'chat':
+                    handleChatMessage(data);
+                    break;
+                    
+                case 'game_over':
+                    handleGameOver(data);
+                    break;
+                    
+                default:
+                    // Set client ID if available
+                    if (data.client_id && !clientId) {
+                        clientId = data.client_id;
+                        console.log("My client ID:", clientId);
+                    }
+            }
+        };
+        
+        socket.onclose = function() {
+            console.log("Disconnected from WebSocket");
+            document.getElementById("game-status").innerText = "Connection lost. Please refresh.";
+        };
+        
+        // Handle mousemove to control paddle
+        canvas.addEventListener('mousemove', function(e) {
+            // Only send paddle updates if we're a player
+            if (isPlayer1 || isPlayer2) {
+                const rect = canvas.getBoundingClientRect();
+                const mouseY = e.clientY - rect.top;
+                const paddlePosition = (mouseY / canvas.height) * 100;
+                
+                // Send paddle position to server
+                socket.send(JSON.stringify({
+                    type: 'paddle_move',
+                    position: paddlePosition
+                }));
+            }
+        });
+        
+        // Function to update game state
+        function updateGameState(state) {
+            gameState = state;
+            
+            // Determine if we're player1 or player2
+            if (clientId && state.player1_id === clientId) {
+                isPlayer1 = true;
+            } else if (clientId && state.player2_id === clientId) {
+                isPlayer2 = true;
+            }
+            
+            // Update status
+            if (!state.is_full) {
+                document.getElementById("game-status").innerText = "Waiting for opponent...";
+            } else if (state.winner_id) {
+                // This will be handled by the game_over event
+            } else {
+                document.getElementById("game-status").innerText = "Game in progress";
+            }
+            
+            // Update score
+            document.getElementById("player1-score").innerText = `Player 1: ${state.player1_score}`;
+            document.getElementById("player2-score").innerText = `Player 2: ${state.player2_score}`;
+            
+            // Draw game
+            drawGame();
+        }
+        
+        // Function to draw the game
+        function drawGame() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Convert percentage to actual canvas coordinates
+            const ballX = (gameState.ball_x / 100) * canvas.width;
+            const ballY = (gameState.ball_y / 100) * canvas.height;
+            const p1Y = (gameState.player1_position / 100) * canvas.height;
+            const p2Y = (gameState.player2_position / 100) * canvas.height;
+            
+            // Draw paddles
+            ctx.fillStyle = "white";
+            
+            // Left paddle (player 1)
+            const paddleWidth = (PADDLE_WIDTH / 100) * canvas.width;
+            const paddleHeight = (PADDLE_HEIGHT / 100) * canvas.height;
+            ctx.fillRect(0, p1Y - paddleHeight/2, paddleWidth, paddleHeight);
+            
+            // Right paddle (player 2)
+            ctx.fillRect(canvas.width - paddleWidth, p2Y - paddleHeight/2, paddleWidth, paddleHeight);
+            
+            // Draw ball
+            const ballSize = (BALL_SIZE / 100) * Math.min(canvas.width, canvas.height);
+            ctx.beginPath();
+            ctx.arc(ballX, ballY, ballSize, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw center line
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2, 0);
+            ctx.lineTo(canvas.width / 2, canvas.height);
+            ctx.strokeStyle = "white";
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+        
+        // Function to handle a player joining
+        function handlePlayerJoined(data) {
+            console.log("Player joined:", data.client_id);
+            // Update game state
+            if (data.state) {
+                updateGameState(data.state);
+            }
+            
+            // Add chat message
+            const isMe = data.client_id === clientId;
+            const chatBox = document.getElementById("chat-box");
+            chatBox.innerHTML += `<p><strong>${isMe ? 'You' : 'Opponent'}</strong> joined the game</p>`;
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+        
+        // Function to handle chat messages
+        function handleChatMessage(data) {
+            const isMe = data.client_id === clientId;
+            const chatBox = document.getElementById("chat-box");
+            chatBox.innerHTML += `<p><strong>${isMe ? 'You' : 'Opponent'}</strong>: ${data.message}</p>`;
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+        
+        // Function to handle game over
+        function handleGameOver(data) {
+            const winnerId = data.winner_id;
+            let message = "";
+            
+            if (winnerId === clientId) {
+                message = "You win!";
+            } else {
+                message = "You lose!";
+            }
+            
+            document.getElementById("game-status").innerText = message;
+            
+            // Add chat message
+            const chatBox = document.getElementById("chat-box");
+            chatBox.innerHTML += `<p><strong>Game Over</strong>: ${message}</p>`;
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+        
+        // Function to send chat messages
+        function sendChatMessage() {
+            const input = document.getElementById("chat-message");
+            const message = input.value.trim();
+            
+            if (message) {
+                socket.send(JSON.stringify({
+                    type: 'chat',
+                    message: message
+                }));
+                
+                input.value = "";
+            }
+        }
+        
+        // Allow Enter key to send chat messages
+        document.getElementById("chat-message").addEventListener("keydown", function(e) {
+            if (e.key === "Enter") {
+                sendChatMessage();
+            }
+        });
+        
+        // Initial draw
+        drawGame();
     </script>
     
 </body>
