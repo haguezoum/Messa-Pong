@@ -224,6 +224,7 @@
         let gameState = {
             ball_x: 50,
             ball_y: 50,
+            ball_speed: 5,
             player1_position: 50,
             player2_position: 50,
             player1_score: 0,
@@ -351,19 +352,23 @@
         
         socket.onmessage = function(event) {
             const data = JSON.parse(event.data);
-            console.log("Received:", data);
+            console.log("Received 11:", data);
             
             // Handle different message types
             switch(data.type) {
-                case 'game_state':
+                case "game_state":
+                    if (data.client_id) {
+                        clientId = data.client_id;
+                    }
+                    console.log("Updating game state net:", data.state.player1_position, data.state.player2_position);
                     updateGameState(data.state);
                     // Enable pause button when game starts
                     if (!isGameStarted && data.state.is_full) {
                         isGameStarted = true;
                         pauseButton.disabled = false;
-                    }
+                    } 
                     break;
-                    
+
                 case 'player_joined':
                     handlePlayerJoined(data);
                     break;
@@ -391,8 +396,8 @@
                     updatePauseButtonState();
                     updateGameStatus();
                     break;
-                    
                 default:
+                    console.log('Default...')
                     // Set client ID if available
                     if (data.client_id && !clientId) {
                         clientId = data.client_id;
@@ -462,6 +467,7 @@
             // Send paddle position to server
             const message = {
                 type: 'paddle_move',
+                // direction: 'up/down',
                 position: newPosition
             };
             console.log("Sending paddle move:", message);
@@ -480,7 +486,7 @@
         
         // Function to update game state
         function updateGameState(state) {
-            console.log("Updating game state:", state);
+            console.log("Updating game state:", state.player1_position, state.player2_position);
             
             // Keep track of previous positions for smooth animations
             const prevPlayer1Position = gameState.player1_position;
@@ -500,20 +506,18 @@
                 // Don't change direction in this case
             }
             
-            // Log player IDs to help with debugging
-            console.log("Player IDs - My ID:", clientId, "Player1 ID:", state.player1_id, "Player2 ID:", state.player2_id);
             
             // Determine if we're player1 or player2
-            if (clientId && state.player1_id === clientId) {
-                console.log("I am Player 1");
-                isPlayer1 = true;
-                isPlayer2 = false;
-            } else if (clientId && state.player2_id === clientId) {
-                console.log("I am Player 2");
-                isPlayer1 = false;
-                isPlayer2 = true;
-            } else {
-                console.log("I am a spectator or waiting for position assignment");
+            if (!isPlayer1 && !isPlayer2) {
+                if (clientId && state.player1_id === clientId) {
+                    console.log("I am Player 1");
+                    isPlayer1 = true;
+                    isPlayer2 = false;
+                } else if (clientId && state.player2_id === clientId) {
+                    console.log("I am Player 2");
+                    isPlayer1 = false;
+                    isPlayer2 = true;
+                }
             }
             
             // Update status
@@ -747,33 +751,46 @@
         
         // Function to update paddle positions automatically
         function updatePaddlePositions() {
-            if (!isPaused && isGameStarted && autoMovementEnabled) {
-                // Update Player 1 paddle position
-                gameState.player1_position += paddle1Direction * AUTO_PADDLE_SPEED;
-                
-                // Bounce at top and bottom
-                if (gameState.player1_position <= PADDLE_HEIGHT/2) {
-                    gameState.player1_position = PADDLE_HEIGHT/2;
-                    paddle1Direction = 1; // Change direction to down
-                } else if (gameState.player1_position >= 100 - PADDLE_HEIGHT/2) {
-                    gameState.player1_position = 100 - PADDLE_HEIGHT/2;
-                    paddle1Direction = -1; // Change direction to up
+            if (!isPaused && isGameStarted && autoMovementEnabled) {                
+
+                if (isPlayer1) {
+                    gameState.player1_position += paddle1Direction * AUTO_PADDLE_SPEED;
+                    if (gameState.player1_position <= PADDLE_HEIGHT/2) {
+                        gameState.player1_position = PADDLE_HEIGHT/2;
+                        paddle1Direction = 1; // Change direction to down
+                    } else if (gameState.player1_position >= 100 - PADDLE_HEIGHT/2) {
+                        gameState.player1_position = 100 - PADDLE_HEIGHT/2;
+                        paddle1Direction = -1; // Change direction to up
+                    }
+                    const message = {
+                        type: 'paddle_move',
+                        position: gameState.player1_position
+                    };
+                    console.log("Sending paddle move:", message);
+                    sendWsMessage(message);
                 }
                 
-                // Update Player 2 paddle position
-                gameState.player2_position += paddle2Direction * AUTO_PADDLE_SPEED;
-                
-                // Bounce at top and bottom
-                if (gameState.player2_position <= PADDLE_HEIGHT/2) {
-                    gameState.player2_position = PADDLE_HEIGHT/2;
-                    paddle2Direction = 1; // Change direction to down
-                } else if (gameState.player2_position >= 100 - PADDLE_HEIGHT/2) {
-                    gameState.player2_position = 100 - PADDLE_HEIGHT/2;
-                    paddle2Direction = -1; // Change direction to up
+                else {
+                    gameState.player2_position += paddle2Direction * AUTO_PADDLE_SPEED;
+                    if (gameState.player2_position <= PADDLE_HEIGHT/2) {
+                        gameState.player2_position = PADDLE_HEIGHT/2;
+                        paddle2Direction = 1; // Change direction to down
+                    } else if (gameState.player2_position >= 100 - PADDLE_HEIGHT/2) {
+                        gameState.player2_position = 100 - PADDLE_HEIGHT/2;
+                        paddle2Direction = -1; // Change direction to up
+                    }
+                    const message = {
+                        type: 'paddle_move',
+                        position: gameState.player2_position
+                    };
+                    console.log("Sending paddle move:", message);
+                    sendWsMessage(message);
                 }
+
+
                 
                 // Redraw the game with updated positions
-                drawGame();
+                // drawGame();
             }
             
             // Continue the animation loop
@@ -781,7 +798,7 @@
         }
 
         // Start the animation loop
-        updatePaddlePositions();
+        // updatePaddlePositions();
         
         // Initial draw
         drawGame();

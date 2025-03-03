@@ -3,6 +3,7 @@ import uuid
 import asyncio
 from channels.generic.websocket import AsyncWebsocketConsumer
 from django.contrib.sessions.backends.db import SessionStore
+from channels.layers import get_channel_layer
 from asgiref.sync import sync_to_async
 from .game_logic import PongGameLogic
 
@@ -37,6 +38,7 @@ class PongConsumer(AsyncWebsocketConsumer):
             self.game_tasks[self.room_name] = asyncio.create_task(self.game_loop())
             
         # Notify all clients about the player joining
+        print('player_joined (1)', self.client_id, game_state)
         await self.channel_layer.group_send(
             self.room_group_name,
             {
@@ -70,8 +72,7 @@ class PongConsumer(AsyncWebsocketConsumer):
                     self.room_group_name,
                     {
                         'type': 'game_state_update',
-                        'state': state,
-                        'client_id': self.client_id
+                        'state': state
                     }
                 )
         elif message_type == 'toggle_pause':
@@ -133,7 +134,7 @@ class PongConsumer(AsyncWebsocketConsumer):
                         break
                 
                 # Pause between updates (60 FPS equivalent)
-                await asyncio.sleep(1/60)
+                await asyncio.sleep(1/30)
         except asyncio.CancelledError:
             pass
         finally:
@@ -149,10 +150,13 @@ class PongConsumer(AsyncWebsocketConsumer):
             'state': state
         }))
         
+    
     async def player_joined(self, event):
         """Handle player joined event."""
         client_id = event.get('client_id', '')
         state = event.get('state', {})
+
+        print('player_joined (2)', client_id, state)
         
         await self.send(text_data=json.dumps({
             'type': 'player_joined',

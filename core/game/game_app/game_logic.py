@@ -61,8 +61,8 @@ class PongGameLogic:
     def _initialize_game_state(game):
         """Initialize the game state for a new game."""
         # Create initial state with random ball direction
-        dx = 0.5 if random.random() > 0.5 else -0.5
-        dy = 0.5 if random.random() > 0.5 else -0.5
+        dx = 1.5 if random.random() > 0.5 else -1.5
+        dy = 1.5 if random.random() > 0.5 else -1.5
         
         GameState.objects.create(
             game=game,
@@ -171,8 +171,8 @@ class PongGameLogic:
         if scored:
             ball_x = 50.0
             ball_y = 50.0
-            ball_dx = 0.5 if random.random() > 0.5 else -0.5
-            ball_dy = 0.5 if random.random() > 0.5 else -0.5
+            ball_dx = 1.5 if random.random() > 0.5 else -1.5
+            ball_dy = 1.5 if random.random() > 0.5 else -1.5
         
         # Check for game end - make sure we set the correct winner
         winner_id = None
