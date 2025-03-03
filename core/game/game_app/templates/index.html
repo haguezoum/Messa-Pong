@@ -26,6 +26,13 @@
             border: 2px solid white;
             background-color: #000;
             margin-bottom: 10px;
+            outline: none; /* Remove default focus outline */
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        
+        canvas:focus {
+            border-color: #4CAF50; /* Green border when focused */
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.7); /* Glow effect */
         }
         
         .score-board {
@@ -95,6 +102,76 @@
         button:hover {
             background-color: #3e8e41;
         }
+        
+        .game-controls {
+            margin: 10px 0;
+        }
+        
+        #pauseButton {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            min-width: 200px;
+            transition: all 0.3s ease;
+        }
+        
+        #pauseButton:disabled {
+            background-color: #cccccc !important;
+            cursor: not-allowed !important;
+            opacity: 0.7;
+            color: #888888;
+            box-shadow: none;
+        }
+        
+        #pauseButton.paused {
+            background-color: #f44336;
+        }
+        
+        #pauseButton:hover:not(:disabled) {
+            opacity: 0.9;
+            transform: scale(1.02);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .game-settings {
+            margin-top: 10px;
+            margin-bottom: 15px;
+            background-color: #1e1e1e;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        
+        #paddleSpeedSlider {
+            margin-top: 5px;
+            margin-bottom: 10px;
+        }
+        
+        .toggle-container {
+            margin-top: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .toggle-button {
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        
+        .toggle-button.enabled {
+            background-color: #4CAF50;
+        }
+        
+        .toggle-button.disabled {
+            background-color: #f44336;
+        }
     </style>
 </head>
 <body>
@@ -103,6 +180,7 @@
     <div class="game-container">
         <div class="score-board">
             <div class="score" id="player1-score">Player 1: 0</div>
+            <button id="pauseButton" disabled>Pause Game</button>
             <div class="score" id="player2-score">Player 2: 0</div>
         </div>
         
@@ -111,7 +189,16 @@
         <div class="status" id="game-status">Waiting for opponent...</div>
         
         <div class="controls">
-            <p>Move your paddle: 'W' key to move up, 'S' key to move down</p>
+            <p>Move your paddle: 'W' key or ↑ to move up, 'S' key or ↓ to move down</p>
+        </div>
+        
+        <div class="game-settings">
+            <label for="paddleSpeedSlider">Paddle Movement Speed: <span id="speedValue">0.5</span></label>
+            <input type="range" id="paddleSpeedSlider" min="0.1" max="2.0" step="0.1" value="0.5" style="width: 200px;">
+            <div class="toggle-container">
+                <label for="autoMovementToggle">Auto Movement:</label>
+                <button id="autoMovementToggle" class="toggle-button enabled">ON</button>
+            </div>
         </div>
     </div>
     
@@ -128,6 +215,10 @@
         // Get canvas and context
         const canvas = document.getElementById("game-canvas");
         const ctx = canvas.getContext("2d");
+        
+        // Make canvas focusable and give it focus
+        canvas.tabIndex = 1;
+        canvas.focus();
         
         // Game state
         let gameState = {
@@ -149,6 +240,14 @@
         const PADDLE_HEIGHT = 15;
         const PADDLE_WIDTH = 2;
         const BALL_SIZE = 2;
+        const PADDLE_SPEED = 2;
+        
+        // Auto paddle movement configuration
+        let AUTO_PADDLE_SPEED = 0.5; // Speed of automatic paddle movement (percentage per frame)
+        let paddle1Direction = 1; // 1 for down, -1 for up
+        let paddle2Direction = -1; // Start in opposite direction
+        let autoMovementEnabled = true; // Can be toggled via settings if desired
+        let animationId = null; // Store the animation frame ID
         
         // Get room name from URL or generate one
         const urlParams = new URLSearchParams(window.location.search);
@@ -167,6 +266,89 @@
             document.getElementById("game-status").innerText = "Connecting to game...";
         };
         
+        // Add pause state variables
+        let isPaused = false;
+        let isGameStarted = false;
+        const pauseButton = document.getElementById('pauseButton');
+        let pausedByClientId = null;
+        let pauseTimer = null;
+        const PAUSE_TIMEOUT = 30; // 30 seconds
+        let remainingPauseTime = PAUSE_TIMEOUT;
+        
+        // Remove any existing click handlers and add this new one
+        pauseButton.onclick = null;
+        pauseButton.addEventListener('click', function(e) {
+            console.log('Pause button clicked', { isPaused, pausedByClientId, clientId, isPlayer1, isPlayer2 });
+            
+            // If the game is not paused, anyone can pause
+            if (!isPaused) {
+                togglePause();
+                return;
+            }
+            
+            // If the game is paused...
+            
+            // If the player is on the right side (Player 2), prevent resume action
+            if (isPlayer2) {
+                console.log("Right side player cannot resume the game!");
+                e.preventDefault();
+                return false;
+            }
+            
+            // If client is not the one who paused, prevent resume
+            if (clientId !== pausedByClientId) {
+                console.log("Cannot resume - only the player who paused can resume!");
+                e.preventDefault();
+                return false;
+            }
+            
+            // If we got here, the player is allowed to resume
+            togglePause();
+        });
+        
+        // Enhanced WebSocket sending function with logging
+        function sendWsMessage(message) {
+            console.log("Sending WebSocket message:", message);
+            socket.send(JSON.stringify(message));
+        }
+        
+        function togglePause() {
+            console.log('Toggling pause', { isPaused, pausedByClientId, clientId });
+            
+            // We should not need this check here since it's handled by the click handler
+            // but keeping it as an extra safety measure
+            if (isPaused && clientId !== pausedByClientId) {
+                console.log("Only the client who paused can resume!");
+                return;
+            }
+
+            if (isPaused && isPlayer2) {
+                console.log("Player 2 cannot resume the game!");
+                return;
+            }
+
+            isPaused = !isPaused;
+
+            if (isPaused) {
+                pausedByClientId = clientId;
+                startPauseTimer();
+            } else {
+                pausedByClientId = null;
+                clearPauseTimer();
+            }
+
+            // Use the enhanced send function
+            sendWsMessage({
+                type: 'toggle_pause',
+                paused: isPaused,
+                pausedByClientId: pausedByClientId,
+                remainingTime: remainingPauseTime
+            });
+
+            updatePauseButtonState();
+            updateGameStatus();
+        }
+        
         socket.onmessage = function(event) {
             const data = JSON.parse(event.data);
             console.log("Received:", data);
@@ -175,6 +357,11 @@
             switch(data.type) {
                 case 'game_state':
                     updateGameState(data.state);
+                    // Enable pause button when game starts
+                    if (!isGameStarted && data.state.is_full) {
+                        isGameStarted = true;
+                        pauseButton.disabled = false;
+                    }
                     break;
                     
                 case 'player_joined':
@@ -187,6 +374,22 @@
                     
                 case 'game_over':
                     handleGameOver(data);
+                    break;
+                    
+                case 'game_paused':
+                    console.log('Received pause state', data);
+                    isPaused = data.paused;
+                    pausedByClientId = data.pausedByClientId;
+                    remainingPauseTime = data.remainingTime;
+
+                    if (isPaused && clientId !== pausedByClientId) {
+                        startPauseTimer();
+                    } else if (!isPaused) {
+                        clearPauseTimer();
+                    }
+
+                    updatePauseButtonState();
+                    updateGameStatus();
                     break;
                     
                 default:
@@ -203,82 +406,138 @@
             document.getElementById("game-status").innerText = "Connection lost. Please refresh.";
         };
         
-        // Remove or comment out the existing mousemove event listener
-        // canvas.addEventListener('mousemove', function(e) { ... });
-
-        // Add this keyboard control code after the WebSocket setup
-        let keysPressed = {};
-        let paddlePosition = 50; // Starting position (middle)
-        const PADDLE_SPEED = 2; // Speed of paddle movement (adjust as needed)
+        // Add focus event for the canvas to make sure keyboard events work
+        canvas.addEventListener('click', function() {
+            console.log("Canvas clicked, setting focus");
+            this.focus();
+        });
         
-        // Add keyboard event listeners
+        window.addEventListener('focus', function() {
+            console.log("Window focused");
+            canvas.focus();
+        });
+        
+        document.addEventListener('click', function() {
+            console.log("Document clicked");
+            if (document.activeElement !== canvas) {
+                console.log("Canvas not focused, setting focus");
+                canvas.focus();
+            }
+        });
+        
+        // Keyboard controls for paddle movement
         document.addEventListener('keydown', function(e) {
-            keysPressed[e.key] = true;
-        });
-        
-        document.addEventListener('keyup', function(e) {
-            keysPressed[e.key] = false;
-        });
-        
-        // Add a function to handle paddle movement based on keys
-        function updatePaddlePosition() {
-            // Move paddle up with 'w' key
-            if (keysPressed['w'] || keysPressed['W']) {
-                paddlePosition = Math.max(paddlePosition - PADDLE_SPEED, PADDLE_HEIGHT/2);
+            console.log("Keydown detected:", e.key, { isPaused, isPlayer1, isPlayer2, clientId });
+            
+            if (isPaused) {
+                console.log("Game is paused, not processing movement");
+                return; // Don't process movement if game is paused
             }
             
-            // Move paddle down with 's' key
-            if (keysPressed['s'] || keysPressed['S']) {
-                paddlePosition = Math.min(paddlePosition + PADDLE_SPEED, 100 - PADDLE_HEIGHT/2);
+            // Only process if we're a player
+            if (!isPlayer1 && !isPlayer2) {
+                console.log("Not a player (isPlayer1:", isPlayer1, "isPlayer2:", isPlayer2, "), not processing movement");
+                return;
             }
             
-            // Only send updates if we're a player
-            if ((isPlayer1 || isPlayer2) && (keysPressed['w'] || keysPressed['W'] || keysPressed['s'] || keysPressed['S'])) {
-                socket.send(JSON.stringify({
-                    type: 'paddle_move',
-                    position: paddlePosition
-                }));
+            console.log("Processing keydown event:", e.key, { isPlayer1, isPlayer2 });
+            
+            let newPosition = isPlayer1 ? gameState.player1_position : gameState.player2_position;
+            
+            // Move up with w/W key or Up arrow key
+            if (e.key.toLowerCase() === 'w' || e.key === 'ArrowUp') {
+                newPosition = Math.max(newPosition - PADDLE_SPEED, PADDLE_HEIGHT/2);
+                console.log("Moving paddle up to:", newPosition);
             }
-        }
-        
-        // Add a game animation loop to continuously check for key presses
-        function gameLoop() {
-            updatePaddlePosition();
-            requestAnimationFrame(gameLoop);
-        }
-        
-        // Start the game loop
-        gameLoop();
-        
-        // Update the controls instructions
-        document.querySelector('.controls p').innerText = "Move your paddle: 'W' key to move up, 'S' key to move down";
+            // Move down with s/S key or Down arrow key
+            else if (e.key.toLowerCase() === 's' || e.key === 'ArrowDown') {
+                newPosition = Math.min(newPosition + PADDLE_SPEED, 100 - PADDLE_HEIGHT/2);
+                console.log("Moving paddle down to:", newPosition);
+            }
+            else {
+                console.log("Not a movement key:", e.key);
+                return; // Not a movement key
+            }
+            
+            // Send paddle position to server
+            const message = {
+                type: 'paddle_move',
+                position: newPosition
+            };
+            console.log("Sending paddle move:", message);
+            sendWsMessage(message);
+            
+            // Update local position immediately for responsiveness
+            if (isPlayer1) {
+                gameState.player1_position = newPosition;
+            } else if (isPlayer2) {
+                gameState.player2_position = newPosition;
+            }
+            
+            // Redraw game
+            drawGame();
+        });
         
         // Function to update game state
         function updateGameState(state) {
+            console.log("Updating game state:", state);
+            
+            // Keep track of previous positions for smooth animations
+            const prevPlayer1Position = gameState.player1_position;
+            const prevPlayer2Position = gameState.player2_position;
+            
             gameState = state;
+            
+            // If game state update includes paddle positions, update our directions
+            // This ensures that server-synchronized paddle movements aren't suddenly reversed
+            if (Math.abs(gameState.player1_position - prevPlayer1Position) > AUTO_PADDLE_SPEED * 2) {
+                // Player 1 paddle had a significant position change, likely from remote
+                // Don't change direction in this case
+            }
+            
+            if (Math.abs(gameState.player2_position - prevPlayer2Position) > AUTO_PADDLE_SPEED * 2) {
+                // Player 2 paddle had a significant position change, likely from remote
+                // Don't change direction in this case
+            }
+            
+            // Log player IDs to help with debugging
+            console.log("Player IDs - My ID:", clientId, "Player1 ID:", state.player1_id, "Player2 ID:", state.player2_id);
             
             // Determine if we're player1 or player2
             if (clientId && state.player1_id === clientId) {
+                console.log("I am Player 1");
                 isPlayer1 = true;
+                isPlayer2 = false;
             } else if (clientId && state.player2_id === clientId) {
+                console.log("I am Player 2");
+                isPlayer1 = false;
                 isPlayer2 = true;
+            } else {
+                console.log("I am a spectator or waiting for position assignment");
             }
             
             // Update status
             if (!state.is_full) {
                 document.getElementById("game-status").innerText = "Waiting for opponent...";
+                pauseButton.disabled = true;
             } else if (state.winner_id) {
                 // This will be handled by the game_over event
+                pauseButton.disabled = true;
             } else {
-                document.getElementById("game-status").innerText = "Game in progress";
+                if (!isPaused) {
+                    document.getElementById("game-status").innerText = "Game in progress";
+                }
+                pauseButton.disabled = false;
             }
             
             // Update score
             document.getElementById("player1-score").innerText = `Player 1: ${state.player1_score}`;
             document.getElementById("player2-score").innerText = `Player 2: ${state.player2_score}`;
             
-            // Draw game
-            drawGame();
+            // Only draw game if not paused
+            if (!isPaused) {
+                drawGame();
+            }
         }
         
         // Function to draw the game
@@ -347,10 +606,21 @@
             const winnerId = data.winner_id;
             let message = "";
             
-            if (winnerId === clientId) {
+            // Check if we're the winner
+            if (isPlayer1 && winnerId === gameState.player1_id || 
+                isPlayer2 && winnerId === gameState.player2_id) {
                 message = "You win!";
             } else {
                 message = "You lose!";
+            }
+            
+            // For spectators or if winner logic fails
+            if (!isPlayer1 && !isPlayer2) {
+                if (winnerId === gameState.player1_id) {
+                    message = "Player 1 wins!";
+                } else {
+                    message = "Player 2 wins!";
+                }
             }
             
             document.getElementById("game-status").innerText = message;
@@ -367,10 +637,10 @@
             const message = input.value.trim();
             
             if (message) {
-                socket.send(JSON.stringify({
+                sendWsMessage({
                     type: 'chat',
                     message: message
-                }));
+                });
                 
                 input.value = "";
             }
@@ -383,8 +653,154 @@
             }
         });
         
+        function startPauseTimer() {
+            remainingPauseTime = PAUSE_TIMEOUT;
+            updatePauseButtonState();
+
+            if (pauseTimer) {
+                clearInterval(pauseTimer);
+            }
+
+            pauseTimer = setInterval(() => {
+                remainingPauseTime--;
+                updatePauseButtonState();
+
+                if (remainingPauseTime <= 0) {
+                    if (clientId === pausedByClientId) {
+                        togglePause();
+                    }
+                }
+            }, 1000);
+        }
+
+        function clearPauseTimer() {
+            if (pauseTimer) {
+                clearInterval(pauseTimer);
+                pauseTimer = null;
+            }
+            remainingPauseTime = PAUSE_TIMEOUT;
+        }
+
+        function updatePauseButtonState() {
+            console.log('Updating button state', { isPaused, pausedByClientId, clientId, isPlayer1, isPlayer2 });
+            
+            if (!isGameStarted) {
+                pauseButton.disabled = true;
+                pauseButton.textContent = 'Pause Game';
+                pauseButton.style.cursor = 'not-allowed';
+                return;
+            }
+
+            if (isPaused) {
+                // Always disable resume for Player 2 (right side)
+                if (isPlayer2) {
+                    pauseButton.textContent = `Resuming in ${remainingPauseTime}s`;
+                    pauseButton.disabled = true;
+                    pauseButton.style.cursor = 'not-allowed';
+                    pauseButton.classList.add('paused');
+                }
+                // Enable for the player who paused (if they're not Player 2)
+                else if (clientId === pausedByClientId) {
+                    pauseButton.textContent = `Resume Game (${remainingPauseTime}s)`;
+                    pauseButton.disabled = false;
+                    pauseButton.style.cursor = 'pointer';
+                    pauseButton.classList.add('paused');
+                } 
+                // Disable for the player who didn't pause
+                else {
+                    pauseButton.textContent = `Resuming in ${remainingPauseTime}s`;
+                    pauseButton.disabled = true;
+                    pauseButton.style.cursor = 'not-allowed';
+                    pauseButton.classList.add('paused');
+                }
+            } else {
+                pauseButton.textContent = 'Pause Game';
+                pauseButton.classList.remove('paused');
+                pauseButton.disabled = false;
+                pauseButton.style.cursor = 'pointer';
+            }
+        }
+
+        function updateGameStatus() {
+            const statusElement = document.getElementById("game-status");
+            if (isPaused) {
+                if (isPlayer2) {
+                    // Clear message for Player 2 that they cannot resume
+                    statusElement.innerText = `Game paused. Only the left player can resume. Auto-resuming in ${remainingPauseTime}s...`;
+                } else if (clientId === pausedByClientId) {
+                    statusElement.innerText = `You paused the game. Click 'Resume' or wait ${remainingPauseTime}s for auto-resume.`;
+                } else {
+                    statusElement.innerText = `Game paused by opponent. Resuming in ${remainingPauseTime}s...`;
+                }
+            } else {
+                statusElement.innerText = isGameStarted ? "Game in progress" : "Waiting for opponent...";
+            }
+        }
+
+        // Add cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            clearPauseTimer();
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+            }
+        });
+        
+        // Function to update paddle positions automatically
+        function updatePaddlePositions() {
+            if (!isPaused && isGameStarted && autoMovementEnabled) {
+                // Update Player 1 paddle position
+                gameState.player1_position += paddle1Direction * AUTO_PADDLE_SPEED;
+                
+                // Bounce at top and bottom
+                if (gameState.player1_position <= PADDLE_HEIGHT/2) {
+                    gameState.player1_position = PADDLE_HEIGHT/2;
+                    paddle1Direction = 1; // Change direction to down
+                } else if (gameState.player1_position >= 100 - PADDLE_HEIGHT/2) {
+                    gameState.player1_position = 100 - PADDLE_HEIGHT/2;
+                    paddle1Direction = -1; // Change direction to up
+                }
+                
+                // Update Player 2 paddle position
+                gameState.player2_position += paddle2Direction * AUTO_PADDLE_SPEED;
+                
+                // Bounce at top and bottom
+                if (gameState.player2_position <= PADDLE_HEIGHT/2) {
+                    gameState.player2_position = PADDLE_HEIGHT/2;
+                    paddle2Direction = 1; // Change direction to down
+                } else if (gameState.player2_position >= 100 - PADDLE_HEIGHT/2) {
+                    gameState.player2_position = 100 - PADDLE_HEIGHT/2;
+                    paddle2Direction = -1; // Change direction to up
+                }
+                
+                // Redraw the game with updated positions
+                drawGame();
+            }
+            
+            // Continue the animation loop
+            animationId = requestAnimationFrame(updatePaddlePositions);
+        }
+
+        // Start the animation loop
+        updatePaddlePositions();
+        
         // Initial draw
         drawGame();
+
+        // Add event listener for the paddle speed slider
+        document.getElementById('paddleSpeedSlider').addEventListener('input', function(e) {
+            AUTO_PADDLE_SPEED = parseFloat(e.target.value);
+            document.getElementById('speedValue').textContent = AUTO_PADDLE_SPEED.toFixed(1);
+            console.log('Paddle speed updated to:', AUTO_PADDLE_SPEED);
+        });
+        
+        // Add event listener for the auto movement toggle button
+        document.getElementById('autoMovementToggle').addEventListener('click', function() {
+            autoMovementEnabled = !autoMovementEnabled;
+            this.textContent = autoMovementEnabled ? 'ON' : 'OFF';
+            this.classList.toggle('enabled', autoMovementEnabled);
+            this.classList.toggle('disabled', !autoMovementEnabled);
+            console.log('Auto movement toggled:', autoMovementEnabled ? 'enabled' : 'disabled');
+        });
     </script>
     
 </body>

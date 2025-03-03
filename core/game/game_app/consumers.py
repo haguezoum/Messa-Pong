@@ -8,6 +8,7 @@ from .game_logic import PongGameLogic
 
 class PongConsumer(AsyncWebsocketConsumer):
     game_tasks = {}  # Class variable to store game update tasks
+    paused_games = set()  # Track paused games
     
     async def connect(self):
         self.room_name = self.scope['url_route']['kwargs']['room_name']
@@ -59,23 +60,40 @@ class PongConsumer(AsyncWebsocketConsumer):
         message_type = data.get('type', '')
         
         if message_type == 'paddle_move':
-            # Handle paddle movement
-            position = data.get('position', 50)
+            # Only process paddle moves if game is not paused
+            if self.room_name not in self.paused_games:
+                position = data.get('position', 50)
+                state = await PongGameLogic.update_paddle_position(
+                    self.room_name, self.client_id, position
+                )
+                await self.channel_layer.group_send(
+                    self.room_group_name,
+                    {
+                        'type': 'game_state_update',
+                        'state': state,
+                        'client_id': self.client_id
+                    }
+                )
+        elif message_type == 'toggle_pause':
+            is_paused = data.get('paused', False)
+            paused_by = data.get('pausedByClientId', None)
+            remaining_time = data.get('remainingTime', 30)
             
-            # Update paddle position in game state
-            state = await PongGameLogic.update_paddle_position(
-                self.room_name, self.client_id, position
-            )
-            
-            # Broadcast updated state to all clients
+            # Broadcast pause state to all clients
             await self.channel_layer.group_send(
                 self.room_group_name,
                 {
-                    'type': 'game_state_update',
-                    'state': state,
-                    'client_id': self.client_id
+                    'type': 'game_paused',
+                    'paused': is_paused,
+                    'pausedByClientId': paused_by,
+                    'remainingTime': remaining_time
                 }
             )
+            
+            if is_paused:
+                self.paused_games.add(self.room_name)
+            else:
+                self.paused_games.discard(self.room_name)
         elif message_type == 'chat':
             # Handle chat messages
             message = data.get('message', '')
@@ -92,38 +110,33 @@ class PongConsumer(AsyncWebsocketConsumer):
         """Main game loop that updates the game state periodically."""
         try:
             while True:
-                # Update game state
-                state = await PongGameLogic.update_game_state(self.room_name)
-                
-                # Broadcast state to all clients
-                await self.channel_layer.group_send(
-                    self.room_group_name,
-                    {
-                        'type': 'game_state_update',
-                        'state': state
-                    }
-                )
-                
-                # Check if game is over
-                if state.get('winner_id'):
-                    # Broadcast game over message
+                # Only update game state if not paused
+                if self.room_name not in self.paused_games:
+                    state = await PongGameLogic.update_game_state(self.room_name)
+                    
                     await self.channel_layer.group_send(
                         self.room_group_name,
                         {
-                            'type': 'game_over',
-                            'winner_id': state.get('winner_id')
+                            'type': 'game_state_update',
+                            'state': state
                         }
                     )
-                    # Cancel this loop
-                    break
                     
+                    if state.get('winner_id'):
+                        await self.channel_layer.group_send(
+                            self.room_group_name,
+                            {
+                                'type': 'game_over',
+                                'winner_id': state.get('winner_id')
+                            }
+                        )
+                        break
+                
                 # Pause between updates (60 FPS equivalent)
                 await asyncio.sleep(1/60)
         except asyncio.CancelledError:
-            # Task was cancelled, clean up
             pass
         finally:
-            # Ensure task is removed from game_tasks if it exits for any reason
             if self.room_name in self.game_tasks:
                 del self.game_tasks[self.room_name]
 
@@ -165,6 +178,15 @@ class PongConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps({
             'type': 'game_over',
             'winner_id': winner_id
+        }))
+
+    async def game_paused(self, event):
+        """Handle game paused event."""
+        await self.send(text_data=json.dumps({
+            'type': 'game_paused',
+            'paused': event['paused'],
+            'pausedByClientId': event['pausedByClientId'],
+            'remainingTime': event['remainingTime']
         }))
 
     @sync_to_async
