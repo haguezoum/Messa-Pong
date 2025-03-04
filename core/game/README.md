@@ -4,7 +4,7 @@ A real-time multiplayer Pong game built with Django Channels and WebSockets.
 
 ## Overview
 
-This project implements a classic Pong game where two players can compete in real-time using WebSockets for communication. The game features a full physics system, score tracking, game rooms, and a chat system - all synchronized across different clients.
+This project implements a classic Pong game where two players can compete in real-time using WebSockets for communication. The game features a full physics system, score tracking, game rooms, pause/resume functionality, and a chat system - all synchronized across different clients.
 
 ## Architecture
 
@@ -91,7 +91,13 @@ The game implements an optimized state management system:
    Update scores → Broadcast state to clients
    ```
 
-4. **Game End**:
+4. **Pause/Resume**:
+   ```
+   Player pauses → Game loop paused → Timer starts → 
+   Only pausing player can resume → Auto-resume after 30 seconds
+   ```
+
+5. **Game End**:
    ```
    Winner determined → Save final state to database → 
    Clean up in-memory state → Notify clients
@@ -338,3 +344,64 @@ Potential improvements for the game:
 ## Contributors
 
 This Pong game implementation was created as part of the ft_transcendence project. 
+
+### Game Pause Functionality
+
+The game implements a robust pause/resume system with the following features:
+
+1. **Pause Mechanism**:
+   - Any player can pause the game by clicking the pause button
+   - When paused, the game loop is suspended on the server
+   - All clients are notified of the pause state via WebSocket
+
+2. **Resume Controls**:
+   - Only the player who initiated the pause can manually resume the game
+   - A 30-second countdown timer begins when the game is paused
+   - After 30 seconds, the game automatically resumes regardless of who paused it
+
+3. **Implementation Details**:
+   - Server-side tracking of paused games:
+     ```python
+     # In consumers.py
+     paused_games = set()  # Class variable to track paused games
+     
+     # When a pause/resume message is received
+     if is_paused:
+         self.paused_games.add(self.room_name)
+     else:
+         self.paused_games.discard(self.room_name)
+     ```
+
+   - Client-side timer management:
+     ```javascript
+     // Countdown timer function
+     function startPauseTimer() {
+         remainingPauseTime = PAUSE_TIMEOUT;
+         
+         pauseTimer = setInterval(() => {
+             remainingPauseTime--;
+             updatePauseButtonState();
+             updateGameStatus();
+             
+             // Auto-resume when timer reaches zero
+             if (remainingPauseTime <= 0) {
+                 // Clear timer and send resume message to server
+                 // with autoResumed flag set to true
+             }
+         }, 1000);
+     }
+     ```
+
+   - User Interface Updates:
+     - The pause button changes to "Resume Game" for the player who paused
+     - Other players see "Resuming in Xs" with a countdown
+     - Game status messages update dynamically
+     - Auto-resume notifications appear in the chat
+
+4. **Synchronization Strategy**:
+   - Server coordinates the paused state across all clients
+   - Paddle movements and game updates are not processed during pause
+   - Animation frames are stopped during pause to conserve resources
+   - All state changes are broadcast to maintain consistency
+
+This pause system ensures fair gameplay by preventing unexpected interruptions while still allowing for necessary breaks. The auto-resume feature prevents games from being indefinitely paused.
