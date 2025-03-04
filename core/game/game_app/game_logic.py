@@ -18,6 +18,9 @@ BALL_SPEED_INCREMENT = 0.1
 class PongGameLogic:
     """Class to handle the Pong game logic."""
     
+    # Class variable to store active game states in memory
+    active_games = {}
+    
     @staticmethod
     async def create_or_join_game(room_name, client_id):
         """Create a new game or join an existing one."""
@@ -26,6 +29,17 @@ class PongGameLogic:
         # If just created, initialize game state
         if created:
             await sync_to_async(PongGameLogic._initialize_game_state)(game)
+            # Initialize in-memory state
+            PongGameLogic.active_games[room_name] = {
+                'ball_x': 50.0,
+                'ball_y': 50.0,
+                'ball_dx': 1.5 if random.random() > 0.5 else -1.5,
+                'ball_dy': 1.5 if random.random() > 0.5 else -1.5,
+                'player1_position': 50.0,
+                'player2_position': 50.0,
+                'player1_score': 0,
+                'player2_score': 0
+            }
             
         return game, created
     
@@ -80,18 +94,31 @@ class PongGameLogic:
     async def update_paddle_position(room_name, client_id, position):
         """Update a player's paddle position."""
         game = await sync_to_async(Game.objects.get)(room_name=room_name, is_active=True)
-        game_state = await sync_to_async(lambda: game.state)()
+        
+        # Get current state from memory
+        state = PongGameLogic.active_games.get(room_name)
+        if not state:
+            return await sync_to_async(PongGameLogic._get_game_state_dict)(game)
         
         # Determine which player's paddle to update
         if client_id == game.player1_id:
-            game_state.player1_position = position
+            state['player1_position'] = position
         elif client_id == game.player2_id:
-            game_state.player2_position = position
+            state['player2_position'] = position
             
-        await sync_to_async(game_state.save)()
-        
         # Return the updated game state
-        return await sync_to_async(PongGameLogic._get_game_state_dict)(game)
+        return {
+            'ball_x': state['ball_x'],
+            'ball_y': state['ball_y'],
+            'player1_position': state['player1_position'],
+            'player2_position': state['player2_position'],
+            'player1_score': state['player1_score'],
+            'player2_score': state['player2_score'],
+            'player1_id': game.player1_id,
+            'player2_id': game.player2_id,
+            'is_full': game.is_full,
+            'winner_id': game.winner_id
+        }
     
     @staticmethod
     def _get_game_state_dict(game):
@@ -119,17 +146,20 @@ class PongGameLogic:
         if not await sync_to_async(lambda: game.is_full and game.is_active)():
             return await sync_to_async(PongGameLogic._get_game_state_dict)(game)
         
-        state = await sync_to_async(lambda: game.state)()
+        # Get current state from memory
+        state = PongGameLogic.active_games.get(room_name)
+        if not state:
+            return await sync_to_async(PongGameLogic._get_game_state_dict)(game)
         
         # Get current state values
-        ball_x = state.ball_x
-        ball_y = state.ball_y
-        ball_dx = state.ball_dx
-        ball_dy = state.ball_dy
-        player1_pos = state.player1_position
-        player2_pos = state.player2_position
-        player1_score = state.player1_score
-        player2_score = state.player2_score
+        ball_x = state['ball_x']
+        ball_y = state['ball_y']
+        ball_dx = state['ball_dx']
+        ball_dy = state['ball_dy']
+        player1_pos = state['player1_position']
+        player2_pos = state['player2_position']
+        player1_score = state['player1_score']
+        player2_score = state['player2_score']
         
         # Move the ball
         ball_x += ball_dx
@@ -144,8 +174,6 @@ class PongGameLogic:
             ball_y >= player1_pos - PADDLE_HEIGHT/2 and 
             ball_y <= player1_pos + PADDLE_HEIGHT/2):
             ball_dx = abs(ball_dx) + BALL_SPEED_INCREMENT  # Bounce right and increase speed
-            # Adjust y velocity based on where ball hits paddle
-            # (hit on edge = sharper angle)
             relative_intersect = (player1_pos - ball_y) / (PADDLE_HEIGHT/2)
             ball_dy = -relative_intersect * abs(ball_dx)
         
@@ -154,7 +182,6 @@ class PongGameLogic:
             ball_y >= player2_pos - PADDLE_HEIGHT/2 and 
             ball_y <= player2_pos + PADDLE_HEIGHT/2):
             ball_dx = -abs(ball_dx) - BALL_SPEED_INCREMENT  # Bounce left and increase speed
-            # Adjust y velocity based on where ball hits paddle
             relative_intersect = (player2_pos - ball_y) / (PADDLE_HEIGHT/2)
             ball_dy = -relative_intersect * abs(ball_dx)
         
@@ -174,39 +201,62 @@ class PongGameLogic:
             ball_dx = 1.5 if random.random() > 0.5 else -1.5
             ball_dy = 1.5 if random.random() > 0.5 else -1.5
         
-        # Check for game end - make sure we set the correct winner
+        # Check for game end
         winner_id = None
         if player1_score >= WINNING_SCORE:
             winner_id = game.player1_id
         elif player2_score >= WINNING_SCORE:
             winner_id = game.player2_id
             
-        # Update database
-        await sync_to_async(PongGameLogic._save_game_state)(
-            game, ball_x, ball_y, ball_dx, ball_dy,
-            player1_pos, player2_pos, player1_score, player2_score, winner_id
-        )
+        # Update in-memory state
+        state.update({
+            'ball_x': ball_x,
+            'ball_y': ball_y,
+            'ball_dx': ball_dx,
+            'ball_dy': ball_dy,
+            'player1_position': player1_pos,
+            'player2_position': player2_pos,
+            'player1_score': player1_score,
+            'player2_score': player2_score
+        })
+        
+        # If game is over, save final state to database
+        if winner_id:
+            await sync_to_async(PongGameLogic._save_final_game_state)(
+                game, state, winner_id
+            )
+            # Clean up in-memory state
+            del PongGameLogic.active_games[room_name]
         
         # Return the updated state
-        return await sync_to_async(PongGameLogic._get_game_state_dict)(game)
-    
+        return {
+            'ball_x': ball_x,
+            'ball_y': ball_y,
+            'player1_position': player1_pos,
+            'player2_position': player2_pos,
+            'player1_score': player1_score,
+            'player2_score': player2_score,
+            'player1_id': game.player1_id,
+            'player2_id': game.player2_id,
+            'is_full': game.is_full,
+            'winner_id': winner_id
+        }
+
     @staticmethod
-    def _save_game_state(game, ball_x, ball_y, ball_dx, ball_dy, 
-                        player1_pos, player2_pos, player1_score, player2_score, winner_id):
-        """Save the current game state to the database."""
+    def _save_final_game_state(game, state, winner_id):
+        """Save the final game state to the database when the game ends."""
         with transaction.atomic():
-            state = game.state
-            state.ball_x = ball_x
-            state.ball_y = ball_y
-            state.ball_dx = ball_dx
-            state.ball_dy = ball_dy
-            state.player1_position = player1_pos
-            state.player2_position = player2_pos
-            state.player1_score = player1_score
-            state.player2_score = player2_score
-            state.save()
+            db_state = game.state
+            db_state.ball_x = state['ball_x']
+            db_state.ball_y = state['ball_y']
+            db_state.ball_dx = state['ball_dx']
+            db_state.ball_dy = state['ball_dy']
+            db_state.player1_position = state['player1_position']
+            db_state.player2_position = state['player2_position']
+            db_state.player1_score = state['player1_score']
+            db_state.player2_score = state['player2_score']
+            db_state.save()
             
-            if winner_id:
-                game.winner_id = winner_id
-                game.is_active = False
-                game.save() 
+            game.winner_id = winner_id
+            game.is_active = False
+            game.save() 

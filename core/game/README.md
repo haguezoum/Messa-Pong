@@ -14,14 +14,15 @@ The application follows a client-server architecture with WebSockets enabling bi
 
 1. **Django Models** (`models.py`):
    - `Game`: Tracks game sessions, players, and game state
-   - `GameState`: Stores the dynamic game state (ball position, paddle positions, scores)
+   - `GameState`: Stores the final game state (ball position, paddle positions, scores)
 
 2. **Game Logic** (`game_logic.py`):
    - `PongGameLogic`: Handles all game mechanics including:
      - Ball movement and physics
      - Collision detection (paddles, walls)
      - Scoring and win conditions
-     - Game state management
+     - In-memory game state management
+     - Final game state persistence
 
 3. **WebSocket Consumer** (`consumers.py`):
    - `PongConsumer`: Manages WebSocket connections, including:
@@ -53,15 +54,48 @@ The application follows a client-server architecture with WebSockets enabling bi
 
 ## Technical Implementation Details
 
-### Game State Synchronization
+### Game State Management
 
-The game implements a real-time synchronization system:
+The game implements an optimized state management system:
 
-1. Each client connects to the server via WebSockets
-2. Server assigns a client ID and associates the client with a game room
-3. Server manages the authoritative game state
-4. Game state updates are broadcast to clients at 60 FPS
-5. Clients render the game based on received state
+1. **In-Memory State**:
+   - Active game states are stored in memory using `PongGameLogic.active_games`
+   - This reduces database load during gameplay
+   - State updates happen at 30 FPS without database writes
+
+2. **Database State**:
+   - Initial game state is created in database when game starts
+   - Final game state is saved only when game ends
+   - Includes final scores, positions, and winner information
+
+3. **State Synchronization**:
+   - Server maintains authoritative game state in memory
+   - Clients receive state updates via WebSocket
+   - Paddle positions are updated immediately for responsiveness
+
+### Game Flow
+
+1. **Connection Phase**:
+   ```
+   Client connects → Server creates/joins game → Initial state sent to client
+   ```
+
+2. **Game Start**:
+   ```
+   Second player joins → Game marked as full → Game loop begins
+   ```
+
+3. **During Gameplay**:
+   ```
+   Game loop (30 FPS) → Update ball position → Check collisions → 
+   Update scores → Broadcast state to clients
+   ```
+
+4. **Game End**:
+   ```
+   Winner determined → Save final state to database → 
+   Clean up in-memory state → Notify clients
+   ```
 
 ### Physics System
 
@@ -83,7 +117,7 @@ The physics system manages:
 3. **Scoring**:
    - Detection when ball crosses boundaries
    - Score increment and ball reset
-   - Win condition checking
+   - Win condition checking (first to 5 points)
 
 ### Database Structure
 
@@ -169,8 +203,8 @@ The WebSocket implementation uses Django Channels:
                    )
                    break
                    
-               # 60 FPS update rate
-               await asyncio.sleep(1/60)
+               # 30 FPS update rate
+               await asyncio.sleep(1/30)
        except asyncio.CancelledError:
            pass
    ```
@@ -235,6 +269,7 @@ The game uses the HTML5 Canvas API for rendering:
 3. Players control their paddles using mouse movement
 4. Each time a player misses the ball, their opponent scores a point
 5. First player to reach 5 points wins the game
+6. Final game state is saved to database and in-memory state is cleaned up
 
 ### Position System
 
@@ -256,7 +291,7 @@ The game uses a percentage-based position system (0-100) for device-independent 
 
 1. **Client-Server Model**: Server is the source of truth
 2. **Paddle Positions**: Updated immediately on client for responsiveness, then verified by server
-3. **Game State**: Fully managed by server and broadcast to clients
+3. **Game State**: Managed in memory during gameplay, saved to database only at game end
 
 ## How to Run
 
@@ -298,6 +333,7 @@ Potential improvements for the game:
 2. **Client-side Prediction**: Improve perceived responsiveness with input prediction
 3. **Rate Limiting**: Protect against malicious clients
 4. **Session Recovery**: Ability to rejoin ongoing games after disconnection
+5. **State Persistence**: Save game state periodically for crash recovery
 
 ## Contributors
 
