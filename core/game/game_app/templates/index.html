@@ -316,7 +316,13 @@
         let accumulatedTime = 0;
         let isRendering = false;
         
-        // Update the drawGame function for better performance
+        // Add a predicted state object for smooth client-side movement
+        let predictedState = {
+            player1_position: 50,
+            player2_position: 50
+        };
+        
+        // Update the drawGame function to use predicted positions
         function drawGame(currentTime) {
             // Calculate delta time
             const deltaTime = currentTime - lastTime;
@@ -324,7 +330,6 @@
             
             // Skip frame if too much time has passed
             if (deltaTime > 100) {
-                lastRenderTime = currentTime;
                 requestNextFrame();
                 return;
             }
@@ -339,24 +344,36 @@
             const paddleHeight = (PADDLE_HEIGHT / 100) * canvasHeight;
             const ballSize = (BALL_SIZE / 100) * Math.min(canvasWidth, canvasHeight);
             
-            // Pre-calculate positions
+            // Use predicted positions for the current player's paddle
+            let p1Y, p2Y;
+            if (isPlayer1) {
+                p1Y = (predictedState.player1_position / 100) * canvasHeight;
+                p2Y = (gameState.player2_position / 100) * canvasHeight;
+            } else if (isPlayer2) {
+                p1Y = (gameState.player1_position / 100) * canvasHeight;
+                p2Y = (predictedState.player2_position / 100) * canvasHeight;
+            } else {
+                // For spectators, use the server state
+                p1Y = (gameState.player1_position / 100) * canvasHeight;
+                p2Y = (gameState.player2_position / 100) * canvasHeight;
+            }
+            
+            // Pre-calculate ball position
             const ballX = (gameState.ball_x / 100) * canvasWidth;
             const ballY = (gameState.ball_y / 100) * canvasHeight;
-            const p1Y = (gameState.player1_position / 100) * canvasHeight;
-            const p2Y = (gameState.player2_position / 100) * canvasHeight;
             
             // Draw paddles with optimized rendering
             ctx.fillStyle = "white";
             
-            // Draw paddles in a single batch
+            // Draw paddles using predicted positions
             ctx.fillRect(0, p1Y - paddleHeight/2, paddleWidth, paddleHeight);
             ctx.fillRect(canvasWidth - paddleWidth, p2Y - paddleHeight/2, paddleWidth, paddleHeight);
             
             // Optimize ball trail effect
             const currentSpeed = Math.sqrt(gameState.ball_dx * gameState.ball_dx + gameState.ball_dy * gameState.ball_dy);
             if (currentSpeed > 3) {
-                const trailLength = Math.min(currentSpeed * 1.2, 3); // Reduced trail length
-                ctx.globalAlpha = 0.15; // Reduced opacity
+                const trailLength = Math.min(currentSpeed * 1.2, 3);
+                ctx.globalAlpha = 0.15;
                 ctx.beginPath();
                 ctx.arc(ballX - (gameState.ball_dx * trailLength), ballY - (gameState.ball_dy * trailLength), ballSize * 0.8, 0, Math.PI * 2);
                 ctx.fill();
@@ -368,7 +385,7 @@
             ctx.arc(ballX, ballY, ballSize, 0, Math.PI * 2);
             ctx.fill();
             
-            // Draw center line only when needed
+            // Draw center line
             if (!isPaused) {
                 ctx.setLineDash([5, 5]);
                 ctx.beginPath();
@@ -389,28 +406,42 @@
             }
         }
         
-        // Update the updateGameState function for smoother movement
+        // Update the updateGameState function to reconcile server state with predicted state
         function updateGameState(state) {
-            // Keep track of previous positions for smooth animations
-            const prevPlayer1Position = gameState.player1_position;
-            const prevPlayer2Position = gameState.player2_position;
-            
-            // Update game state
+            // Update the game state from server
             gameState = state;
             
-            // Improved paddle movement smoothing with faster response
+            // Also update our predicted state based on server's authoritative state
             if (isPlayer1) {
-                const targetPosition = state.player1_position;
-                const currentPosition = prevPlayer1Position;
-                const diff = targetPosition - currentPosition;
-                gameState.player1_position = currentPosition + (diff * MOVEMENT_SMOOTHING);
-            }
-            
-            if (isPlayer2) {
-                const targetPosition = state.player2_position;
-                const currentPosition = prevPlayer2Position;
-                const diff = targetPosition - currentPosition;
-                gameState.player2_position = currentPosition + (diff * MOVEMENT_SMOOTHING);
+                // If we're player 1, update our prediction's player 2 position
+                predictedState.player2_position = state.player2_position;
+                
+                // Gently reconcile our predicted position with server's position to avoid jumps
+                const diff = state.player1_position - predictedState.player1_position;
+                if (Math.abs(diff) > 5) {
+                    // If too far off, snap to server position
+                    predictedState.player1_position = state.player1_position;
+                } else if (Math.abs(diff) > 0.1) {
+                    // Otherwise slowly correct
+                    predictedState.player1_position += diff * 0.3;
+                }
+            } else if (isPlayer2) {
+                // If we're player 2, update our prediction's player 1 position
+                predictedState.player1_position = state.player1_position;
+                
+                // Gently reconcile our predicted position with server's position
+                const diff = state.player2_position - predictedState.player2_position;
+                if (Math.abs(diff) > 5) {
+                    // If too far off, snap to server position
+                    predictedState.player2_position = state.player2_position;
+                } else if (Math.abs(diff) > 0.1) {
+                    // Otherwise slowly correct
+                    predictedState.player2_position += diff * 0.3;
+                }
+            } else {
+                // For spectators, just use the server state
+                predictedState.player1_position = state.player1_position;
+                predictedState.player2_position = state.player2_position;
             }
             
             // Determine if we're player1 or player2
@@ -419,10 +450,14 @@
                     console.log("I am Player 1");
                     isPlayer1 = true;
                     isPlayer2 = false;
+                    // Initialize predicted position
+                    predictedState.player1_position = state.player1_position;
                 } else if (clientId && state.player2_id === clientId) {
                     console.log("I am Player 2");
                     isPlayer1 = false;
                     isPlayer2 = true;
+                    // Initialize predicted position
+                    predictedState.player2_position = state.player2_position;
                 }
             }
             
@@ -530,36 +565,60 @@
             }
         });
         
-        // Update the keyboard controls for more responsive movement
+        // Update the keyboard controls for immediate local updates
         document.addEventListener('keydown', function(e) {
             if (isPaused || (!isPlayer1 && !isPlayer2)) {
                 return;
             }
             
-            let newPosition = isPlayer1 ? gameState.player1_position : gameState.player2_position;
-            
-            if (e.key.toLowerCase() === 'w') {
-                newPosition = Math.max(newPosition - PADDLE_SPEED, PADDLE_HEIGHT/2);
-            } else if (e.key.toLowerCase() === 's') {
-                newPosition = Math.min(newPosition + PADDLE_SPEED, 100 - PADDLE_HEIGHT/2);
-            } else {
-                return;
-            }
-            
-            // Update local position immediately for responsiveness
+            // Determine which paddle we're controlling
             if (isPlayer1) {
-                gameState.player1_position = newPosition;
+                if (e.key.toLowerCase() === 'w') {
+                    // Update predicted position immediately
+                    predictedState.player1_position = Math.max(predictedState.player1_position - PADDLE_SPEED, PADDLE_HEIGHT/2);
+                    
+                    // Send to server
+                    sendWsMessage({
+                        type: 'paddle_move',
+                        position: predictedState.player1_position
+                    });
+                } else if (e.key.toLowerCase() === 's') {
+                    // Update predicted position immediately
+                    predictedState.player1_position = Math.min(predictedState.player1_position + PADDLE_SPEED, 100 - PADDLE_HEIGHT/2);
+                    
+                    // Send to server
+                    sendWsMessage({
+                        type: 'paddle_move',
+                        position: predictedState.player1_position
+                    });
+                } else {
+                    return;
+                }
             } else if (isPlayer2) {
-                gameState.player2_position = newPosition;
+                if (e.key.toLowerCase() === 'w') {
+                    // Update predicted position immediately
+                    predictedState.player2_position = Math.max(predictedState.player2_position - PADDLE_SPEED, PADDLE_HEIGHT/2);
+                    
+                    // Send to server
+                    sendWsMessage({
+                        type: 'paddle_move',
+                        position: predictedState.player2_position
+                    });
+                } else if (e.key.toLowerCase() === 's') {
+                    // Update predicted position immediately
+                    predictedState.player2_position = Math.min(predictedState.player2_position + PADDLE_SPEED, 100 - PADDLE_HEIGHT/2);
+                    
+                    // Send to server
+                    sendWsMessage({
+                        type: 'paddle_move',
+                        position: predictedState.player2_position
+                    });
+                } else {
+                    return;
+                }
             }
             
-            // Send paddle position to server
-            sendWsMessage({
-                type: 'paddle_move',
-                position: newPosition
-            });
-            
-            // Force immediate redraw
+            // Force immediate redraw with predicted positions
             if (!isRendering) {
                 isRendering = true;
                 drawGame(performance.now());
