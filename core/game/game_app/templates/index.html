@@ -281,16 +281,7 @@
                 return;
             }
             
-            // If the game is paused...
-            
-            // If the player is on the right side (Player 2), prevent resume action
-            if (isPlayer2) {
-                console.log("Right side player cannot resume the game!");
-                e.preventDefault();
-                return false;
-            }
-            
-            // If client is not the one who paused, prevent resume
+            // If the game is paused, only the player who paused can resume it
             if (clientId !== pausedByClientId) {
                 console.log("Cannot resume - only the player who paused can resume!");
                 e.preventDefault();
@@ -487,7 +478,7 @@
         
         socket.onmessage = function(event) {
             const data = JSON.parse(event.data);
-            console.log("Received 11:", data);
+            console.log("Received:", data);
             
             // Handle different message types
             switch(data.type) {
@@ -495,7 +486,7 @@
                     if (data.client_id) {
                         clientId = data.client_id;
                     }
-                    console.log("Updating game state net:", data.state.player1_position, data.state.player2_position);
+                    console.log("Updating game state:", data.state.player1_position, data.state.player2_position);
                     updateGameState(data.state);
                     // Enable pause button when game starts
                     if (!isGameStarted && data.state.is_full) {
@@ -521,11 +512,34 @@
                     isPaused = data.paused;
                     pausedByClientId = data.pausedByClientId;
                     remainingPauseTime = data.remainingTime;
+                    const isAutoResumed = data.autoResumed || false;
 
-                    if (isPaused && clientId !== pausedByClientId) {
-                        startPauseTimer();
-                    } else if (!isPaused) {
+                    if (isAutoResumed && !isPaused) {
+                        // Game was auto-resumed after timeout
+                        const chatBox = document.getElementById("chat-box");
+                        chatBox.innerHTML += `<p><em>Game automatically resumed after 30 second timeout</em></p>`;
+                        chatBox.scrollTop = chatBox.scrollHeight;
+                    }
+
+                    if (isPaused) {
+                        // Stop animation if game is paused
+                        if (animationFrameId) {
+                            cancelAnimationFrame(animationFrameId);
+                            animationFrameId = null;
+                        }
+                        
+                        // Start the pause timer for everyone except the person who paused
+                        if (clientId !== pausedByClientId) {
+                            startPauseTimer();
+                        }
+                    } else {
+                        // Clear timer when game is resumed
                         clearPauseTimer();
+                        
+                        // Restart animation
+                        if (!animationFrameId && isGameStarted) {
+                            animationFrameId = requestAnimationFrame(drawGame);
+                        }
                     }
 
                     updatePauseButtonState();
@@ -707,15 +721,47 @@
 
             if (pauseTimer) {
                 clearInterval(pauseTimer);
+                pauseTimer = null;
             }
 
             pauseTimer = setInterval(() => {
                 remainingPauseTime--;
                 updatePauseButtonState();
+                updateGameStatus();
 
+                // When timer reaches zero, auto-resume regardless of who paused
                 if (remainingPauseTime <= 0) {
-                    if (clientId === pausedByClientId) {
-                        togglePause();
+                    clearInterval(pauseTimer);
+                    pauseTimer = null;
+                    
+                    // Only auto-resume if the game is still paused
+                    if (isPaused) {
+                        // Store who paused for logging
+                        const pausedBy = pausedByClientId;
+                        
+                        // Reset paused state
+                        isPaused = false;
+                        pausedByClientId = null;
+                        
+                        // Send auto-resume message to server
+                        sendWsMessage({
+                            type: 'toggle_pause',
+                            paused: false,
+                            pausedByClientId: null,
+                            remainingTime: 0,
+                            autoResumed: true
+                        });
+                        
+                        console.log(`Game auto-resumed after 30s timeout (originally paused by ${pausedBy})`);
+                        
+                        // Start animation again
+                        if (!animationFrameId && isGameStarted) {
+                            animationFrameId = requestAnimationFrame(drawGame);
+                        }
+                        
+                        // Update UI
+                        updatePauseButtonState();
+                        updateGameStatus();
                     }
                 }
             }, 1000);
@@ -740,27 +786,18 @@
             }
 
             if (isPaused) {
-                // Always disable resume for Player 2 (right side)
-                if (isPlayer2) {
-                    pauseButton.textContent = `Resuming in ${remainingPauseTime}s`;
-                    pauseButton.disabled = true;
-                    pauseButton.style.cursor = 'not-allowed';
-                    pauseButton.classList.add('paused');
-                }
-                // Enable for the player who paused (if they're not Player 2)
-                else if (clientId === pausedByClientId) {
+                // Show resume button only for the player who paused
+                if (clientId === pausedByClientId) {
                     pauseButton.textContent = `Resume Game (${remainingPauseTime}s)`;
                     pauseButton.disabled = false;
                     pauseButton.style.cursor = 'pointer';
-                    pauseButton.classList.add('paused');
-                } 
-                // Disable for the player who didn't pause
-                else {
+                } else {
+                    // For other players, show countdown but disable the button
                     pauseButton.textContent = `Resuming in ${remainingPauseTime}s`;
                     pauseButton.disabled = true;
                     pauseButton.style.cursor = 'not-allowed';
-                    pauseButton.classList.add('paused');
                 }
+                pauseButton.classList.add('paused');
             } else {
                 pauseButton.textContent = 'Pause Game';
                 pauseButton.classList.remove('paused');
@@ -772,10 +809,7 @@
         function updateGameStatus() {
             const statusElement = document.getElementById("game-status");
             if (isPaused) {
-                if (isPlayer2) {
-                    // Clear message for Player 2 that they cannot resume
-                    statusElement.innerText = `Game paused. Only your opponent can resume.`;
-                } else if (clientId === pausedByClientId) {
+                if (clientId === pausedByClientId) {
                     statusElement.innerText = `You paused the game. Click 'Resume' or wait ${remainingPauseTime}s for auto-resume.`;
                 } else {
                     statusElement.innerText = `Game paused by opponent. Resuming in ${remainingPauseTime}s...`;
@@ -801,15 +835,9 @@
         function togglePause() {
             console.log('Toggling pause', { isPaused, pausedByClientId, clientId });
             
-            // We should not need this check here since it's handled by the click handler
-            // but keeping it as an extra safety measure
+            // When trying to resume, only the player who paused can do it
             if (isPaused && clientId !== pausedByClientId) {
                 console.log("Only the client who paused can resume!");
-                return;
-            }
-
-            if (isPaused && isPlayer2) {
-                console.log("Player 2 cannot resume the game!");
                 return;
             }
 
@@ -825,6 +853,11 @@
             } else {
                 pausedByClientId = null;
                 clearPauseTimer();
+                
+                // If we're resuming, start the animation again
+                if (isGameStarted && !animationFrameId) {
+                    animationFrameId = requestAnimationFrame(drawGame);
+                }
             }
 
             // Use the enhanced send function

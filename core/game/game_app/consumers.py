@@ -58,27 +58,37 @@ class PongConsumer(AsyncWebsocketConsumer):
             del self.game_tasks[self.room_name]
 
     async def receive(self, text_data):
+        """Receive message from WebSocket."""
         data = json.loads(text_data)
         message_type = data.get('type', '')
         
         if message_type == 'paddle_move':
             # Only process paddle moves if game is not paused
             if self.room_name not in self.paused_games:
+                # Handle paddle movement
                 position = data.get('position', 50)
-                state = await PongGameLogic.update_paddle_position(
-                    self.room_name, self.client_id, position
-                )
+                state = await PongGameLogic.update_paddle_position(self.room_name, self.client_id, position)
+                
+                # Send updated state to the group
                 await self.channel_layer.group_send(
                     self.room_group_name,
                     {
                         'type': 'game_state_update',
-                        'state': state
+                        'state': state,
+                        'client_id': self.client_id
                     }
                 )
         elif message_type == 'toggle_pause':
+            # Handle pause/resume
             is_paused = data.get('paused', False)
             paused_by = data.get('pausedByClientId', None)
             remaining_time = data.get('remainingTime', 30)
+            auto_resumed = data.get('autoResumed', False)
+            
+            # Log the action
+            action = "paused" if is_paused else "resumed"
+            auto_str = " (auto)" if auto_resumed else ""
+            print(f"Game {action}{auto_str} by {self.client_id if is_paused else paused_by}, room: {self.room_name}")
             
             # Broadcast pause state to all clients
             await self.channel_layer.group_send(
@@ -87,7 +97,8 @@ class PongConsumer(AsyncWebsocketConsumer):
                     'type': 'game_paused',
                     'paused': is_paused,
                     'pausedByClientId': paused_by,
-                    'remainingTime': remaining_time
+                    'remainingTime': remaining_time,
+                    'autoResumed': auto_resumed
                 }
             )
             
@@ -190,7 +201,8 @@ class PongConsumer(AsyncWebsocketConsumer):
             'type': 'game_paused',
             'paused': event['paused'],
             'pausedByClientId': event['pausedByClientId'],
-            'remainingTime': event['remainingTime']
+            'remainingTime': event['remainingTime'],
+            'autoResumed': event.get('autoResumed', False)
         }))
 
     @sync_to_async
