@@ -12,7 +12,11 @@ PADDLE_HEIGHT = 15
 PADDLE_WIDTH = 2
 BALL_SIZE = 2
 WINNING_SCORE = 5
-BALL_SPEED_INCREMENT = 0.1
+INITIAL_BALL_SPEED = 0.5  # Initial ball speed
+BALL_SPEED_INCREMENT = 0.5  # How much to increase speed on paddle hit
+MAX_BALL_SPEED = 8.0  # Maximum ball speed
+FPS = 60  # Target frames per second
+TIME_STEP = 1.0 / FPS  # Time step for physics calculations
 
 
 class PongGameLogic:
@@ -33,8 +37,8 @@ class PongGameLogic:
             PongGameLogic.active_games[room_name] = {
                 'ball_x': 50.0,
                 'ball_y': 50.0,
-                'ball_dx': 1.5 if random.random() > 0.5 else -1.5,
-                'ball_dy': 1.5 if random.random() > 0.5 else -1.5,
+                'ball_dx': INITIAL_BALL_SPEED if random.random() > 0.5 else -INITIAL_BALL_SPEED,
+                'ball_dy': INITIAL_BALL_SPEED if random.random() > 0.5 else -INITIAL_BALL_SPEED,
                 'player1_position': 50.0,
                 'player2_position': 50.0,
                 'player1_score': 0,
@@ -75,8 +79,8 @@ class PongGameLogic:
     def _initialize_game_state(game):
         """Initialize the game state for a new game."""
         # Create initial state with random ball direction
-        dx = 1.5 if random.random() > 0.5 else -1.5
-        dy = 1.5 if random.random() > 0.5 else -1.5
+        dx = INITIAL_BALL_SPEED if random.random() > 0.5 else -INITIAL_BALL_SPEED
+        dy = INITIAL_BALL_SPEED if random.random() > 0.5 else -INITIAL_BALL_SPEED
         
         GameState.objects.create(
             game=game,
@@ -173,17 +177,25 @@ class PongGameLogic:
         if (ball_x <= PADDLE_WIDTH and 
             ball_y >= player1_pos - PADDLE_HEIGHT/2 and 
             ball_y <= player1_pos + PADDLE_HEIGHT/2):
-            ball_dx = abs(ball_dx) + BALL_SPEED_INCREMENT  # Bounce right and increase speed
+            # Calculate current speed
+            current_speed = abs(ball_dx)
+            # Increase speed but cap it
+            new_speed = min(current_speed + BALL_SPEED_INCREMENT, MAX_BALL_SPEED)
+            ball_dx = new_speed  # Bounce right
             relative_intersect = (player1_pos - ball_y) / (PADDLE_HEIGHT/2)
-            ball_dy = -relative_intersect * abs(ball_dx)
+            ball_dy = -relative_intersect * new_speed
         
         # Check for paddle collisions (right paddle - player 2)
         if (ball_x >= CANVAS_WIDTH - PADDLE_WIDTH and 
             ball_y >= player2_pos - PADDLE_HEIGHT/2 and 
             ball_y <= player2_pos + PADDLE_HEIGHT/2):
-            ball_dx = -abs(ball_dx) - BALL_SPEED_INCREMENT  # Bounce left and increase speed
+            # Calculate current speed
+            current_speed = abs(ball_dx)
+            # Increase speed but cap it
+            new_speed = min(current_speed + BALL_SPEED_INCREMENT, MAX_BALL_SPEED)
+            ball_dx = -new_speed  # Bounce left
             relative_intersect = (player2_pos - ball_y) / (PADDLE_HEIGHT/2)
-            ball_dy = -relative_intersect * abs(ball_dx)
+            ball_dy = -relative_intersect * new_speed
         
         # Check if ball goes out of bounds (scoring)
         scored = False
@@ -198,8 +210,9 @@ class PongGameLogic:
         if scored:
             ball_x = 50.0
             ball_y = 50.0
-            ball_dx = 1.5 if random.random() > 0.5 else -1.5
-            ball_dy = 1.5 if random.random() > 0.5 else -1.5
+            # Reset to initial speed with random direction
+            ball_dx = INITIAL_BALL_SPEED if random.random() > 0.5 else -INITIAL_BALL_SPEED
+            ball_dy = INITIAL_BALL_SPEED if random.random() > 0.5 else -INITIAL_BALL_SPEED
         
         # Check for game end
         winner_id = None
