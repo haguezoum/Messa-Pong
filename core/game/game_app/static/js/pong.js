@@ -171,16 +171,14 @@ function drawGame(currentTime) {
     ctx.arc(ballX, ballY, ballSize, 0, Math.PI * 2);
     ctx.fill();
     
-    // Draw center line
-    if (!isPaused) {
-        ctx.setLineDash([5, 5]);
-        ctx.beginPath();
-        ctx.moveTo(canvasWidth / 2, 0);
-        ctx.lineTo(canvasWidth / 2, canvasHeight);
-        ctx.strokeStyle = "white";
-        ctx.stroke();
-        ctx.setLineDash([]);
-    }
+    // Draw center line - Always draw regardless of pause state
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    ctx.moveTo(canvasWidth / 2, 0);
+    ctx.lineTo(canvasWidth / 2, canvasHeight);
+    ctx.strokeStyle = "white";
+    ctx.stroke();
+    ctx.setLineDash([]);
     
     requestNextFrame();
 }
@@ -388,7 +386,7 @@ document.addEventListener('keydown', function(e) {
             
             // Send to server
             sendWsMessage({
-        type: 'paddle_move',
+                type: 'paddle_move',
                 position: predictedState.player1_position
             });
         } else if (e.key.toLowerCase() === 's') {
@@ -422,7 +420,7 @@ document.addEventListener('keydown', function(e) {
                 type: 'paddle_move',
                 position: predictedState.player2_position
             });
-    } else {
+        } else {
             return;
         }
     }

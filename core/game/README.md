@@ -2,9 +2,67 @@
 
 A real-time multiplayer Pong game built with Django Channels and WebSockets.
 
+## Table of Contents
+- [Overview](#overview)
+- [Project Structure](#project-structure)
+- [Architecture](#architecture)
+  - [Backend Components](#backend-components)
+  - [Frontend Components](#frontend-components)
+- [Technical Implementation Details](#technical-implementation-details)
+  - [Game State Management](#game-state-management)
+  - [Game Flow](#game-flow)
+  - [Physics System](#physics-system)
+  - [Database Structure](#database-structure)
+  - [WebSocket Implementation](#websocket-implementation)
+  - [Front-end Rendering](#front-end-rendering)
+- [Game Mechanics](#game-mechanics)
+- [Code Organization](#code-organization)
+- [How to Run](#how-to-run)
+- [Bug Fixes](#bug-fixes)
+- [Future Improvements](#future-improvements)
+- [Technical Optimizations](#technical-optimizations)
+- [Game Pause Functionality](#game-pause-functionality)
+- [Contributors](#contributors)
+
 ## Overview
 
 This project implements a classic Pong game where two players can compete in real-time using WebSockets for communication. The game features a full physics system, score tracking, game rooms, pause/resume functionality, and a chat system - all synchronized across different clients.
+
+## Project Structure
+
+The project follows a standard Django structure with additional organization for the game components:
+
+```
+core/game/
+│
+├── game_app/                     # Main Django application
+│   ├── migrations/               # Database migrations
+│   │   └── 0001_initial.py      # Initial migration
+│   │
+│   ├── static/                   # Static assets
+│   │   ├── css/                  # CSS files
+│   │   │   └── pong.css          # Game styles
+│   │   └── js/                   # JavaScript files
+│   │       └── pong.js           # Game logic and WebSocket handling
+│   │
+│   ├── templates/                # HTML templates
+│   │   └── index.html            # Main game page
+│   │
+│   ├── __init__.py
+│   ├── admin.py                  # Django admin configuration
+│   ├── apps.py                   # Django application configuration
+│   ├── consumers.py              # WebSocket consumers
+│   ├── game_logic.py             # Game physics and logic
+│   ├── models.py                 # Database models
+│   ├── routing.py                # WebSocket routing
+│   ├── tests.py                  # Tests
+│   ├── urls.py                   # URL routing
+│   └── views.py                  # HTTP views
+│
+├── manage.py                     # Django management script
+├── db.sqlite3                    # SQLite database
+└── README.md                     # Project documentation
+```
 
 ## Architecture
 
@@ -38,29 +96,20 @@ The application follows a client-server architecture with WebSockets enabling bi
 
 ### Frontend Components
 
-1. **HTML** (`templates/index.html`):
+1. **HTML/CSS** (`templates/index.html`, `static/css/pong.css`):
    - Game canvas for rendering
    - Score display
    - Status indicators
    - Chat interface
    - Responsive design
 
-2. **CSS** (`static/css/pong.css`):
-   - Game styling
-   - Canvas border styling
-   - Score display styling
-   - Chat interface styling
-   - Pause button styling
-   - Responsive design rules
-
-3. **JavaScript** (`static/js/pong.js`):
+2. **JavaScript** (`static/js/pong.js`):
    - WebSocket connection management
    - Game state handling
    - Canvas rendering
-   - Input handling (keyboard events for paddle control)
+   - Input handling (keyboard controls for paddle movement)
    - Chat functionality
-   - Pause/resume functionality
-   - Client-side prediction for responsive gameplay
+   - Client-side prediction for responsive controls
 
 ## Technical Implementation Details
 
@@ -84,6 +133,8 @@ The game implements an optimized state management system:
    - Paddle positions are updated immediately for responsiveness
 
 ### Game Flow
+
+The game follows a well-defined lifecycle:
 
 1. **Connection Phase**:
    ```
@@ -137,6 +188,8 @@ The physics system manages:
 
 ### Database Structure
 
+The game uses two primary models to track game state:
+
 1. **Game Model**:
    ```python
    class Game(models.Model):
@@ -166,7 +219,7 @@ The physics system manages:
 
 ### WebSocket Implementation
 
-The WebSocket implementation uses Django Channels:
+The WebSocket implementation uses Django Channels to enable real-time communication:
 
 1. **Connection Handling**:
    ```python
@@ -184,11 +237,14 @@ The WebSocket implementation uses Django Channels:
    ```
 
 2. **Message Types**:
-   - `game_state`: Updates to the game state
-   - `paddle_move`: Player paddle movement
-   - `chat`: Chat messages
-   - `player_joined`: New player joined notification
-   - `game_over`: Game end notification
+   | Type | Purpose |
+   |------|---------|
+   | `game_state` | Updates to the game state |
+   | `paddle_move` | Player paddle movement |
+   | `chat` | Chat messages |
+   | `player_joined` | New player joined notification |
+   | `game_over` | Game end notification |
+   | `game_paused` | Game pause state notification |
 
 3. **Game Loop**:
    ```python
@@ -227,82 +283,86 @@ The WebSocket implementation uses Django Channels:
 
 ### Front-end Rendering
 
-The game uses the HTML5 Canvas API for rendering:
+The game uses the HTML5 Canvas API for rendering with optimized performance:
 
 1. **Drawing Function**:
    ```javascript
-   function drawGame() {
+   function drawGame(currentTime) {
+       // Calculate delta time for smooth animation
+       const deltaTime = currentTime - lastTime;
+       lastTime = currentTime;
+       
        // Clear canvas
        ctx.clearRect(0, 0, canvas.width, canvas.height);
        
-       // Convert percentage to actual canvas coordinates
-       const ballX = (gameState.ball_x / 100) * canvas.width;
-       const ballY = (gameState.ball_y / 100) * canvas.height;
-       const p1Y = (gameState.player1_position / 100) * canvas.height;
-       const p2Y = (gameState.player2_position / 100) * canvas.height;
+       // Pre-calculate all dimensions once
+       const canvasWidth = canvas.width;
+       const canvasHeight = canvas.height;
+       const paddleWidth = (PADDLE_WIDTH / 100) * canvasWidth;
+       const paddleHeight = (PADDLE_HEIGHT / 100) * canvasHeight;
+       
+       // Use predicted positions for paddles
+       let p1Y = (predictedState.player1_position / 100) * canvasHeight;
+       let p2Y = (predictedState.player2_position / 100) * canvasHeight;
+       
+       // Calculate ball position
+       const ballX = (gameState.ball_x / 100) * canvasWidth;
+       const ballY = (gameState.ball_y / 100) * canvasHeight;
        
        // Draw paddles and ball
        ctx.fillStyle = "white";
        ctx.fillRect(0, p1Y - paddleHeight/2, paddleWidth, paddleHeight);
-       ctx.fillRect(canvas.width - paddleWidth, p2Y - paddleHeight/2, paddleWidth, paddleHeight);
+       ctx.fillRect(canvasWidth - paddleWidth, p2Y - paddleHeight/2, paddleWidth, paddleHeight);
        
        ctx.beginPath();
        ctx.arc(ballX, ballY, ballSize, 0, Math.PI * 2);
        ctx.fill();
        
-       // Draw center line
+       // Draw center line (visible in all game states)
        ctx.setLineDash([5, 5]);
        ctx.beginPath();
-       ctx.moveTo(canvas.width / 2, 0);
-       ctx.lineTo(canvas.width / 2, canvas.height);
+       ctx.moveTo(canvasWidth / 2, 0);
+       ctx.lineTo(canvasWidth / 2, canvasHeight);
        ctx.strokeStyle = "white";
        ctx.stroke();
+       ctx.setLineDash([]);
    }
    ```
 
-2. **Input Handling**:
+2. **Animation Loop**:
    ```javascript
-   canvas.addEventListener('mousemove', function(e) {
-       if (isPlayer1 || isPlayer2) {
-           const rect = canvas.getBoundingClientRect();
-           const mouseY = e.clientY - rect.top;
-           const paddlePosition = (mouseY / canvas.height) * 100;
-           
-           socket.send(JSON.stringify({
-               type: 'paddle_move',
-               position: paddlePosition
-           }));
+   function requestNextFrame() {
+       if (!isPaused && isGameStarted) {
+           animationFrameId = requestAnimationFrame(drawGame);
        }
+   }
+   ```
+
+3. **Input Handling**:
+   ```javascript
+   document.addEventListener('keydown', function(e) {
+       if (isPaused || (!isPlayer1 && !isPlayer2)) {
+           return;
+       }
+       
+       if (isPlayer1) {
+           if (e.key.toLowerCase() === 'w') {
+               // Update predicted position immediately
+               predictedState.player1_position = Math.max(
+                   predictedState.player1_position - PADDLE_SPEED, 
+                   PADDLE_HEIGHT/2
+               );
+               
+               // Send to server
+               sendWsMessage({
+                   type: 'paddle_move',
+                   position: predictedState.player1_position
+               });
+           }
+       }
+       // ... similar code for other keys and Player 2
    });
    ```
-
-### Code Organization
-
-The frontend code is organized following separation of concerns principles:
-
-1. **File Structure**:
-   ```
-   core/game/game_app/
-   ├── templates/
-   │   └── index.html         # Main HTML structure
-   ├── static/
-   │   ├── css/
-   │   │   └── pong.css       # All styling rules
-   │   └── js/
-   │       └── pong.js        # Game logic and interactivity
-   ```
-
-2. **Separation Benefits**:
-   - **Maintainability**: Each file has a single responsibility, making updates easier
-   - **Caching**: Browser can cache static files separately, improving load times
-   - **Readability**: Smaller, focused files are easier to understand
-   - **Development**: Allows multiple developers to work on different aspects simultaneously
-
-3. **Code Modularization**:
-   - HTML focuses on structure and content only
-   - CSS handles all visual styling and animations
-   - JavaScript manages all game logic, WebSocket communication, and interactivity
-   - Client-side prediction implemented in JavaScript for responsive gameplay
 
 ## Game Mechanics
 
@@ -310,7 +370,7 @@ The frontend code is organized following separation of concerns principles:
 
 1. A player enters the game and is assigned to a room
 2. When a second player joins, the game starts automatically
-3. Players control their paddles using mouse movement
+3. Players control their paddles using 'W' (up) and 'S' (down) keys
 4. Each time a player misses the ball, their opponent scores a point
 5. First player to reach 5 points wins the game
 6. Final game state is saved to database and in-memory state is cleaned up
@@ -337,27 +397,76 @@ The game uses a percentage-based position system (0-100) for device-independent 
 2. **Paddle Positions**: Updated immediately on client for responsiveness, then verified by server
 3. **Game State**: Managed in memory during gameplay, saved to database only at game end
 
+## Code Organization
+
+The codebase follows a clean separation of concerns for better maintainability:
+
+1. **Static Assets Structure**:
+   - CSS files in `static/css/` directory:
+     - `pong.css`: Contains all styles for the game interface
+   - JavaScript files in `static/js/` directory:
+     - `pong.js`: Contains all game logic and WebSocket handling
+
+2. **Rendering Optimizations**:
+   - Center line is always drawn regardless of game state for consistency
+   - Paddle positions use client-side prediction for smoother movement
+   - Ball trail effect is dynamically adjusted based on speed
+   - All animations use `requestAnimationFrame` for optimal performance
+
+3. **Template Structure**:
+   - Main HTML file (`templates/index.html`) contains minimal markup
+   - External CSS and JS files are loaded using Django's `{% static %}` template tag
+   - Game interface is structured with semantic HTML for better accessibility
+
 ## How to Run
 
-1. Ensure Django and Channels are installed:
+Follow these steps to set up and run the game locally:
+
+1. **Clone the repository**:
+   ```bash
+   git clone <repository-url>
+   cd ft_transcendence/core/game
    ```
+
+2. **Set up a virtual environment** (optional but recommended):
+   ```bash
+   python -m venv venv
+   # On Windows
+   venv\Scripts\activate
+   # On macOS/Linux
+   source venv/bin/activate
+   ```
+
+3. **Install dependencies**:
+   ```bash
    pip install django channels
    ```
 
-2. Apply database migrations:
-   ```
+4. **Apply database migrations**:
+   ```bash
    python manage.py makemigrations game_app
    python manage.py migrate
    ```
 
-3. Run the development server:
-   ```
+5. **Run the development server**:
+   ```bash
    python manage.py runserver
    ```
 
-4. Access the game at `http://localhost:8000/`
+6. **Access the game**:
+   - Open your browser and navigate to `http://localhost:8000/`
+   - To play with a friend, share the game URL with the same room name parameter
+   - Example: `http://localhost:8000/?room=game123`
 
-5. To play with a friend, share the game URL with the same room name parameter
+## Bug Fixes
+
+Recent fixes include:
+
+1. **Center Line Display**: The dashed center line now remains visible when the game is paused, ensuring visual consistency throughout all game states.
+
+2. **Pause State Visual Feedback**: Improved visual indicators for the pause state to make it clear which player paused the game and who can resume it.
+
+3. **Code Organization**: Separated CSS and JavaScript from the HTML file into dedicated files for better maintainability and performance.
 
 ## Future Improvements
 
@@ -379,11 +488,7 @@ Potential improvements for the game:
 4. **Session Recovery**: Ability to rejoin ongoing games after disconnection
 5. **State Persistence**: Save game state periodically for crash recovery
 
-## Contributors
-
-This Pong game implementation was created as part of the ft_transcendence project. 
-
-### Game Pause Functionality
+## Game Pause Functionality
 
 The game implements a robust pause/resume system with the following features:
 
@@ -443,3 +548,7 @@ The game implements a robust pause/resume system with the following features:
    - All state changes are broadcast to maintain consistency
 
 This pause system ensures fair gameplay by preventing unexpected interruptions while still allowing for necessary breaks. The auto-resume feature prevents games from being indefinitely paused.
+
+## Contributors
+
+This Pong game implementation was created as part of the ft_transcendence project.
