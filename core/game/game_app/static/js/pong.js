@@ -364,8 +364,19 @@ window.addEventListener('focus', function() {
     canvas.focus();
 });
 
-document.addEventListener('click', function() {
+document.addEventListener('click', function(e) {
     console.log("Document clicked");
+    // Only focus canvas if the click wasn't on the chat input or its container
+    const chatInput = document.getElementById("chat-message");
+    const chatButton = document.querySelector(".chat-input button");
+    const chatContainer = document.querySelector(".chat-input");
+    
+    // Skip setting focus if clicking on chat elements
+    if (e.target === chatInput || e.target === chatButton || e.target === chatContainer) {
+        console.log("Chat element clicked, not changing focus");
+        return;
+    }
+    
     if (document.activeElement !== canvas) {
         console.log("Canvas not focused, setting focus");
         canvas.focus();
@@ -374,6 +385,11 @@ document.addEventListener('click', function() {
 
 // Update the keyboard controls for immediate local updates
 document.addEventListener('keydown', function(e) {
+    // Don't process game controls if typing in chat
+    if (document.activeElement === document.getElementById("chat-message")) {
+        return; // Let the chat input handle the key event
+    }
+    
     if (isPaused || (!isPlayer1 && !isPlayer2)) {
         return;
     }
@@ -506,6 +522,23 @@ document.getElementById("chat-message").addEventListener("keydown", function(e) 
     if (e.key === "Enter") {
         sendChatMessage();
     }
+});
+
+// Add specific handler for the chat input to prevent issues with focus
+document.getElementById("chat-message").addEventListener("click", function(e) {
+    // Stop event propagation to prevent document click handler from firing
+    e.stopPropagation();
+});
+
+document.getElementById("chat-message").addEventListener("focus", function(e) {
+    // Prevent the canvas focus code from interfering
+    e.stopPropagation();
+    console.log("Chat input focused");
+});
+
+// Also make sure the send button doesn't cause focus issues
+document.querySelector(".chat-input button").addEventListener("click", function(e) {
+    e.stopPropagation();
 });
 
 function startPauseTimer() {

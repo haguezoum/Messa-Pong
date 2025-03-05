@@ -364,6 +364,44 @@ The game uses the HTML5 Canvas API for rendering with optimized performance:
    });
    ```
 
+4. **Chat Functionality**:
+   ```javascript
+   // Function to send chat messages
+   function sendChatMessage() {
+       const input = document.getElementById("chat-message");
+       const message = input.value.trim();
+       
+       if (message) {
+           sendWsMessage({
+               type: 'chat',
+               message: message
+           });
+           
+           input.value = "";
+       }
+   }
+   
+   // Handling received chat messages
+   function handleChatMessage(data) {
+       const isMe = data.client_id === clientId;
+       const chatBox = document.getElementById("chat-box");
+       chatBox.innerHTML += `<p><strong>${isMe ? 'You' : 'Opponent'}</strong>: ${data.message}</p>`;
+       chatBox.scrollTop = chatBox.scrollHeight;
+   }
+   
+   // Smart focus management between game and chat
+   document.addEventListener('click', function(e) {
+       // Skip setting focus to canvas if clicking on chat elements
+       if (e.target === chatInput || e.target === chatButton) {
+           return;
+       }
+       
+       if (document.activeElement !== canvas) {
+           canvas.focus();
+       }
+   });
+   ```
+
 ## Game Mechanics
 
 ### Game Flow
@@ -467,6 +505,8 @@ Recent fixes include:
 2. **Pause State Visual Feedback**: Improved visual indicators for the pause state to make it clear which player paused the game and who can resume it.
 
 3. **Code Organization**: Separated CSS and JavaScript from the HTML file into dedicated files for better maintainability and performance.
+
+4. **Chat Input Focus**: Fixed an issue where players couldn't click once on the chat input to type messages. Previously, keyboard events were being captured by the game canvas, requiring users to hold down the mouse button while typing. The fix ensures proper focus handling between game controls and chat interface.
 
 ## Future Improvements
 
