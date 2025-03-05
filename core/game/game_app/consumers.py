@@ -38,7 +38,6 @@ class PongConsumer(AsyncWebsocketConsumer):
             self.game_tasks[self.room_name] = asyncio.create_task(self.game_loop())
             
         # Notify all clients about the player joining
-        print('player_joined (1)', self.client_id, game_state)
         await self.channel_layer.group_send(
             self.room_group_name,
             {
@@ -166,8 +165,6 @@ class PongConsumer(AsyncWebsocketConsumer):
         """Handle player joined event."""
         client_id = event.get('client_id', '')
         state = event.get('state', {})
-
-        print('player_joined (2)', client_id, state)
         
         await self.send(text_data=json.dumps({
             'type': 'player_joined',
