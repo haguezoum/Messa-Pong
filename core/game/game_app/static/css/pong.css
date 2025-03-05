@@ -1,0 +1,167 @@
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    background-color: #121212;
+    color: white;
+}
+
+.game-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+canvas {
+    border: 2px solid white;
+    background-color: #000;
+    margin-bottom: 10px;
+    outline: none; /* Remove default focus outline */
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+canvas:focus {
+    border-color: #4CAF50; /* Green border when focused */
+    box-shadow: 0 0 10px rgba(76, 175, 80, 0.7); /* Glow effect */
+}
+
+.score-board {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin-bottom: 10px;
+    font-size: 24px;
+}
+
+.score {
+    margin: 0 20px;
+    padding: 5px 15px;
+    background-color: #333;
+    border-radius: 5px;
+}
+
+.controls {
+    margin-bottom: 15px;
+}
+
+.status {
+    margin-bottom: 15px;
+    font-size: 18px;
+    color: #ccc;
+}
+
+.chat-container {
+    width: 100%;
+    max-width: 600px;
+    margin-top: 20px;
+}
+
+.chat-messages {
+    height: 150px;
+    overflow-y: auto;
+    margin-bottom: 10px;
+    padding: 10px;
+    background-color: #1e1e1e;
+    border-radius: 5px;
+}
+
+.chat-input {
+    display: flex;
+    width: 100%;
+}
+
+#chat-message {
+    flex-grow: 1;
+    padding: 8px;
+    margin-right: 5px;
+    background-color: #333;
+    color: white;
+    border: none;
+    border-radius: 3px;
+}
+
+button {
+    padding: 8px 15px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #3e8e41;
+}
+
+.game-controls {
+    margin: 10px 0;
+}
+
+#pauseButton {
+    padding: 10px 20px;
+    font-size: 16px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    min-width: 200px;
+    transition: all 0.3s ease;
+}
+
+#pauseButton:disabled {
+    background-color: #cccccc !important;
+    cursor: not-allowed !important;
+    opacity: 0.7;
+    color: #888888;
+    box-shadow: none;
+}
+
+#pauseButton.paused {
+    background-color: #f44336;
+}
+
+#pauseButton:hover:not(:disabled) {
+    opacity: 0.9;
+    transform: scale(1.02);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.game-settings {
+    margin-top: 10px;
+    margin-bottom: 15px;
+    background-color: #1e1e1e;
+    padding: 10px;
+    border-radius: 5px;
+    text-align: center;
+}
+
+#paddleSpeedSlider {
+    margin-top: 5px;
+    margin-bottom: 10px;
+}
+
+.toggle-container {
+    margin-top: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}
+
+.toggle-button {
+    padding: 5px 15px;
+    border-radius: 15px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.toggle-button.enabled {
+    background-color: #4CAF50;
+}
+
+.toggle-button.disabled {
+    background-color: #f44336;
+} 

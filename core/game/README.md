@@ -22,7 +22,7 @@ The application follows a client-server architecture with WebSockets enabling bi
      - Collision detection (paddles, walls)
      - Scoring and win conditions
      - In-memory game state management
-     - Final game state persistence
+     - Final game state persistence 
 
 3. **WebSocket Consumer** (`consumers.py`):
    - `PongConsumer`: Manages WebSocket connections, including:
@@ -38,19 +38,29 @@ The application follows a client-server architecture with WebSockets enabling bi
 
 ### Frontend Components
 
-1. **HTML/CSS** (`templates/index.html`):
+1. **HTML** (`templates/index.html`):
    - Game canvas for rendering
    - Score display
    - Status indicators
    - Chat interface
    - Responsive design
 
-2. **JavaScript**:
+2. **CSS** (`static/css/pong.css`):
+   - Game styling
+   - Canvas border styling
+   - Score display styling
+   - Chat interface styling
+   - Pause button styling
+   - Responsive design rules
+
+3. **JavaScript** (`static/js/pong.js`):
    - WebSocket connection management
    - Game state handling
    - Canvas rendering
-   - Input handling (mouse movement for paddle control)
+   - Input handling (keyboard events for paddle control)
    - Chat functionality
+   - Pause/resume functionality
+   - Client-side prediction for responsive gameplay
 
 ## Technical Implementation Details
 
@@ -265,6 +275,34 @@ The game uses the HTML5 Canvas API for rendering:
        }
    });
    ```
+
+### Code Organization
+
+The frontend code is organized following separation of concerns principles:
+
+1. **File Structure**:
+   ```
+   core/game/game_app/
+   ├── templates/
+   │   └── index.html         # Main HTML structure
+   ├── static/
+   │   ├── css/
+   │   │   └── pong.css       # All styling rules
+   │   └── js/
+   │       └── pong.js        # Game logic and interactivity
+   ```
+
+2. **Separation Benefits**:
+   - **Maintainability**: Each file has a single responsibility, making updates easier
+   - **Caching**: Browser can cache static files separately, improving load times
+   - **Readability**: Smaller, focused files are easier to understand
+   - **Development**: Allows multiple developers to work on different aspects simultaneously
+
+3. **Code Modularization**:
+   - HTML focuses on structure and content only
+   - CSS handles all visual styling and animations
+   - JavaScript manages all game logic, WebSocket communication, and interactivity
+   - Client-side prediction implemented in JavaScript for responsive gameplay
 
 ## Game Mechanics
 
