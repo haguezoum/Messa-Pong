@@ -108,15 +108,18 @@ services:
         container_name: elasticsearch
         environment:
             - discovery.type=single-node
-            - ES_JAVA_OPTS=-Xms512m -Xmx512m
             - xpack.security.enabled=true
             - xpack.security.authc.api_key.enabled=true
+            - ELASTIC_PASSWORD_FILE=/run/secrets/elk-credentials
         volumes:
-            - elk-data:/usr/share/elasticsearch/data
+            - elk-data:/var/lib/elasticsearch
+            - ./infrastructure/elk/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
         networks:
             42network:
                 aliases:
                     - elasticsearch
+        secrets:
+            - elk-credentials
         healthcheck:
             test: ["CMD-SHELL", "curl -sS http://localhost:9200/_cluster/health | grep -q '\"status\":\"green\"'"]
             interval: 30s
@@ -134,6 +137,7 @@ services:
         container_name: logstash
         volumes:
             - ./infrastructure/elk/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+            - ./infrastructure/elk/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
         networks:
             42network:
                 aliases:
@@ -143,6 +147,14 @@ services:
                 condition: service_healthy
         environment:
             - LS_JAVA_OPTS=-Xms256m -Xmx256m
+            - LOGSTASH_PASSWORD_FILE=/run/secrets/elk-credentials
+        secrets:
+            - elk-credentials
+        command: >
+            sh -c "
+              export LOGSTASH_ELASTIC_PASSWORD=$(cat /run/secrets/elk-credentials);
+              exec logstash -f /usr/share/logstash/pipeline
+            "
         deploy:
             resources:
                 limits:
@@ -163,14 +175,38 @@ services:
                 condition: service_healthy
         environment:
             - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-            - XPACK_REPORTING_KIBANASERVER_HOSTNAME=localhost
-            - XPACK_SECURITY_ENABLED=true
-            - ELASTICSEARCH_USERNAME=tarzan
-            - ELASTICSEARCH_PASSWORD=kingofthejungle
+            - ELASTICSEARCH_USERNAME=elastic
+            - ELASTICSEARCH_PASSWORD_FILE=/run/secrets/elk-credentials
+        secrets:
+            - elk-credentials
+        command: >
+            sh -c "
+              export ELASTICSEARCH_PASSWORD=$(cat /run/secrets/elk-credentials);
+              exec /usr/local/bin/kibana-docker
+            "
         deploy:
             resources:
                 limits:
                     memory: 512M
+        restart: always
+
+    filebeat:
+        image: docker.elastic.co/beats/filebeat:8.7.1
+        container_name: filebeat
+        volumes:
+            - /var/lib/docker/containers:/var/lib/docker/containers:ro
+            - ./infrastructure/elk/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+        networks:
+            42network:
+                aliases:
+                    - filebeat
+        depends_on:
+            logstash:
+                condition: service_healthy
+        deploy:
+            resources:
+                limits:
+                    memory: 128M
         restart: always
 
     # auth:
@@ -179,7 +215,7 @@ services:
     #     build:
     #         context: ./auth
     #     volumes:
-    #         - auth_storage:/app/storage
+    #         - auth_storage:/storage
     #     networks:
     #         42network:
     #           aliases:
@@ -191,11 +227,16 @@ services:
     #     depends_on:
     #         database:
     #             condition: service_healthy
-    #     logging:
-    #         driver: syslog
-    #         options:
-    #             syslog-address: "tcp://127.0.0.1:5000"
-    #             tag: "auth"
+    #     deploy:
+    #         resources:
+    #             limits:
+    #                 memory: 256M
+    #     healthcheck:
+    #         test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+    #         interval: 5s
+    #         timeout: 2s
+    #         retries: 3
+    #         start_period: 10s
     #     restart: always
 
 
@@ -221,3 +262,5 @@ secrets:
         file: ../secrets/database-credentials.env
     api-credentials:
         file: ../secrets/api-credentials.env
+    elk-credentials:
+        file: ../secrets/elk-credentials.env
