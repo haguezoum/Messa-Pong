@@ -50,6 +50,7 @@ if (!urlParams.has('room')) {
 
 // Create WebSocket connection
 const socket = new WebSocket(`ws://${window.location.host}/ws/game/${roomName}/`);
+let isRejectedDueToFullRoom = false;  // Flag to track if we've been rejected
 
 socket.onopen = function() {
     console.log("Connected to WebSocket");
@@ -180,13 +181,45 @@ function drawGame(currentTime) {
     ctx.stroke();
     ctx.setLineDash([]);
     
-    requestNextFrame();
+    // Request next animation frame, but only if the game isn't paused
+    if (!isPaused && isGameStarted) {
+        requestNextFrame();
+    } else {
+        console.log("Not requesting next frame at end of drawGame - isPaused:", isPaused);
+    }
 }
 
 // Add this new function for optimized frame requesting
 function requestNextFrame() {
+    // Only request animation frame if the game is running (not paused and started)
     if (!isPaused && isGameStarted) {
-        animationFrameId = requestAnimationFrame(drawGame);
+        // For safety, always check if there's an existing animation frame and cancel it
+        if (animationFrameId) {
+            window.cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
+        }
+        
+        // Request a new animation frame
+        try {
+            animationFrameId = window.requestAnimationFrame(drawGame);
+        } catch (error) {
+            console.error("Error requesting animation frame:", error);
+            
+            // Fallback - try again after a short delay
+            setTimeout(() => {
+                if (!isPaused && isGameStarted && !animationFrameId) {
+                    console.log("Retrying animation frame request");
+                    animationFrameId = window.requestAnimationFrame(drawGame);
+                }
+            }, 16); // ~ 60fps
+        }
+    } else {
+        if (isPaused) {
+            console.log("Not requesting animation frame - game is paused");
+        }
+        if (!isGameStarted) {
+            console.log("Not requesting animation frame - game not started");
+        }
     }
 }
 
@@ -194,6 +227,24 @@ function requestNextFrame() {
 function updateGameState(state) {
     // Update the game state from server
     gameState = state;
+    
+    // Check if the game is now full
+    if (state.is_full && !isGameStarted) {
+        console.log("Game is now full from updateGameState");
+        isGameStarted = true;
+        
+        // Update UI elements
+        pauseButton.disabled = false;
+        updatePauseButtonState();
+        updateGameStatus();
+        
+        // Start animation if not already running and not paused
+        if (!isPaused && !animationFrameId) {
+            console.log("Starting animation from updateGameState");
+            lastTime = performance.now();
+            animationFrameId = requestAnimationFrame(drawGame);
+        }
+    }
     
     // Also update our predicted state based on server's authoritative state
     if (isPlayer1) {
@@ -281,13 +332,27 @@ socket.onmessage = function(event) {
             }
             console.log("Updating game state:", data.state.player1_position, data.state.player2_position);
             updateGameState(data.state);
+            
             // Enable pause button when game starts
             if (!isGameStarted && data.state.is_full) {
+                console.log("Game is now full and ready to start");
                 isGameStarted = true;
                 pauseButton.disabled = false;
+                
+                // Start the animation if not paused and not already running
+                if (!isPaused && !animationFrameId) {
+                    console.log("Starting initial animation frame");
+                    lastTime = performance.now();
+                    animationFrameId = requestAnimationFrame(drawGame);
+                }
             } 
             break;
 
+        case 'room_full':
+            // Handle the case when the room is full
+            handleRoomFull(data);
+            break;
+            
         case 'player_joined':
             handlePlayerJoined(data);
             break;
@@ -301,11 +366,31 @@ socket.onmessage = function(event) {
             break;
             
         case 'game_paused':
-            console.log('Received pause state', data);
+            console.log('Received game_paused message:', data);
+            
+            // Store previous state for comparison
+            const wasPaused = isPaused;
+            
+            // Update local state from server
             isPaused = data.paused;
             pausedByClientId = data.pausedByClientId;
+            const resumedByClientId = data.resumedByClientId;
             remainingPauseTime = data.remainingTime;
             const isAutoResumed = data.autoResumed || false;
+
+            console.log(`Pause state changed: ${wasPaused} -> ${isPaused}`);
+            if (isPaused) {
+                console.log(`Game paused by: ${pausedByClientId}`);
+            } else {
+                console.log(`Game resumed by: ${resumedByClientId || pausedByClientId}`);
+                // Add a chat message to show who resumed the game
+                if (!isAutoResumed && resumedByClientId) {
+                    const chatBox = document.getElementById("chat-box");
+                    const isMe = resumedByClientId === clientId;
+                    chatBox.innerHTML += `<p><em>Game resumed by ${isMe ? 'you' : 'opponent'}</em></p>`;
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                }
+            }
 
             if (isAutoResumed && !isPaused) {
                 // Game was auto-resumed after timeout
@@ -315,26 +400,47 @@ socket.onmessage = function(event) {
             }
 
             if (isPaused) {
-                // Stop animation if game is paused
+                // Game is being paused - stop animation
+                console.log(`Pausing animation. Current animationFrameId: ${animationFrameId}`);
+                
                 if (animationFrameId) {
-                    cancelAnimationFrame(animationFrameId);
+                    console.log(`Cancelling animation frame: ${animationFrameId}`);
+                    window.cancelAnimationFrame(animationFrameId);
                     animationFrameId = null;
                 }
                 
                 // Start the pause timer for everyone except the person who paused
                 if (clientId !== pausedByClientId) {
-                startPauseTimer();
+                    console.log(`Starting pause timer for client ${clientId}`);
+                    startPauseTimer();
                 }
             } else {
-                // Clear timer when game is resumed
+                // Game is being resumed
+                console.log(`Resuming animation. Current animationFrameId: ${animationFrameId}`);
+                
+                // Clear timer
                 clearPauseTimer();
                 
-                // Restart animation
-                if (!animationFrameId && isGameStarted) {
-                    animationFrameId = requestAnimationFrame(drawGame);
+                // Restart animation forcefully
+                if (isGameStarted) {
+                    // Always cancel existing frames first
+                    if (animationFrameId) {
+                        console.log(`Cancelling existing animation frame: ${animationFrameId}`);
+                        window.cancelAnimationFrame(animationFrameId);
+                        animationFrameId = null;
+                    }
+                    
+                    // Use setTimeout to ensure clean execution stack
+                    setTimeout(() => {
+                        console.log("Starting new animation frame from game_paused handler");
+                        lastTime = performance.now();
+                        animationFrameId = window.requestAnimationFrame(drawGame);
+                        console.log(`New animation frame ID: ${animationFrameId}`);
+                    }, 0);
                 }
             }
-
+            
+            // Update UI
             updatePauseButtonState();
             updateGameStatus();
             break;
@@ -348,9 +454,36 @@ socket.onmessage = function(event) {
     }
 };
 
-socket.onclose = function() {
-    console.log("Disconnected from WebSocket");
-    document.getElementById("game-status").innerText = "Connection lost. Please refresh.";
+socket.onclose = function(event) {
+    console.log("WebSocket closed with code:", event.code);
+    
+    // Avoid updating status if we were already shown the room full message
+    if (isRejectedDueToFullRoom || document.getElementById("room-full-message")) {
+        return;
+    }
+    
+    // Only show connection lost if we were actually connected before
+    if (clientId) {
+        document.getElementById("game-status").innerText = "Connection lost. Please refresh.";
+        
+        // Cleanup any running animations or timers
+        if (animationFrameId) {
+            cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
+        }
+        clearPauseTimer();
+    }
+};
+
+socket.onerror = function(error) {
+    console.error("WebSocket error:", error);
+    
+    // Avoid updating status if we were already shown the room full message
+    if (isRejectedDueToFullRoom || document.getElementById("room-full-message")) {
+        return;
+    }
+    
+    document.getElementById("game-status").innerText = "Connection error. Please refresh.";
 };
 
 // Add focus event for the canvas to make sure keyboard events work
@@ -573,7 +706,8 @@ function startPauseTimer() {
                 sendWsMessage({
                     type: 'toggle_pause',
                     paused: false,
-                    pausedByClientId: null,
+                    pausedByClientId: pausedBy,
+                    resumedByClientId: 'auto',
                     remainingTime: 0,
                     autoResumed: true
                 });
@@ -659,7 +793,13 @@ window.addEventListener('beforeunload', cleanup);
 
 // Update the pause handling
 function togglePause() {
-    console.log('Toggling pause', { isPaused, pausedByClientId, clientId });
+    console.log('togglePause called with state:', { 
+        isPaused, 
+        pausedByClientId, 
+        clientId, 
+        isGameStarted,
+        animationFrameId
+    });
     
     // When trying to resume, only the player who paused can do it
     if (isPaused && clientId !== pausedByClientId) {
@@ -667,38 +807,228 @@ function togglePause() {
         return;
     }
 
+    // Store the previous state before toggling
+    const wasPaused = isPaused;
+    
+    // Toggle the pause state
     isPaused = !isPaused;
+    console.log(`Pause state changed from ${wasPaused} to ${isPaused}`);
+
+    // Store who is executing this action (for both pause and resume)
+    const actionByClientId = clientId;
 
     if (isPaused) {
+        // Game is being paused
+        console.log(`Pausing game. Current animationFrameId: ${animationFrameId}`);
+        
+        // Cancel any running animation frame
         if (animationFrameId) {
-            cancelAnimationFrame(animationFrameId);
+            console.log(`Cancelling animation frame: ${animationFrameId}`);
+            window.cancelAnimationFrame(animationFrameId);
             animationFrameId = null;
         }
-        pausedByClientId = clientId;
+        
+        // Record who paused the game
+        pausedByClientId = actionByClientId;
         startPauseTimer();
     } else {
-        pausedByClientId = null;
+        // Game is being resumed
+        console.log(`Resuming game by ${actionByClientId}. Current animationFrameId: ${animationFrameId}`);
+        
+        // Clear the timer
         clearPauseTimer();
         
-        // If we're resuming, start the animation again
-        if (isGameStarted && !animationFrameId) {
-            animationFrameId = requestAnimationFrame(drawGame);
+        // DO NOT clear pausedByClientId before sending the message to the server
+        // so that the server knows who resumed the game
+        
+        // Force restart the animation frame
+        // Always cancel any existing frames first to be safe
+        if (animationFrameId) {
+            console.log(`Cancelling any existing animation frame: ${animationFrameId}`);
+            window.cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
+        }
+        
+        if (isGameStarted) {
+            console.log("Restarting animation frame on resume");
+            // Use setTimeout to ensure the animation restarts after the current execution stack
+            setTimeout(() => {
+                lastTime = performance.now();
+                console.log("Starting new animation frame");
+                animationFrameId = window.requestAnimationFrame(drawGame);
+                console.log(`New animation frame ID: ${animationFrameId}`);
+            }, 0);
         }
     }
 
-    // Use the enhanced send function
+    // Send the pause state to the server
+    console.log(`Sending pause state to server: ${isPaused}, action by: ${actionByClientId}`);
     sendWsMessage({
         type: 'toggle_pause',
         paused: isPaused,
-        pausedByClientId: pausedByClientId,
+        pausedByClientId: isPaused ? actionByClientId : pausedByClientId, // Who paused
+        resumedByClientId: isPaused ? null : actionByClientId, // Who resumed (only set if resuming)
         remainingTime: remainingPauseTime
     });
 
+    // Now that we've sent the message, we can clear pausedByClientId if resuming
+    if (!isPaused) {
+        pausedByClientId = null;
+    }
+
+    // Update UI
     updatePauseButtonState();
     updateGameStatus();
+    
+    console.log(`Toggle pause complete. Game is now ${isPaused ? 'paused' : 'resumed'}. Animation frame ID: ${animationFrameId}`);
 }
 
 // Start the game loop
 if (isGameStarted && !isPaused) {
     animationFrameId = requestAnimationFrame(drawGame);
-} 
+}
+
+// Function to handle room full message
+function handleRoomFull(data) {
+    console.log("Room is full:", data.message);
+    
+    // Set the flag indicating we were rejected due to full room
+    isRejectedDueToFullRoom = true;
+    
+    // Create a completely new UI instead of modifying existing elements
+    // This ensures no interference with the ongoing game
+    
+    // First, store reference to body
+    const body = document.body;
+    
+    // Clear the entire page content
+    body.innerHTML = '';
+    
+    // Create a new container for the rejected player
+    const rejectedContainer = document.createElement("div");
+    rejectedContainer.className = "rejected-container";
+    rejectedContainer.style.cssText = `
+        width: 100%;
+        max-width: 600px;
+        margin: 50px auto;
+        padding: 20px;
+        background-color: #1e1e1e;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        text-align: center;
+        color: white;
+        font-family: Arial, sans-serif;
+    `;
+    
+    // Create message content
+    rejectedContainer.innerHTML = `
+        <h2 style="color: #f44336; margin-bottom: 20px;">Game Room Full</h2>
+        <p style="margin-bottom: 20px; font-size: 16px; line-height: 1.5;">${data.message}</p>
+        <button id="create-new-room" style="
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        ">Create New Room</button>
+    `;
+    
+    // Add the container to the body
+    body.appendChild(rejectedContainer);
+    
+    // Add event listener to the create room button
+    document.getElementById("create-new-room").addEventListener("click", function() {
+        // Generate a new random room name
+        const newRoomName = Math.random().toString(36).substring(2, 8);
+        // Navigate to the new room
+        window.location.href = `?room=${newRoomName}`;
+    });
+    
+    // Cancel any animation frames
+    if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+    }
+    
+    // Stop any timers
+    clearPauseTimer();
+    
+    console.log("Completely separated UI created for rejected player");
+}
+
+// Add a diagnostic function for debugging
+function checkGameState() {
+    console.log("Game State Diagnostic:");
+    console.log("---------------");
+    console.log("isPaused:", isPaused);
+    console.log("isGameStarted:", isGameStarted);
+    console.log("clientId:", clientId);
+    console.log("pausedByClientId:", pausedByClientId);
+    console.log("isPlayer1:", isPlayer1); 
+    console.log("isPlayer2:", isPlayer2);
+    console.log("animationFrameId:", animationFrameId);
+    console.log("remainingPauseTime:", remainingPauseTime);
+    console.log("---------------");
+    
+    // Check for potential issues
+    if (isPaused && !pausedByClientId) {
+        console.warn("WARNING: Game is paused but no pausedByClientId is set!");
+    }
+    
+    if (!isPaused && !animationFrameId && isGameStarted) {
+        console.warn("WARNING: Game is resumed but no animation frame is active!");
+        console.log("Attempting to restart animation...");
+        
+        // Try to restart animation
+        lastTime = performance.now();
+        animationFrameId = window.requestAnimationFrame(drawGame);
+        console.log("New animation frame ID:", animationFrameId);
+    }
+    
+    return {
+        isPaused,
+        isGameStarted,
+        clientId,
+        pausedByClientId,
+        isPlayer1,
+        isPlayer2,
+        animationFrameId,
+        remainingPauseTime
+    };
+}
+
+// Make available globally for console debugging
+window.checkGameState = checkGameState;
+window.forcePauseResume = function(forcePause) {
+    console.log("Manual override - forcing pause state to:", forcePause);
+    
+    // Force the pause state
+    isPaused = forcePause;
+    
+    if (forcePause) {
+        // Force pause
+        if (animationFrameId) {
+            window.cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
+        }
+        pausedByClientId = clientId;
+    } else {
+        // Force resume
+        pausedByClientId = null;
+        
+        if (isGameStarted && !animationFrameId) {
+            console.log("Forcing animation restart");
+            lastTime = performance.now();
+            animationFrameId = window.requestAnimationFrame(drawGame);
+        }
+    }
+    
+    // Update UI
+    updatePauseButtonState();
+    updateGameStatus();
+    
+    return checkGameState();
+}; 

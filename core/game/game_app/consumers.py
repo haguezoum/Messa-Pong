@@ -17,13 +17,33 @@ class PongConsumer(AsyncWebsocketConsumer):
 
         # Ensure session key exists and is stored asynchronously
         self.client_id = await self.get_or_create_session()
-
-        # Join room group
-        await self.channel_layer.group_add(self.room_group_name, self.channel_name)
+        
+        # First check if the room is full before joining
+        game, created, status = await PongGameLogic.create_or_join_game(self.room_name, self.client_id)
+        
+        # Accept the connection so we can send messages
         await self.accept()
         
-        # Create or join game
-        game, created = await PongGameLogic.create_or_join_game(self.room_name, self.client_id)
+        # Check if the room is full - do this BEFORE joining the group
+        if status == "room_full":
+            print(f"Room {self.room_name} is full. Rejecting player {self.client_id}")
+            
+            # Send the room full message
+            await self.send(text_data=json.dumps({
+                'type': 'room_full',
+                'message': 'This game room is full. Only 2 players are allowed per room.',
+                'suggest_create_room': True
+            }))
+            
+            # Log the rejection
+            print(f"Player {self.client_id} rejected from full room: {self.room_name}")
+            
+            # Close the connection after sending the message
+            await self.close(code=1000)  # Use normal closure code
+            return
+        
+        # If not full, then join the room group
+        await self.channel_layer.group_add(self.room_group_name, self.channel_name)
         
         # Send initial game state to the client
         game_state = await sync_to_async(PongGameLogic._get_game_state_dict)(game)
@@ -51,10 +71,27 @@ class PongConsumer(AsyncWebsocketConsumer):
         # Leave room group
         await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
         
-        # Cleanup any running game task
-        if self.room_name in self.game_tasks:
-            self.game_tasks[self.room_name].cancel()
-            del self.game_tasks[self.room_name]
+        # Check if this player was actively participating in the game
+        # Get the current game state to see if this client was one of the active players
+        try:
+            # Only act if game exists
+            if self.room_name in self.game_tasks:
+                # Get the game state first to check player IDs
+                game_info = await PongGameLogic.get_game_player_info(self.room_name)
+                
+                # Only cancel the game task if this is one of the active players
+                if game_info and (game_info.get('player1_id') == self.client_id or 
+                                game_info.get('player2_id') == self.client_id):
+                    print(f"Active player {self.client_id} disconnected from room: {self.room_name}")
+                    
+                    # Cancel game task since an active player disconnected
+                    if self.room_name in self.game_tasks:
+                        self.game_tasks[self.room_name].cancel()
+                        del self.game_tasks[self.room_name]
+                else:
+                    print(f"Spectator/rejected player {self.client_id} disconnected from room: {self.room_name}")
+        except Exception as e:
+            print(f"Error in disconnect: {e}")
 
     async def receive(self, text_data):
         """Receive message from WebSocket."""
@@ -81,13 +118,26 @@ class PongConsumer(AsyncWebsocketConsumer):
             # Handle pause/resume
             is_paused = data.get('paused', False)
             paused_by = data.get('pausedByClientId', None)
+            resumed_by = data.get('resumedByClientId', None)  # Get who resumed explicitly
             remaining_time = data.get('remainingTime', 30)
             auto_resumed = data.get('autoResumed', False)
             
             # Log the action
             action = "paused" if is_paused else "resumed"
             auto_str = " (auto)" if auto_resumed else ""
-            print(f"Game {action}{auto_str} by {self.client_id if is_paused else paused_by}, room: {self.room_name}")
+            
+            # Use explicit resumedByClientId for logging who resumed
+            if is_paused:
+                print(f"Game {action}{auto_str} by {paused_by}, room: {self.room_name}")
+            else:
+                # Use resumed_by if available, otherwise fall back to self.client_id
+                player_who_resumed = resumed_by if resumed_by else self.client_id
+                
+                # Special handling for auto-resume
+                if resumed_by == 'auto' or auto_resumed:
+                    print(f"Game automatically resumed after timeout (paused by {paused_by}), room: {self.room_name}")
+                else:
+                    print(f"Game {action}{auto_str} by {player_who_resumed}, room: {self.room_name}")
             
             # Broadcast pause state to all clients
             await self.channel_layer.group_send(
@@ -96,6 +146,7 @@ class PongConsumer(AsyncWebsocketConsumer):
                     'type': 'game_paused',
                     'paused': is_paused,
                     'pausedByClientId': paused_by,
+                    'resumedByClientId': None if is_paused else (resumed_by or self.client_id),
                     'remainingTime': remaining_time,
                     'autoResumed': auto_resumed
                 }
@@ -198,6 +249,7 @@ class PongConsumer(AsyncWebsocketConsumer):
             'type': 'game_paused',
             'paused': event['paused'],
             'pausedByClientId': event['pausedByClientId'],
+            'resumedByClientId': event['resumedByClientId'],
             'remainingTime': event['remainingTime'],
             'autoResumed': event.get('autoResumed', False)
         }))

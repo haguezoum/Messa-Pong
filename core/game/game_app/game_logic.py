@@ -28,7 +28,7 @@ class PongGameLogic:
     @staticmethod
     async def create_or_join_game(room_name, client_id):
         """Create a new game or join an existing one."""
-        game, created = await sync_to_async(PongGameLogic._get_or_create_game)(room_name, client_id)
+        game, created, status = await sync_to_async(PongGameLogic._get_or_create_game)(room_name, client_id)
         
         # If just created, initialize game state
         if created:
@@ -45,7 +45,7 @@ class PongGameLogic:
                 'player2_score': 0
             }
             
-        return game, created
+        return game, created, status
     
     @staticmethod
     def _get_or_create_game(room_name, client_id):
@@ -54,6 +54,11 @@ class PongGameLogic:
             try:
                 game = Game.objects.get(room_name=room_name, is_active=True)
                 created = False
+                
+                # Check if game is full (both player slots are filled and this client isn't one of them)
+                if (game.player1_id and game.player2_id and 
+                    game.player1_id != client_id and game.player2_id != client_id):
+                    return game, False, "room_full"
                 
                 # If the game doesn't have player2, add this client
                 if not game.player2_id and game.player1_id != client_id:
@@ -73,7 +78,7 @@ class PongGameLogic:
                 )
                 created = True
                 
-        return game, created
+        return game, created, "success"
         
     @staticmethod
     def _initialize_game_state(game):
@@ -272,4 +277,27 @@ class PongGameLogic:
             
             game.winner_id = winner_id
             game.is_active = False
-            game.save() 
+            game.save()
+
+    @staticmethod
+    async def get_game_player_info(room_name):
+        """Get information about players in a specific game room."""
+        try:
+            from .models import Game
+            
+            # Get the game from the database
+            game = await sync_to_async(Game.objects.filter)(room_name=room_name, is_active=True)
+            game = await sync_to_async(lambda: list(game)[0] if game.exists() else None)()
+            
+            if game:
+                # Return basic player information
+                return {
+                    'player1_id': game.player1_id,
+                    'player2_id': game.player2_id,
+                    'room_name': room_name,
+                    'is_active': game.is_active
+                }
+            return None
+        except Exception as e:
+            print(f"Error in get_game_player_info: {e}")
+            return None 
