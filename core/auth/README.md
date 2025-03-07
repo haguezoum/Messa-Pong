@@ -159,8 +159,10 @@ python manage.py runserver
   - Enter the following JSON:
     ```json
     {
-        "username": "postman_user",
-        "email": "postman@example.com",
+        "first_name": "John",
+        "last_name": "Doe",
+        "username": "johndoe",
+        "email": "john.doe@example.com",
         "password": "testpassword123",
         "password2": "testpassword123"
     }
@@ -176,10 +178,17 @@ python manage.py runserver
   - URL: `http://localhost:8000/api/login/`
   - Headers: Add `Content-Type: application/json`
   - Body: Select "raw" and choose "JSON"
-  - Enter the following JSON:
+  - You can login using either email or username:
     ```json
     {
-        "email": "postman@example.com",
+        "login": "john.doe@example.com",
+        "password": "testpassword123"
+    }
+    ```
+    OR
+    ```json
+    {
+        "login": "johndoe",
         "password": "testpassword123"
     }
     ```

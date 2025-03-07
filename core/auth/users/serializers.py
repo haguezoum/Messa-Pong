@@ -13,21 +13,21 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class RegisterSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
-    password2 = serializers.CharField(write_only=True, required=True)
-
+    password2 = serializers.CharField(write_only=True)
+    
     class Meta:
         model = User
-        fields = ('username', 'email', 'password', 'password2', 'first_name', 'last_name')
+        fields = ('first_name', 'last_name', 'username', 'email', 'password', 'password2')
         extra_kwargs = {
-            'first_name': {'required': False},
-            'last_name': {'required': False}
+            'password': {'write_only': True},
+            'first_name': {'required': True},
+            'last_name': {'required': True}
         }
 
-    def validate(self, attrs):
-        if attrs['password'] != attrs['password2']:
-            raise serializers.ValidationError({"password": "Password fields didn't match."})
-        return attrs
+    def validate(self, data):
+        if data['password'] != data['password2']:
+            raise serializers.ValidationError("Passwords must match")
+        return data
 
     def create(self, validated_data):
         validated_data.pop('password2')
@@ -45,4 +45,9 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         token['email'] = user.email
         # Add more custom claims if needed
 
-        return token 
+        return token
+
+
+class LoginSerializer(serializers.Serializer):
+    login = serializers.CharField(required=True)  # This will accept either email or username
+    password = serializers.CharField(required=True) 
