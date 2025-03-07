@@ -19,9 +19,11 @@ A real-time multiplayer Pong game built with Django Channels and WebSockets.
 - [Code Organization](#code-organization)
 - [How to Run](#how-to-run)
 - [Bug Fixes](#bug-fixes)
+- [Recent Improvements](#recent-improvements)
 - [Future Improvements](#future-improvements)
 - [Technical Optimizations](#technical-optimizations)
 - [Game Pause Functionality](#game-pause-functionality)
+- [Room Management](#room-management)
 - [Contributors](#contributors)
 
 ## Overview
@@ -138,7 +140,7 @@ The game follows a well-defined lifecycle:
 
 1. **Connection Phase**:
    ```
-   Client connects → Server creates/joins game → Initial state sent to client
+   Client connects → Server checks room capacity → Creates/joins game → Initial state sent to client
    ```
 
 2. **Game Start**:
@@ -228,12 +230,25 @@ The WebSocket implementation uses Django Channels to enable real-time communicat
        self.room_group_name = f"game_{self.room_name}"
        self.client_id = await self.get_or_create_session()
        
-       # Join room group
-       await self.channel_layer.group_add(self.room_group_name, self.channel_name)
+       # First check if the room is full before joining
+       game, created, status = await PongGameLogic.create_or_join_game(self.room_name, self.client_id)
+       
+       # Accept the connection
        await self.accept()
        
-       # Create or join game
-       game, created = await PongGameLogic.create_or_join_game(self.room_name, self.client_id)
+       # Check if the room is full
+       if status == "room_full":
+           # Send the room full message and close the connection
+           await self.send(text_data=json.dumps({
+               'type': 'room_full',
+               'message': 'This game room is full. Only 2 players are allowed per room.',
+               'suggest_create_room': True
+           }))
+           await self.close()
+           return
+       
+       # If not full, join the room group
+       await self.channel_layer.group_add(self.room_group_name, self.channel_name)
    ```
 
 2. **Message Types**:
@@ -245,36 +260,38 @@ The WebSocket implementation uses Django Channels to enable real-time communicat
    | `player_joined` | New player joined notification |
    | `game_over` | Game end notification |
    | `game_paused` | Game pause state notification |
+   | `room_full` | Notification when room capacity is reached |
 
 3. **Game Loop**:
    ```python
    async def game_loop(self):
        try:
            while True:
-               # Update game state
-               state = await PongGameLogic.update_game_state(self.room_name)
-               
-               # Broadcast state to all clients
-               await self.channel_layer.group_send(
-                   self.room_group_name,
-                   {
-                       'type': 'game_state_update',
-                       'state': state
-                   }
-               )
-               
-               # Check if game is over
-               if state.get('winner_id'):
-                   # Broadcast game over message
+               # Only update game state if not paused
+               if self.room_name not in self.paused_games:
+                   state = await PongGameLogic.update_game_state(self.room_name)
+                   
+                   # Broadcast state to all clients
                    await self.channel_layer.group_send(
                        self.room_group_name,
                        {
-                           'type': 'game_over',
-                           'winner_id': state.get('winner_id')
+                           'type': 'game_state_update',
+                           'state': state
                        }
                    )
-                   break
                    
+                   # Check if game is over
+                   if state.get('winner_id'):
+                       # Broadcast game over message
+                       await self.channel_layer.group_send(
+                           self.room_group_name,
+                           {
+                               'type': 'game_over',
+                               'winner_id': state.get('winner_id')
+                           }
+                       )
+                       break
+                       
                # 30 FPS update rate
                await asyncio.sleep(1/30)
        except asyncio.CancelledError:
@@ -333,7 +350,14 @@ The game uses the HTML5 Canvas API for rendering with optimized performance:
    ```javascript
    function requestNextFrame() {
        if (!isPaused && isGameStarted) {
-           animationFrameId = requestAnimationFrame(drawGame);
+           // For safety, always check if there's an existing animation frame and cancel it
+           if (animationFrameId) {
+               window.cancelAnimationFrame(animationFrameId);
+               animationFrameId = null;
+           }
+           
+           // Request a new animation frame
+           animationFrameId = window.requestAnimationFrame(drawGame);
        }
    }
    ```
@@ -508,6 +532,53 @@ Recent fixes include:
 
 4. **Chat Input Focus**: Fixed an issue where players couldn't click once on the chat input to type messages. Previously, keyboard events were being captured by the game canvas, requiring users to hold down the mouse button while typing. The fix ensures proper focus handling between game controls and chat interface.
 
+## Recent Improvements
+
+### Room Capacity Management
+
+1. **Room Capacity Enforcement**:
+   - Rooms are strictly limited to 2 active players
+   - When a third player attempts to join, they receive a clear "Room Full" message
+   - The connection sequence now checks room capacity before adding players to WebSocket groups
+
+2. **Isolated UI for Rejected Players**:
+   - Players attempting to join a full room now see a completely separate UI
+   - This prevents any interference with the ongoing game for active players
+   - The rejected player is offered an option to create a new room
+
+3. **Improved Connection Handling**:
+   - WebSocket connections are now properly managed when a player is rejected
+   - The connection is closed with a proper status code after sending the room full message
+   - Rejected players are never added to the channel group, preventing any impact on the game
+
+### Pause/Resume System Enhancements
+
+1. **Improved Player Identification**:
+   - The system now properly tracks and displays which player paused and which player resumed the game
+   - Messages in the chat window clearly indicate who performed each action
+
+2. **Reliable Animation Frame Management**:
+   - Animation frames are now properly managed during pause/resume transitions
+   - Added safety checks to prevent multiple concurrent animation frames
+   - Uses `setTimeout` to ensure clean execution stack when resuming animations
+
+3. **Auto-Resume Improvements**:
+   - Enhanced auto-resume functionality with clearer messaging
+   - The system now properly identifies when a game is auto-resumed after timeout
+   - All players receive appropriate notifications when auto-resume occurs
+
+### Player Disconnection Handling
+
+1. **Smart Game Task Management**:
+   - Game tasks are now only canceled when active players disconnect
+   - Added intelligence to distinguish between active players and spectators/rejected players
+   - This prevents game interruptions when non-players disconnect from the server
+
+2. **Diagnostic Tools**:
+   - Added game state diagnostic functions accessible from the browser console
+   - These tools help debug and fix issues with game state in real-time
+   - Includes the ability to check animation states and manually override if needed
+
 ## Future Improvements
 
 Potential improvements for the game:
@@ -588,6 +659,82 @@ The game implements a robust pause/resume system with the following features:
    - All state changes are broadcast to maintain consistency
 
 This pause system ensures fair gameplay by preventing unexpected interruptions while still allowing for necessary breaks. The auto-resume feature prevents games from being indefinitely paused.
+
+## Room Management
+
+The game implements a sophisticated room management system that controls player access and ensures game integrity:
+
+1. **Room Capacity Control**:
+   - Each game room is strictly limited to 2 active players
+   - The server performs capacity checks before allowing players to join
+   - Room status is tracked through the game database and in-memory state
+
+2. **Handling Third Player Attempts**:
+   - When a third player attempts to join, the connection sequence identifies them as excess
+   - The WebSocket connection is established only to send a rejection message
+   - After informing the player, the connection is properly closed
+   - The third player is never added to the channel group, preventing any impact on the game
+
+3. **UI Separation for Rejected Players**:
+   ```javascript
+   function handleRoomFull(data) {
+       // Set flag indicating rejection
+       isRejectedDueToFullRoom = true;
+       
+       // Replace entire UI with room full message
+       const body = document.body;
+       body.innerHTML = '';
+       
+       // Create new container with room full message
+       const rejectedContainer = document.createElement("div");
+       // ... styling and content ...
+       
+       // Add option to create new room
+       // ... button and event handler ...
+       
+       // Clean up any running processes
+       if (animationFrameId) {
+           cancelAnimationFrame(animationFrameId);
+           animationFrameId = null;
+       }
+       clearPauseTimer();
+   }
+   ```
+
+4. **Smart Disconnection Handling**:
+   - The system intelligently identifies the role of disconnecting clients
+   - Only when active players disconnect is the game affected
+   - Spectators or rejected players can disconnect without disrupting gameplay
+   
+   ```python
+   async def disconnect(self, close_code):
+       # Leave room group
+       await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
+       
+       try:
+           # Only act if game exists
+           if self.room_name in self.game_tasks:
+               # Get game info to check player IDs
+               game_info = await PongGameLogic.get_game_player_info(self.room_name)
+               
+               # Only cancel game task if this is an active player
+               if game_info and (game_info.get('player1_id') == self.client_id or 
+                               game_info.get('player2_id') == self.client_id):
+                   print(f"Active player {self.client_id} disconnected from room: {self.room_name}")
+                   
+                   # Cancel game task
+                   if self.room_name in self.game_tasks:
+                       self.game_tasks[self.room_name].cancel()
+                       del self.game_tasks[self.room_name]
+       except Exception as e:
+           print(f"Error in disconnect: {e}")
+   ```
+
+This room management system ensures that:
+- Each game room maintains exactly two players
+- Rejected players receive clear feedback about why they can't join
+- Ongoing games are protected from interference by third parties
+- The disconnect process is context-aware and optimized
 
 ## Contributors
 
