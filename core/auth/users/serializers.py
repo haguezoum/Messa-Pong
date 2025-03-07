@@ -49,5 +49,5 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 
 class LoginSerializer(serializers.Serializer):
-    login = serializers.CharField(required=True)  # This will accept either email or username
-    password = serializers.CharField(required=True) 
+    login = serializers.CharField(required=True)  # This field will accept either email or username
+    password = serializers.CharField(required=True, style={'input_type': 'password'}) 

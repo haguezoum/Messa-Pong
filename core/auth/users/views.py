@@ -5,6 +5,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model, authenticate
 from rest_framework.views import APIView
+from django.core.exceptions import ObjectDoesNotExist
 
 from .serializers import (
     UserSerializer,
@@ -18,33 +19,43 @@ User = get_user_model()
 
 class LoginView(APIView):
     permission_classes = (AllowAny,)
+    serializer_class = LoginSerializer
 
     def post(self, request):
-        serializer = LoginSerializer(data=request.data)
+        serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-        
+
         login = serializer.validated_data['login']
         password = serializer.validated_data['password']
-        
-        # Try to authenticate with email
-        user = authenticate(request, username=login, password=password)
-        if not user:
-            # If email auth fails, try username
+        user = None
+
+        # First try to authenticate with the login value as username
+        user = authenticate(username=login, password=password)
+
+        # If authentication fails, try to find user by email
+        if user is None:
             try:
                 user_obj = User.objects.get(email=login)
-                user = authenticate(request, username=user_obj.username, password=password)
-            except User.DoesNotExist:
+                user = authenticate(username=user_obj.username, password=password)
+            except ObjectDoesNotExist:
                 pass
-        
-        if not user:
+
+        if user is None:
             return Response({
-                'error': 'Invalid credentials'
+                'error': 'Invalid login credentials'
             }, status=status.HTTP_401_UNAUTHORIZED)
 
         refresh = RefreshToken.for_user(user)
         return Response({
             'access': str(refresh.access_token),
             'refresh': str(refresh),
+            'user': {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name
+            }
         })
 
 
