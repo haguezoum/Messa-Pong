@@ -321,136 +321,72 @@ function updateGameState(state) {
 }
 
 socket.onmessage = function(event) {
-    const data = JSON.parse(event.data);
-    console.log("Received:", data);
-    
-    // Handle different message types
-    switch(data.type) {
-        case "game_state":
-            if (data.client_id) {
-                clientId = data.client_id;
-            }
-            console.log("Updating game state:", data.state.player1_position, data.state.player2_position);
-            updateGameState(data.state);
+    let data;
+    try {
+        data = JSON.parse(event.data);
+        console.log("Received message:", data);
+        
+        // EMERGENCY HANDLING: Process player_disconnected immediately with highest priority
+        if (data.type === 'player_disconnected') {
+            console.log("🚨 EMERGENCY: Player disconnection detected!");
+            // Handle immediately
+            handlePlayerDisconnected(data);
             
-            // Enable pause button when game starts
-            if (!isGameStarted && data.state.is_full) {
-                console.log("Game is now full and ready to start");
-                isGameStarted = true;
-                pauseButton.disabled = false;
-                
-                // Start the animation if not paused and not already running
-                if (!isPaused && !animationFrameId) {
-                    console.log("Starting initial animation frame");
-                    lastTime = performance.now();
-                    animationFrameId = requestAnimationFrame(drawGame);
+            // Don't process any other message types
+            return;
+        }
+        
+        // Handle other message types
+        switch(data.type) {
+            case "game_state":
+                if (data.client_id) {
+                    clientId = data.client_id;
                 }
-            } 
-            break;
-
-        case 'room_full':
-            // Handle the case when the room is full
-            handleRoomFull(data);
-            break;
-            
-        case 'player_joined':
-            handlePlayerJoined(data);
-            break;
-            
-        case 'chat':
-            handleChatMessage(data);
-            break;
-            
-        case 'game_over':
-            handleGameOver(data);
-            break;
-            
-        case 'game_paused':
-            console.log('Received game_paused message:', data);
-            
-            // Store previous state for comparison
-            const wasPaused = isPaused;
-            
-            // Update local state from server
-            isPaused = data.paused;
-            pausedByClientId = data.pausedByClientId;
-            const resumedByClientId = data.resumedByClientId;
-            remainingPauseTime = data.remainingTime;
-            const isAutoResumed = data.autoResumed || false;
-
-            console.log(`Pause state changed: ${wasPaused} -> ${isPaused}`);
-            if (isPaused) {
-                console.log(`Game paused by: ${pausedByClientId}`);
-            } else {
-                console.log(`Game resumed by: ${resumedByClientId || pausedByClientId}`);
-                // Add a chat message to show who resumed the game
-                if (!isAutoResumed && resumedByClientId) {
-                    const chatBox = document.getElementById("chat-box");
-                    const isMe = resumedByClientId === clientId;
-                    chatBox.innerHTML += `<p><em>Game resumed by ${isMe ? 'you' : 'opponent'}</em></p>`;
-                    chatBox.scrollTop = chatBox.scrollHeight;
-                }
-            }
-
-            if (isAutoResumed && !isPaused) {
-                // Game was auto-resumed after timeout
-                const chatBox = document.getElementById("chat-box");
-                chatBox.innerHTML += `<p><em>Game automatically resumed after 30 second timeout</em></p>`;
-                chatBox.scrollTop = chatBox.scrollHeight;
-            }
-
-            if (isPaused) {
-                // Game is being paused - stop animation
-                console.log(`Pausing animation. Current animationFrameId: ${animationFrameId}`);
+                console.log("Updating game state:", data.state.player1_position, data.state.player2_position);
+                updateGameState(data.state);
                 
-                if (animationFrameId) {
-                    console.log(`Cancelling animation frame: ${animationFrameId}`);
-                    window.cancelAnimationFrame(animationFrameId);
-                    animationFrameId = null;
-                }
-                
-                // Start the pause timer for everyone except the person who paused
-                if (clientId !== pausedByClientId) {
-                    console.log(`Starting pause timer for client ${clientId}`);
-                    startPauseTimer();
-                }
-            } else {
-                // Game is being resumed
-                console.log(`Resuming animation. Current animationFrameId: ${animationFrameId}`);
-                
-                // Clear timer
-                clearPauseTimer();
-                
-                // Restart animation forcefully
-                if (isGameStarted) {
-                    // Always cancel existing frames first
-                    if (animationFrameId) {
-                        console.log(`Cancelling existing animation frame: ${animationFrameId}`);
-                        window.cancelAnimationFrame(animationFrameId);
-                        animationFrameId = null;
-                    }
+                // Enable pause button when game starts
+                if (!isGameStarted && data.state.is_full) {
+                    console.log("Game is now full and ready to start");
+                    isGameStarted = true;
+                    pauseButton.disabled = false;
                     
-                    // Use setTimeout to ensure clean execution stack
-                    setTimeout(() => {
-                        console.log("Starting new animation frame from game_paused handler");
+                    // Start the animation if not paused and not already running
+                    if (!isPaused && !animationFrameId) {
+                        console.log("Starting initial animation frame");
                         lastTime = performance.now();
-                        animationFrameId = window.requestAnimationFrame(drawGame);
-                        console.log(`New animation frame ID: ${animationFrameId}`);
-                    }, 0);
-                }
-            }
-            
-            // Update UI
-            updatePauseButtonState();
-            updateGameStatus();
-            break;
-        default:
-            console.log('Default...')
-            // Set client ID if available
-            if (data.client_id && !clientId) {
-                clientId = data.client_id;
-                console.log("My client ID:", clientId);
-            }
+                        animationFrameId = requestAnimationFrame(drawGame);
+                    }
+                } 
+                break;
+
+            case 'room_full':
+                // Handle the case when the room is full
+                handleRoomFull(data);
+                break;
+                
+            case 'player_joined':
+                handlePlayerJoined(data);
+                break;
+                
+            case 'chat':
+                handleChatMessage(data);
+                break;
+                
+            case 'game_over':
+                handleGameOver(data);
+                break;
+                
+            case 'game_paused':
+                handleGamePaused(data);
+                break;
+                
+            default:
+                console.log("Unknown message type:", data.type);
+                break;
+        }
+    } catch (error) {
+        console.error("Error processing WebSocket message:", error, event.data);
     }
 };
 
@@ -766,8 +702,24 @@ function updatePauseButtonState() {
     }
 }
 
-function updateGameStatus() {
+function updateGameStatus(customStatus) {
     const statusElement = document.getElementById("game-status");
+    
+    // If a custom status is provided, use it
+    if (customStatus) {
+        statusElement.innerText = customStatus;
+        return;
+    }
+    
+    // Check if opponent has disconnected (using the global flag we set)
+    if (window.opponentDisconnected) {
+        statusElement.innerText = "OPPONENT DISCONNECTED - GAME ENDED";
+        statusElement.style.color = "#f44336";
+        statusElement.style.fontWeight = "bold";
+        return;
+    }
+    
+    // Normal game status logic
     if (isPaused) {
         if (clientId === pausedByClientId) {
             statusElement.innerText = `You paused the game. Click 'Resume' or wait ${remainingPauseTime}s for auto-resume.`;
@@ -1031,4 +983,269 @@ window.forcePauseResume = function(forcePause) {
     updateGameStatus();
     
     return checkGameState();
-}; 
+};
+
+// Function to handle player disconnection - EMERGENCY VERSION
+function handlePlayerDisconnected(data) {
+    console.log("🔴 PLAYER DISCONNECTED EVENT RECEIVED:", data);
+    
+    try {
+        // EMERGENCY: Stop everything immediately
+        // Cancel all animations
+        if (animationFrameId) {
+            window.cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
+            console.log("Animation canceled");
+        }
+        
+        // Clear all timers
+        clearPauseTimer();
+        
+        // Set all game state flags to stop the game
+        window.opponentDisconnected = true;
+        isPaused = true;
+        isGameStarted = false;
+        
+        // EMERGENCY: Force clear all intervals that might be running
+        // This is a brute force approach to ensure everything stops
+        for (let i = 1; i < 10000; i++) {
+            window.clearInterval(i);
+        }
+        
+        console.log("Game state forcibly reset");
+        
+        // Add a message to the chat with timestamp
+        try {
+            const chatBox = document.getElementById("chat-box");
+            if (chatBox) {
+                chatBox.innerHTML += `
+                    <p class="system-message emergency">
+                        <strong>⚠️ SYSTEM ALERT:</strong> ${data.message}
+                        <br><small>at ${new Date().toLocaleTimeString()}</small>
+                    </p>`;
+                chatBox.scrollTop = chatBox.scrollHeight;
+                console.log("Chat message added");
+            }
+        } catch (e) {
+            console.error("Error updating chat:", e);
+        }
+        
+        // Create full-page overlay that can't be missed
+        try {
+            // Remove any existing overlay first
+            const existingOverlay = document.getElementById("disconnect-overlay");
+            if (existingOverlay) {
+                document.body.removeChild(existingOverlay);
+            }
+            
+            // Create new overlay
+            const overlay = document.createElement("div");
+            overlay.id = "disconnect-overlay";
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0, 0, 0, 0.9);
+                z-index: 10000;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                color: white;
+                font-family: Arial, sans-serif;
+                text-align: center;
+                animation: fadeIn 0.5s ease-in-out;
+            `;
+            
+            // Create message container with vibrant styling
+            const messageContainer = document.createElement("div");
+            messageContainer.style.cssText = `
+                background-color: #ff3b30;
+                padding: 30px;
+                border-radius: 10px;
+                box-shadow: 0 0 50px rgba(255, 59, 48, 0.8);
+                max-width: 80%;
+                margin-bottom: 30px;
+                animation: pulse 1.5s infinite alternate;
+            `;
+            
+            // Add disconnect message with warning icon
+            messageContainer.innerHTML = `
+                <h1 style="font-size: 36px; margin-bottom: 20px; text-transform: uppercase; color: white;">
+                    ⚠️ Connection Lost ⚠️
+                </h1>
+                <h2 style="font-size: 24px; margin-bottom: 20px; color: white;">
+                    ${data.player_label} has disconnected
+                </h2>
+                <p style="font-size: 18px; margin-bottom: 25px; color: white;">
+                    ${data.message}
+                </p>
+                <p style="font-size: 16px; margin-bottom: 30px; color: white;">
+                    The game has been terminated. You can start a new game below.
+                </p>
+            `;
+            
+            // Create new game button with vibrant styling
+            const newGameBtn = document.createElement("button");
+            newGameBtn.innerText = "Start New Game";
+            newGameBtn.style.cssText = `
+                background-color: #34c759;
+                color: white;
+                border: none;
+                padding: 15px 30px;
+                font-size: 20px;
+                font-weight: bold;
+                border-radius: 8px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                box-shadow: 0 5px 15px rgba(52, 199, 89, 0.4);
+            `;
+            
+            // Add hover effect to button
+            newGameBtn.onmouseover = function() {
+                this.style.transform = "scale(1.1)";
+                this.style.boxShadow = "0 8px 25px rgba(52, 199, 89, 0.6)";
+            };
+            
+            newGameBtn.onmouseout = function() {
+                this.style.transform = "scale(1)";
+                this.style.boxShadow = "0 5px 15px rgba(52, 199, 89, 0.4)";
+            };
+            
+            // Add click handler to create new game
+            newGameBtn.onclick = function() {
+                // Generate a new random room name
+                const newRoomName = Math.random().toString(36).substring(2, 8);
+                // Navigate to the new room
+                window.location.href = `?room=${newRoomName}`;
+            };
+            
+            // Assemble the overlay
+            messageContainer.appendChild(newGameBtn);
+            overlay.appendChild(messageContainer);
+            
+            // Add disconnect timestamp at the bottom
+            const timestamp = document.createElement("p");
+            timestamp.style.cssText = `
+                margin-top: 20px;
+                color: rgba(255, 255, 255, 0.7);
+                font-size: 14px;
+            `;
+            timestamp.innerText = `Disconnection occurred at ${new Date().toLocaleTimeString()}`;
+            overlay.appendChild(timestamp);
+            
+            // Add to document
+            document.body.appendChild(overlay);
+            console.log("Disconnect overlay created and added to page");
+            
+            // Disable pause button if it exists
+            const pauseButton = document.getElementById("pauseButton");
+            if (pauseButton) {
+                pauseButton.disabled = true;
+                console.log("Pause button disabled");
+            }
+            
+            // Update game status with error styling
+            const statusElement = document.getElementById("game-status");
+            if (statusElement) {
+                statusElement.innerText = "⚠️ GAME TERMINATED - OPPONENT DISCONNECTED ⚠️";
+                statusElement.style.color = "#ff3b30";
+                statusElement.style.fontWeight = "bold";
+                statusElement.style.textTransform = "uppercase";
+                console.log("Game status updated");
+            }
+            
+        } catch (e) {
+            console.error("Error creating disconnect overlay:", e);
+            // Fallback to alert in case of error
+            alert(`GAME TERMINATED: ${data.message}`);
+        }
+    } catch (error) {
+        console.error("CRITICAL ERROR in handlePlayerDisconnected:", error);
+        // Last resort fallback
+        alert(`EMERGENCY: Game terminated! ${data.message || "Opponent disconnected."}`);
+    }
+}
+
+// Function to handle game paused message
+function handleGamePaused(data) {
+    console.log('Received game_paused message:', data);
+    
+    // Store previous state for comparison
+    const wasPaused = isPaused;
+    
+    // Update local state from server
+    isPaused = data.paused;
+    pausedByClientId = data.pausedByClientId;
+    const resumedByClientId = data.resumedByClientId;
+    remainingPauseTime = data.remainingTime;
+    const isAutoResumed = data.autoResumed || false;
+
+    console.log(`Pause state changed: ${wasPaused} -> ${isPaused}`);
+    if (isPaused) {
+        console.log(`Game paused by: ${pausedByClientId}`);
+    } else {
+        console.log(`Game resumed by: ${resumedByClientId || pausedByClientId}`);
+        // Add a chat message to show who resumed the game
+        if (!isAutoResumed && resumedByClientId) {
+            const chatBox = document.getElementById("chat-box");
+            const isMe = resumedByClientId === clientId;
+            chatBox.innerHTML += `<p><em>Game resumed by ${isMe ? 'you' : 'opponent'}</em></p>`;
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+    }
+
+    if (isAutoResumed && !isPaused) {
+        // Game was auto-resumed after timeout
+        const chatBox = document.getElementById("chat-box");
+        chatBox.innerHTML += `<p><em>Game automatically resumed after 30 second timeout</em></p>`;
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    if (isPaused) {
+        // Game is being paused - stop animation
+        console.log(`Pausing animation. Current animationFrameId: ${animationFrameId}`);
+        
+        if (animationFrameId) {
+            console.log(`Cancelling animation frame: ${animationFrameId}`);
+            window.cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
+        }
+        
+        // Start the pause timer for everyone except the person who paused
+        if (clientId !== pausedByClientId) {
+            console.log(`Starting pause timer for client ${clientId}`);
+            startPauseTimer();
+        }
+    } else {
+        // Game is being resumed
+        console.log(`Resuming animation. Current animationFrameId: ${animationFrameId}`);
+        
+        // Clear timer
+        clearPauseTimer();
+        
+        // Restart animation forcefully
+        if (isGameStarted) {
+            // Always cancel existing frames first
+            if (animationFrameId) {
+                console.log(`Cancelling existing animation frame: ${animationFrameId}`);
+                window.cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+            
+            // Use setTimeout to ensure clean execution stack
+            setTimeout(() => {
+                console.log("Starting new animation frame from game_paused handler");
+                lastTime = performance.now();
+                animationFrameId = window.requestAnimationFrame(drawGame);
+                console.log(`New animation frame ID: ${animationFrameId}`);
+            }, 0);
+        }
+    }
+    
+    // Update UI
+    updatePauseButtonState();
+    updateGameStatus();
+} 

@@ -1,6 +1,7 @@
 import json
 import uuid
 import asyncio
+import datetime
 from channels.generic.websocket import AsyncWebsocketConsumer
 from django.contrib.sessions.backends.db import SessionStore
 from channels.layers import get_channel_layer
@@ -68,30 +69,87 @@ class PongConsumer(AsyncWebsocketConsumer):
         )
 
     async def disconnect(self, close_code):
-        # Leave room group
-        await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
+        print(f"DISCONNECT TRIGGERED for client {self.client_id} in room {self.room_name}, code: {close_code}")
         
-        # Check if this player was actively participating in the game
-        # Get the current game state to see if this client was one of the active players
+        # Check for active player before doing anything else
+        is_active_player = False
+        player_number = 0
+        
         try:
-            # Only act if game exists
-            if self.room_name in self.game_tasks:
-                # Get the game state first to check player IDs
-                game_info = await PongGameLogic.get_game_player_info(self.room_name)
+            # Quick check if we're an active player to send notification BEFORE leaving the group
+            # Get game info to check player IDs
+            game_info = await PongGameLogic.get_game_player_info(self.room_name)
+            
+            if game_info:
+                if game_info.get('player1_id') == self.client_id:
+                    is_active_player = True
+                    player_number = 1
+                elif game_info.get('player2_id') == self.client_id:
+                    is_active_player = True
+                    player_number = 2
+            
+            # If we're an active player, send notification FIRST before leaving group
+            if is_active_player:
+                player_label = f"Player {player_number}"
+                print(f"⚠️ ACTIVE PLAYER {self.client_id} ({player_label}) DISCONNECTED from room: {self.room_name}")
                 
-                # Only cancel the game task if this is one of the active players
-                if game_info and (game_info.get('player1_id') == self.client_id or 
-                                game_info.get('player2_id') == self.client_id):
-                    print(f"Active player {self.client_id} disconnected from room: {self.room_name}")
-                    
-                    # Cancel game task since an active player disconnected
-                    if self.room_name in self.game_tasks:
+                # Send disconnection message BEFORE leaving the group
+                await self.channel_layer.group_send(
+                    self.room_group_name,
+                    {
+                        'type': 'player_disconnected',
+                        'client_id': self.client_id,
+                        'player_number': player_number,
+                        'player_label': player_label,
+                        'message': f"⚠️ {player_label} HAS DISCONNECTED! The game has been terminated.",
+                        'timestamp': str(datetime.datetime.now())
+                    }
+                )
+                
+                # Give the message time to be delivered
+                await asyncio.sleep(0.2)
+        except Exception as e:
+            print(f"Error during pre-disconnect notification: {e}")
+        
+        # Now leave the room group
+        try:
+            await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
+            print(f"Removed {self.client_id} from group {self.room_group_name}")
+        except Exception as e:
+            print(f"Error removing from group: {e}")
+        
+        # Handle active player disconnect tasks
+        if is_active_player:
+            try:
+                # Mark the game as inactive in the database
+                try:
+                    from .models import Game
+                    game = await sync_to_async(Game.objects.get)(room_name=self.room_name, is_active=True)
+                    await sync_to_async(setattr)(game, 'is_active', False)
+                    await sync_to_async(game.save)()
+                    print(f"Game {self.room_name} marked as inactive in database")
+                except Exception as e:
+                    print(f"Error updating game in database: {e}")
+                
+                # Remove from paused games set
+                if self.room_name in self.paused_games:
+                    self.paused_games.discard(self.room_name)
+                    print(f"Removed {self.room_name} from paused games")
+                
+                # Cancel game task
+                if self.room_name in self.game_tasks:
+                    try:
                         self.game_tasks[self.room_name].cancel()
                         del self.game_tasks[self.room_name]
-                else:
-                    print(f"Spectator/rejected player {self.client_id} disconnected from room: {self.room_name}")
-        except Exception as e:
-            print(f"Error in disconnect: {e}")
+                        print(f"Canceled game task for room {self.room_name}")
+                    except Exception as e:
+                        print(f"Error canceling game task: {e}")
+            except Exception as e:
+                print(f"Error in active player cleanup: {e}")
+        else:
+            print(f"Non-active player {self.client_id} disconnected from room: {self.room_name}")
+        
+        print(f"Disconnect processing completed for {self.client_id}")
 
     async def receive(self, text_data):
         """Receive message from WebSocket."""
@@ -253,6 +311,33 @@ class PongConsumer(AsyncWebsocketConsumer):
             'remainingTime': event['remainingTime'],
             'autoResumed': event.get('autoResumed', False)
         }))
+
+    async def player_disconnected(self, event):
+        """Handle player disconnected event."""
+        try:
+            disconnected_client_id = event.get('client_id', '')
+            player_number = event.get('player_number', 0)
+            player_label = event.get('player_label', f"Player {player_number}")
+            message = event.get('message', f"{player_label} has disconnected from the game.")
+            timestamp = event.get('timestamp', '')
+            
+            # Log the event
+            print(f"⚠️ SENDING player_disconnected to client {self.client_id} about {disconnected_client_id}")
+            
+            # Send the player_disconnected message to WebSocket with emergency flag
+            await self.send(text_data=json.dumps({
+                'type': 'player_disconnected',
+                'client_id': disconnected_client_id,
+                'player_number': player_number,
+                'player_label': player_label,
+                'message': message,
+                'timestamp': timestamp,
+                'emergency': True  # Flag to ensure client treats this as highest priority
+            }))
+            
+            print(f"✅ SENT player_disconnected to client {self.client_id}")
+        except Exception as e:
+            print(f"❌ ERROR in player_disconnected handler: {e}")
 
     @sync_to_async
     def get_or_create_session(self):
