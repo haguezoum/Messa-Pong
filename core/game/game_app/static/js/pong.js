@@ -225,6 +225,11 @@ function requestNextFrame() {
 
 // Update the updateGameState function to reconcile server state with predicted state
 function updateGameState(state) {
+    // Check for score changes and animate if needed
+    if (gameState.player1_score !== state.player1_score || gameState.player2_score !== state.player2_score) {
+        updateScoreWithAnimation(gameState.player1_score, state.player1_score, gameState.player2_score, state.player2_score);
+    }
+    
     // Update the game state from server
     gameState = state;
     
@@ -526,10 +531,16 @@ function handlePlayerJoined(data) {
         updateGameState(data.state);
     }
     
-    // Add chat message
-    const isMe = data.client_id === clientId;
+    // Add chat message as a system message
     const chatBox = document.getElementById("chat-box");
-    chatBox.innerHTML += `<p><strong>${isMe ? 'You' : 'Opponent'}</strong> joined the game</p>`;
+    const isMe = data.client_id === clientId;
+    const messageHTML = `
+        <div class="chat-message system">
+            <div class="content"><strong>${isMe ? 'You' : 'Opponent'}</strong> joined the game</div>
+            <div class="time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+        </div>
+    `;
+    chatBox.innerHTML += messageHTML;
     chatBox.scrollTop = chatBox.scrollHeight;
 }
 
@@ -537,8 +548,31 @@ function handlePlayerJoined(data) {
 function handleChatMessage(data) {
     const isMe = data.client_id === clientId;
     const chatBox = document.getElementById("chat-box");
-    chatBox.innerHTML += `<p><strong>${isMe ? 'You' : 'Opponent'}</strong>: ${data.message}</p>`;
+    
+    // Create a formatted time string
+    const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    
+    // Create the chat message with proper styling
+    const messageHTML = `
+        <div class="chat-message ${isMe ? 'self' : 'other'}">
+            <div class="sender">${isMe ? 'You' : 'Opponent'}</div>
+            <div class="content">${escapeHTML(data.message)}</div>
+            <div class="time">${time}</div>
+        </div>
+    `;
+    
+    chatBox.innerHTML += messageHTML;
     chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+// Helper function to escape HTML to prevent XSS
+function escapeHTML(unsafe) {
+    return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
 
 // Function to handle game over
@@ -565,9 +599,21 @@ function handleGameOver(data) {
     
     document.getElementById("game-status").innerText = message;
     
-    // Add chat message
+    // Add chat message as a system message with special styling
     const chatBox = document.getElementById("chat-box");
-    chatBox.innerHTML += `<p><strong>Game Over</strong>: ${message}</p>`;
+    const messageHTML = `
+        <div class="chat-message system" style="font-weight: bold; background-color: ${
+            message === "You win!" ? "rgba(52, 199, 89, 0.2)" : 
+            message === "You lose!" ? "rgba(255, 59, 48, 0.2)" : "rgba(255, 255, 255, 0.15)"
+        }; border-left-color: ${
+            message === "You win!" ? "var(--success-color)" : 
+            message === "You lose!" ? "var(--danger-color)" : "rgba(255, 255, 255, 0.3)"
+        };">
+            <div class="content"><strong>Game Over:</strong> ${message}</div>
+            <div class="time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+        </div>
+    `;
+    chatBox.innerHTML += messageHTML;
     chatBox.scrollTop = chatBox.scrollHeight;
 }
 
@@ -577,12 +623,17 @@ function sendChatMessage() {
     const message = input.value.trim();
     
     if (message) {
+        // Send to server
         sendWsMessage({
             type: 'chat',
             message: message
         });
         
+        // Clear input
         input.value = "";
+        
+        // Re-focus on input for continued typing
+        input.focus();
     }
 }
 
@@ -985,6 +1036,22 @@ window.forcePauseResume = function(forcePause) {
     return checkGameState();
 };
 
+// Add disconnection message to chat with proper formatting
+function addDisconnectionMessage(message) {
+    const chatBox = document.getElementById("chat-box");
+    const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    
+    const messageHTML = `
+        <div class="chat-message system emergency">
+            <div class="content"><strong>⚠️ SYSTEM ALERT:</strong> ${message}</div>
+            <div class="time">${time}</div>
+        </div>
+    `;
+    
+    chatBox.innerHTML += messageHTML;
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+
 // Function to handle player disconnection - EMERGENCY VERSION
 function handlePlayerDisconnected(data) {
     console.log("🔴 PLAYER DISCONNECTED EVENT RECEIVED:", data);
@@ -1014,23 +1081,9 @@ function handlePlayerDisconnected(data) {
         
         console.log("Game state forcibly reset");
         
-        // Add a message to the chat with timestamp
-        try {
-            const chatBox = document.getElementById("chat-box");
-            if (chatBox) {
-                chatBox.innerHTML += `
-                    <p class="system-message emergency">
-                        <strong>⚠️ SYSTEM ALERT:</strong> ${data.message}
-                        <br><small>at ${new Date().toLocaleTimeString()}</small>
-                    </p>`;
-                chatBox.scrollTop = chatBox.scrollHeight;
-                console.log("Chat message added");
-            }
-        } catch (e) {
-            console.error("Error updating chat:", e);
-        }
+        // Add a message to the chat with timestamp - use our new function
+        addDisconnectionMessage(data.message);
         
-        // Create full-page overlay that can't be missed
         try {
             // Remove any existing overlay first
             const existingOverlay = document.getElementById("disconnect-overlay");
@@ -1074,7 +1127,7 @@ function handlePlayerDisconnected(data) {
             // Add disconnect message with warning icon
             messageContainer.innerHTML = `
                 <h1 style="font-size: 36px; margin-bottom: 20px; text-transform: uppercase; color: white;">
-                    ⚠️ Connection Lost ⚠️
+                    ⚠️ CONNECTION LOST ⚠️
                 </h1>
                 <h2 style="font-size: 24px; margin-bottom: 20px; color: white;">
                     ${data.player_label} has disconnected
@@ -1126,22 +1179,24 @@ function handlePlayerDisconnected(data) {
             messageContainer.appendChild(newGameBtn);
             overlay.appendChild(messageContainer);
             
-            // Add disconnect timestamp at the bottom
+            // Add disconnect timestamp at the bottom with improved formatting
             const timestamp = document.createElement("p");
             timestamp.style.cssText = `
                 margin-top: 20px;
                 color: rgba(255, 255, 255, 0.7);
                 font-size: 14px;
+                background-color: rgba(0, 0, 0, 0.5);
+                padding: 5px 10px;
+                border-radius: 5px;
             `;
-            timestamp.innerText = `Disconnection occurred at ${new Date().toLocaleTimeString()}`;
+            timestamp.innerText = `Disconnection occurred at ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
             overlay.appendChild(timestamp);
             
             // Add to document
             document.body.appendChild(overlay);
-            console.log("Disconnect overlay created and added to page");
+            console.log("Disconnect overlay added");
             
             // Disable pause button if it exists
-            const pauseButton = document.getElementById("pauseButton");
             if (pauseButton) {
                 pauseButton.disabled = true;
                 console.log("Pause button disabled");
@@ -1157,8 +1212,8 @@ function handlePlayerDisconnected(data) {
                 console.log("Game status updated");
             }
             
-        } catch (e) {
-            console.error("Error creating disconnect overlay:", e);
+        } catch (error) {
+            console.error("Error creating disconnect overlay:", error);
             // Fallback to alert in case of error
             alert(`GAME TERMINATED: ${data.message}`);
         }
@@ -1186,13 +1241,34 @@ function handleGamePaused(data) {
     console.log(`Pause state changed: ${wasPaused} -> ${isPaused}`);
     if (isPaused) {
         console.log(`Game paused by: ${pausedByClientId}`);
+        // Add a chat message to show who paused the game
+        const chatBox = document.getElementById("chat-box");
+        const isMe = pausedByClientId === clientId;
+        const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        
+        const messageHTML = `
+            <div class="chat-message system">
+                <div class="content"><strong>${isMe ? 'You' : 'Opponent'}</strong> paused the game</div>
+                <div class="time">${time}</div>
+            </div>
+        `;
+        chatBox.innerHTML += messageHTML;
+        chatBox.scrollTop = chatBox.scrollHeight;
     } else {
         console.log(`Game resumed by: ${resumedByClientId || pausedByClientId}`);
         // Add a chat message to show who resumed the game
         if (!isAutoResumed && resumedByClientId) {
             const chatBox = document.getElementById("chat-box");
             const isMe = resumedByClientId === clientId;
-            chatBox.innerHTML += `<p><em>Game resumed by ${isMe ? 'you' : 'opponent'}</em></p>`;
+            const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            
+            const messageHTML = `
+                <div class="chat-message system">
+                    <div class="content"><strong>${isMe ? 'You' : 'Opponent'}</strong> resumed the game</div>
+                    <div class="time">${time}</div>
+                </div>
+            `;
+            chatBox.innerHTML += messageHTML;
             chatBox.scrollTop = chatBox.scrollHeight;
         }
     }
@@ -1200,7 +1276,15 @@ function handleGamePaused(data) {
     if (isAutoResumed && !isPaused) {
         // Game was auto-resumed after timeout
         const chatBox = document.getElementById("chat-box");
-        chatBox.innerHTML += `<p><em>Game automatically resumed after 30 second timeout</em></p>`;
+        const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        
+        const messageHTML = `
+            <div class="chat-message system">
+                <div class="content">Game automatically resumed after 30 second timeout</div>
+                <div class="time">${time}</div>
+            </div>
+        `;
+        chatBox.innerHTML += messageHTML;
         chatBox.scrollTop = chatBox.scrollHeight;
     }
 
@@ -1248,4 +1332,62 @@ function handleGamePaused(data) {
     // Update UI
     updatePauseButtonState();
     updateGameStatus();
+}
+
+// Function to update scores with animation
+function updateScoreWithAnimation(oldP1Score, newP1Score, oldP2Score, newP2Score) {
+    const p1ScoreElem = document.getElementById("player1-score");
+    const p2ScoreElem = document.getElementById("player2-score");
+    
+    // Update Player 1 score with animation if changed
+    if (oldP1Score !== newP1Score) {
+        // Remove any existing animation
+        p1ScoreElem.classList.remove("score-changed");
+        
+        // Set the new score
+        p1ScoreElem.textContent = newP1Score;
+        
+        // Force a reflow to restart animation
+        void p1ScoreElem.offsetWidth;
+        
+        // Add the animation class
+        p1ScoreElem.classList.add("score-changed");
+        
+        // Add a chat message
+        addSystemChatMessage(`Player 1 scores! (${newP1Score}-${newP2Score})`);
+    }
+    
+    // Update Player 2 score with animation if changed
+    if (oldP2Score !== newP2Score) {
+        // Remove any existing animation
+        p2ScoreElem.classList.remove("score-changed");
+        
+        // Set the new score
+        p2ScoreElem.textContent = newP2Score;
+        
+        // Force a reflow to restart animation
+        void p2ScoreElem.offsetWidth;
+        
+        // Add the animation class
+        p2ScoreElem.classList.add("score-changed");
+        
+        // Add a chat message
+        addSystemChatMessage(`Player 2 scores! (${newP1Score}-${newP2Score})`);
+    }
+}
+
+// Helper function to add system messages to chat
+function addSystemChatMessage(message) {
+    const chatBox = document.getElementById("chat-box");
+    const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    
+    const messageHTML = `
+        <div class="chat-message system">
+            <div class="content">${message}</div>
+            <div class="time">${time}</div>
+        </div>
+    `;
+    
+    chatBox.innerHTML += messageHTML;
+    chatBox.scrollTop = chatBox.scrollHeight;
 } 
