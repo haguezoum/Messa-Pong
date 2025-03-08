@@ -1,7 +1,11 @@
-FROM	alpine:3.19
+FROM		alpine:3.19
 
-WORKDIR	/www
+RUN		apk add --no-cache darkhttpd
 
-COPY	. /www
+WORKDIR		/www
 
-CMD ["tail", "-F"]
+COPY		. /www
+
+EXPOSE		8080/tcp
+
+ENTRYPOINT	[ "darkhttpd", ".", "--port", "8080" ]
