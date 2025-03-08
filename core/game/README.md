@@ -24,6 +24,7 @@ A real-time multiplayer Pong game built with Django Channels and WebSockets.
 - [Technical Optimizations](#technical-optimizations)
 - [Game Pause Functionality](#game-pause-functionality)
 - [Room Management](#room-management)
+- [Player Disconnection Handling](#player-disconnection-handling)
 - [Contributors](#contributors)
 
 ## Overview
@@ -735,6 +736,82 @@ This room management system ensures that:
 - Rejected players receive clear feedback about why they can't join
 - Ongoing games are protected from interference by third parties
 - The disconnect process is context-aware and optimized
+
+## Player Disconnection Handling
+
+The game implements a robust disconnection handling system that ensures a smooth user experience when one of the players unexpectedly leaves the game:
+
+1. **Immediate Detection and Notification**:
+   - When a player disconnects, the server immediately detects this event
+   - A high-priority notification is sent to the remaining player before cleaning up resources
+   - The system uses a carefully sequenced notification process to ensure the message is delivered
+
+2. **Full-Screen Emergency Overlay**:
+   - When a player disconnects, the remaining player sees an unmissable full-screen overlay
+   - The overlay includes clear information about what happened and next steps
+   - Animated warning with vibrant colors ensures the notification can't be missed
+   - Provides a clear option to start a new game with one click
+
+3. **Game State Management**:
+   - The game is immediately marked as inactive in the database
+   - All animation frames and timers are stopped to prevent UI glitches
+   - Game loop tasks are properly canceled on the server
+   - Multiple safeguards ensure complete termination of the game session
+
+4. **Implementation Details**:
+   ```javascript
+   // Client-side handling with high visibility emergency overlay
+   function handlePlayerDisconnected(data) {
+       // Stop all animations and clear all timers
+       window.opponentDisconnected = true;
+       isPaused = true;
+       isGameStarted = false;
+       
+       // Create a full-page overlay with warning styling
+       const overlay = document.createElement("div");
+       overlay.id = "disconnect-overlay";
+       // ... styling to ensure it's unmissable ...
+       
+       // Display disconnection information
+       messageContainer.innerHTML = `
+           <h1>⚠️ Connection Lost ⚠️</h1>
+           <h2>${data.player_label} has disconnected</h2>
+           <p>${data.message}</p>
+           <!-- New game button -->
+       `;
+       
+       // Provide new game option
+       document.body.appendChild(overlay);
+   }
+   ```
+
+5. **Backend Architecture**:
+   ```python
+   async def disconnect(self, close_code):
+       # Check if this is an active player
+       game_info = await PongGameLogic.get_game_player_info(self.room_name)
+       if game_info and (game_info.get('player1_id') == self.client_id or 
+                      game_info.get('player2_id') == self.client_id):
+           # Send notification BEFORE leaving the group
+           await self.channel_layer.group_send(
+               self.room_group_name,
+               {
+                   'type': 'player_disconnected',
+                   'client_id': self.client_id,
+                   'player_number': player_number,
+                   'message': f"Player {player_number} has disconnected!"
+               }
+           )
+           
+           # Mark game as inactive and clean up resources
+   ```
+
+6. **Fallback Mechanisms**:
+   - Multiple layers of error handling ensure important notifications are delivered
+   - Fallback to system alerts if the overlay can't be created
+   - Server-side redundancy in communication ensures messages reach the client
+
+This comprehensive approach prevents games from getting stuck in an unresolved state when a player disconnects, providing clear feedback to the remaining player and allowing them to start a new game immediately. The system is designed with multiple redundancies to work reliably across different scenarios and browser environments.
 
 ## Contributors
 
