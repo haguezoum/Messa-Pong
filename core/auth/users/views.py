@@ -29,16 +29,16 @@ class LoginView(APIView):
         password = serializer.validated_data['password']
         user = None
 
-        # First try to authenticate with the login value as username
-        user = authenticate(username=login, password=password)
-
-        # If authentication fails, try to find user by email
-        if user is None:
+        # Check if login is an email
+        if '@' in login:
             try:
-                user_obj = User.objects.get(email=login)
-                user = authenticate(username=user_obj.username, password=password)
-            except ObjectDoesNotExist:
+                user = User.objects.get(email=login)
+                user = authenticate(username=user.username, password=password)
+            except User.DoesNotExist:
                 pass
+        else:
+            # Login with username directly
+            user = authenticate(username=login, password=password)
 
         if user is None:
             return Response({
