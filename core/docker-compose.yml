@@ -18,6 +18,12 @@ services:
         depends_on:
             redis:
                 condition: service_healthy
+        security_opt:
+            - no-new-privileges:true
+        cap_drop:
+            - ALL
+        cap_add:
+            - NET_BIND_SERVICE
         restart: always
 
     frontend:
@@ -31,6 +37,14 @@ services:
             42network:
                 aliases:
                     - frontend
+        deploy:
+            resources:
+                limits:
+                    cpus: '0.50'
+                    memory: 256M
+                reservations:
+                    cpus: '0.25'
+                    memory: 128M
         restart: always
 
     database:
@@ -53,6 +67,11 @@ services:
             timeout: 10s
             retries: 5
             start_period: 50s
+        logging:
+            driver: "json-file"
+            options:
+                max-size: "10m"
+                max-file: "3"
         restart: always
 
     redis:
@@ -66,10 +85,10 @@ services:
                     - redis
         healthcheck:
             test: ["CMD", "redis-cli", "ping"]
-            interval: 5s
-            timeout: 2s
+            interval: 10s
+            timeout: 5s
             retries: 3
-            start_period: 10s
+            start_period: 30s
         depends_on:
             database:
                 condition: service_healthy
@@ -87,126 +106,40 @@ services:
     #     depends_on:
     #         redis:
     #             condition: service_healthy
+    #     healthcheck:
+    #         test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+    #         interval: 30s
+    #         timeout: 10s
+    #         retries: 3
+    #         start_period: 30s
     #     restart: always
 
-    # chat:
-    #     image: chat:messenger
-    #     container_name: chat
-    #     build:
-    #         context: ./chat
-    #     networks:
-    #         42network:
-    #             aliases:
-    #                 - chat
-    #     depends_on:
-    #         redis:
-    #             condition: service_healthy
-    #     restart: always
-
-    elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:8.7.1
-        container_name: elasticsearch
-        environment:
-            - discovery.type=single-node
-            - xpack.security.enabled=true
-            - xpack.security.authc.api_key.enabled=true
-            - ELASTIC_PASSWORD_FILE=/run/secrets/elk-credentials
-        volumes:
-            - elk-data:/var/lib/elasticsearch
-            - ./infrastructure/elk/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+    chat:
+        image: chat:messenger
+        container_name: chat
+        build:
+            context: ./chat
         networks:
             42network:
                 aliases:
-                    - elasticsearch
+                    - chat
         secrets:
-            - elk-credentials
+            - database-credentials
+        environment:
+            - DJANGO_SETTINGS_MODULE=chat.settings
+            - PG_HOST=database
+            - PG_PORT=5432
+        depends_on:
+            database:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
         healthcheck:
-            test: ["CMD-SHELL", "curl -sS http://localhost:9200/_cluster/health | grep -q '\"status\":\"green\"'"]
+            test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
             interval: 30s
             timeout: 10s
-            retries: 5
+            retries: 3
             start_period: 30s
-        deploy:
-            resources:
-                limits:
-                    memory: 512M
-        restart: always
-
-    logstash:
-        image: docker.elastic.co/logstash/logstash:8.7.1
-        container_name: logstash
-        volumes:
-            - ./infrastructure/elk/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
-            - ./infrastructure/elk/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
-        networks:
-            42network:
-                aliases:
-                    - logstash
-        depends_on:
-            elasticsearch:
-                condition: service_healthy
-        environment:
-            - LS_JAVA_OPTS=-Xms256m -Xmx256m
-            - LOGSTASH_PASSWORD_FILE=/run/secrets/elk-credentials
-        secrets:
-            - elk-credentials
-        command: >
-            sh -c "
-              export LOGSTASH_ELASTIC_PASSWORD=$(cat /run/secrets/elk-credentials);
-              exec logstash -f /usr/share/logstash/pipeline
-            "
-        deploy:
-            resources:
-                limits:
-                    memory: 256M
-        restart: always
-
-    kibana:
-        image: docker.elastic.co/kibana/kibana:8.7.1
-        container_name: kibana
-        ports:
-            - 5601:5601/tcp
-        networks:
-            42network:
-                aliases:
-                    - kibana
-        depends_on:
-            elasticsearch:
-                condition: service_healthy
-        environment:
-            - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-            - ELASTICSEARCH_USERNAME=elastic
-            - ELASTICSEARCH_PASSWORD_FILE=/run/secrets/elk-credentials
-        secrets:
-            - elk-credentials
-        command: >
-            sh -c "
-              export ELASTICSEARCH_PASSWORD=$(cat /run/secrets/elk-credentials);
-              exec /usr/local/bin/kibana-docker
-            "
-        deploy:
-            resources:
-                limits:
-                    memory: 512M
-        restart: always
-
-    filebeat:
-        image: docker.elastic.co/beats/filebeat:8.7.1
-        container_name: filebeat
-        volumes:
-            - /var/lib/docker/containers:/var/lib/docker/containers:ro
-            - ./infrastructure/elk/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
-        networks:
-            42network:
-                aliases:
-                    - filebeat
-        depends_on:
-            logstash:
-                condition: service_healthy
-        deploy:
-            resources:
-                limits:
-                    memory: 128M
         restart: always
 
     # auth:
@@ -239,6 +172,82 @@ services:
     #         start_period: 10s
     #     restart: always
 
+    # elasticsearch:
+    #     image: docker.elastic.co/elasticsearch/elasticsearch:8.12.2
+    #     container_name: elasticsearch
+    #     environment:
+    #         - discovery.type=single-node
+    #         - ES_JAVA_OPTS=-Xms256m -Xmx256m
+    #         - xpack.security.enabled=true
+    #         - ELASTIC_PASSWORD_FILE=/run/secrets/elk-credentials
+    #         - bootstrap.memory_lock=true
+    #         - cluster.routing.allocation.disk.threshold_enabled=false
+    #     ulimits:
+    #         memlock:
+    #             soft: -1
+    #             hard: -1
+    #     volumes:
+    #         - elk-data:/usr/share/elasticsearch/data:delegated
+    #     networks:
+    #         42network:
+    #             aliases:
+    #                 - elasticsearch
+    #     secrets:
+    #         - elk-credentials
+    #     deploy:
+    #         resources:
+    #             limits:
+    #                 memory: 512M
+    #     healthcheck:
+    #         test: ["CMD", "curl", "-f", "http://localhost:9200"]
+    #         interval: 30s
+    #         timeout: 10s
+    #         retries: 3
+    #     restart: always
+    #
+    # logstash:
+    #     image: docker.elastic.co/logstash/logstash:8.12.2
+    #     container_name: logstash
+    #     environment:
+    #         - LS_JAVA_OPTS=-Xms128m -Xmx128m
+    #         - pipeline.workers=2
+    #         - pipeline.batch.size=125
+    #     networks:
+    #         42network:
+    #             aliases:
+    #                 - logstash
+    #     depends_on:
+    #         elasticsearch:
+    #             condition: service_healthy
+    #     deploy:
+    #         resources:
+    #             limits:
+    #                 memory: 256M
+    #     restart: always
+    #
+    # kibana:
+    #     image: docker.elastic.co/kibana/kibana:8.12.2
+    #     container_name: kibana
+    #     environment:
+    #         - ELASTICSEARCH_URL=http://elasticsearch:9200
+    #         - ELASTICSEARCH_USERNAME=${KIBANA_USERNAME}
+    #         - ELASTICSEARCH_PASSWORD_FILE=/run/secrets/elk-credentials
+    #         - SERVER_MAXPAYLOADBYTES=1048576
+    #         - KIBANA_CACHE_ENABLED=true
+    #     networks:
+    #         42network:
+    #             aliases:
+    #                 - kibana
+    #     secrets:
+    #         - elk-credentials
+    #     depends_on:
+    #         elasticsearch:
+    #             condition: service_healthy
+    #     deploy:
+    #         resources:
+    #             limits:
+    #                 memory: 256M
+    #     restart: always
 
 volumes:
     database-data:
@@ -255,6 +264,8 @@ networks:
     42network:
         name: 42network
         driver: bridge
+        driver_opts:
+            com.docker.network.driver.mtu: 1450
 
 
 secrets:

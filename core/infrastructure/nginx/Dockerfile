@@ -12,16 +12,28 @@
 
 FROM		alpine:3.19
 
+RUN 		addgroup -S nginx && \
+		adduser -S -G nginx -h /var/cache/nginx -s /sbin/nologin nginx 
+
+RUN 		mkdir -p /www /etc/nginx/ssl /var/log/nginx /run/nginx && \
+		chown -R nginx:nginx /var/log/nginx /run/nginx /www /etc/nginx/ssl 
+
+RUN		apk update && apk add --no-cache \
+		nginx \
+		openssl \
+		curl && \
+		rm -rf /var/cache/apk/* 
+
+COPY		./configuration/http.conf /etc/nginx/nginx.conf
+COPY		./configuration/default.conf /etc/nginx/http.d/default.conf
 COPY		./tools/launcher.sh /
 
-COPY		./configuration/default.conf /etc/nginx/http.d/default.conf
+RUN		chmod +x /launcher.sh && \
+		ln -sf /dev/stdout /var/log/nginx/access.log && \
+		ln -sf /dev/stderr /var/log/nginx/error.log
 
-RUN		apk update && apk add --no-cache nginx \
-		openssl && mkdir -p /www /etc/nginx/ssl && chmod +x launcher.sh && \
-		ln -s /dev/stdout /var/log/nginx/access.log && \
-		ln -s /dev/stderr /var/log/nginx/error.log && \
-		rm -rf /var/cache/apk/*
+USER		nginx
 
-EXPOSE		443/tcp 80/tcp
+EXPOSE		80/tcp 443/tcp
 
 ENTRYPOINT	[ "sh", "./launcher.sh" ]
