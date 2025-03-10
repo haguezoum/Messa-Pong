@@ -12,14 +12,17 @@
 
 FROM		alpine:3.19
 
+RUN		apk add --no-cache postgresql postgresql-contrib
+
 COPY		./tools/setup.sh /setup.sh
 
-RUN		apk add --no-cache postgresql curl jq su-exec && \
-		install -do postgres -g postgres /var/lib/postgresql/data && \
-		install -do postgres -g postgres /run/postgresql && chmod +x /setup.sh
+RUN		chmod +x /setup.sh
 
 USER		postgres
 
 EXPOSE		5432/tcp
 
-ENTRYPOINT	[ "sh", "/setup.sh" ]
+HEALTHCHECK --interval=10s --timeout=5s --retries=3 \
+  CMD pg_isready -U postgres || exit 1
+
+ENTRYPOINT	[ "/setup.sh" ]

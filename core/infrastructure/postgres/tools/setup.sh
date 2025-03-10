@@ -1,63 +1,49 @@
 #!/bin/sh
 
+set -e
+
+# Load environment variables from secrets
 source /run/secrets/database-credentials
-set -eo pipefail
 
-: "${PG_NAME:?PG_NAME must be set}"
-: "${PG_USER:?PG_USER must be set}"
-: "${PG_PASSWD:?PG_PASSWD must be set}"
-
-PG_BIN="/usr/bin"
-DATA_DIR="/var/lib/postgresql/data"
+# Initialize PostgreSQL data directory
+PGDATA="/var/lib/postgresql/data"
 SOCKET_DIR="/run/postgresql"
 
+# Create necessary directories
 mkdir -p "${SOCKET_DIR}" && chown postgres:postgres "${SOCKET_DIR}"
-mkdir -p "${DATA_DIR}" && chown postgres:postgres "${DATA_DIR}"
+mkdir -p "${PGDATA}" && chown postgres:postgres "${PGDATA}"
 
-# Initialize PostgreSQL data directory if it doesn't exist
-if [ ! -s "${DATA_DIR}/PG_VERSION" ]; then
+if [ ! -s "${PGDATA}/PG_VERSION" ]; then
     echo "Initializing PostgreSQL database..."
-    "${PG_BIN}/initdb" -U postgres -D "${DATA_DIR}" --locale=C.UTF-8
+    su postgres -c "initdb -D ${PGDATA} --username=postgres --pwfile=<(echo \"${PG_PASSWD}\")"
 
-    # Modify postgresql.conf to allow remote connections
-    echo "listen_addresses='*'" >> "${DATA_DIR}/postgresql.conf"
-    
-    # Configure authentication
-    echo "host all all all md5" >> "${DATA_DIR}/pg_hba.conf"
+    # Configure PostgreSQL
+    cat >> "${PGDATA}/postgresql.conf" << EOF
+listen_addresses = '*'
+max_connections = 100
+shared_buffers = 128MB
+dynamic_shared_memory_type = posix
+max_wal_size = 1GB
+min_wal_size = 80MB
+log_timezone = 'UTC'
+datestyle = 'iso, mdy'
+timezone = 'UTC'
+lc_messages = 'en_US.utf8'
+lc_monetary = 'en_US.utf8'
+lc_numeric = 'en_US.utf8'
+lc_time = 'en_US.utf8'
+default_text_search_config = 'pg_catalog.english'
+EOF
+
+    # Configure access
+    cat >> "${PGDATA}/pg_hba.conf" << EOF
+local   all             all                                     trust
+host    all             all             127.0.0.1/32           md5
+host    all             all             ::1/128                md5
+host    all             all             0.0.0.0/0              md5
+EOF
 fi
 
-echo "Starting PostgreSQL..."
-if ! "${PG_BIN}/pg_ctl" -D "${DATA_DIR}" -l "${DATA_DIR}/logfile" -o "-k ${SOCKET_DIR}" start; then
-    echo "Failed to start PostgreSQL. Reinitializing data directory..."
-    rm -rf "${DATA_DIR}"/*
-    "${PG_BIN}/initdb" -U postgres -D "${DATA_DIR}" --locale=C.UTF-8
-    "${PG_BIN}/pg_ctl" -D "${DATA_DIR}" -l "${DATA_DIR}/logfile" -o "-k ${SOCKET_DIR}" start
-fi
-
-until "${PG_BIN}/pg_isready" -h "${SOCKET_DIR}"; do sleep 1; done
-
-echo "Configuring database..."
-if ! psql -h "${SOCKET_DIR}" -v ON_ERROR_STOP=1 -U postgres -tAc "SELECT 1 FROM pg_database WHERE datname='${PG_NAME}';" | grep -q 1; then
-    psql -h "${SOCKET_DIR}" -v ON_ERROR_STOP=1 -U postgres <<-EOSQL
-        CREATE DATABASE ${PG_NAME};
-        CREATE USER ${PG_USER} WITH PASSWORD '${PG_PASSWD}';
-        ALTER USER postgres PASSWORD '${PG_PASSWD}';
-        ALTER ROLE ${PG_USER} SET
-            client_encoding = 'utf8',
-            default_transaction_isolation = 'read committed',
-            timezone = 'UTC';
-        GRANT ALL PRIVILEGES ON DATABASE ${PG_NAME} TO ${PG_USER};
-EOSQL
-else
-    echo "Database '${PG_NAME}' already exists. Skipping creation."
-fi
-
-{
-    echo "Restarting PostgreSQL with updated configuration..."
-    
-    "${PG_BIN}/pg_ctl" -D "${DATA_DIR}" stop
-
-    echo "listen_addresses = '*'" >> "${DATA_DIR}/postgresql.conf"
-    echo "host all all 0.0.0.0/0 scram-sha-256" >> "${DATA_DIR}/pg_hba.conf"
-    exec "${PG_BIN}/postgres" -D "${DATA_DIR}" -k "${SOCKET_DIR}"
-}
+# Start PostgreSQL
+echo "Starting PostgreSQL server..."
+su postgres -c "postgres -D ${PGDATA}"
