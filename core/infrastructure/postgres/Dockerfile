@@ -14,10 +14,10 @@ FROM		alpine:3.19
 
 RUN		apk add --no-cache postgresql postgresql-contrib
 
-# Create postgres user and necessary directories if they don't exist
-RUN mkdir -p /var/lib/postgresql/data && \
-    chown -R postgres:postgres /var/lib/postgresql && \
-    chmod 700 /var/lib/postgresql/data
+# Create necessary directories and set permissions
+RUN mkdir -p /var/lib/postgresql/data /run/postgresql && \
+    chown -R postgres:postgres /var/lib/postgresql /run/postgresql && \
+    chmod 700 /var/lib/postgresql/data /run/postgresql
 
 COPY		--chown=postgres:postgres ./tools/setup.sh /setup.sh
 
