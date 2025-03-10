@@ -154,5 +154,3 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         invite = GameInvite.objects.get(sender=sender, receiver=receiver, room__name=room_name)
         invite.status = response
         invite.save()
-        
-        

@@ -15,8 +15,6 @@ done
 
 echo "Postgres is up - executing commands"
 
-mkdir -p /app/static /app/staticfiles
-
 python manage.py collectstatic --noinput --clear
 python manage.py makemigrations messenger
 python manage.py migrate
