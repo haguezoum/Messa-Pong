@@ -14,15 +14,22 @@ FROM		alpine:3.19
 
 RUN		apk add --no-cache postgresql postgresql-contrib
 
-COPY		./tools/setup.sh /setup.sh
+# Create postgres user and necessary directories
+RUN adduser -D -h /var/lib/postgresql postgres && \
+    mkdir -p /var/lib/postgresql/data && \
+    chown -R postgres:postgres /var/lib/postgresql
+
+COPY		--chown=postgres:postgres ./tools/setup.sh /setup.sh
 
 RUN		chmod +x /setup.sh
 
 USER		postgres
+WORKDIR /var/lib/postgresql
 
+VOLUME ["/var/lib/postgresql/data"]
 EXPOSE		5432/tcp
 
 HEALTHCHECK --interval=10s --timeout=5s --retries=3 \
   CMD pg_isready -U postgres || exit 1
 
-ENTRYPOINT	[ "/setup.sh" ]
+CMD ["/setup.sh"]
