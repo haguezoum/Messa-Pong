@@ -18,6 +18,8 @@ services:
         depends_on:
             redis:
                 condition: service_healthy
+            elasticsearch:
+                condition: service_healthy
         security_opt:
             - no-new-privileges:true
         cap_drop:
@@ -114,33 +116,33 @@ services:
     #         start_period: 30s
     #     restart: always
 
-    chat:
-        image: chat:messenger
-        container_name: chat
-        build:
-            context: ./chat
-        networks:
-            42network:
-                aliases:
-                    - chat
-        secrets:
-            - database-credentials
-        environment:
-            - DJANGO_SETTINGS_MODULE=chat.settings
-            - PG_HOST=database
-            - PG_PORT=5432
-        depends_on:
-            database:
-                condition: service_healthy
-            redis:
-                condition: service_healthy
-        healthcheck:
-            test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
-            interval: 30s
-            timeout: 10s
-            retries: 3
-            start_period: 30s
-        restart: always
+    # chat:
+    #     image: chat:messenger
+    #     container_name: chat
+    #     build:
+    #         context: ./chat
+    #     networks:
+    #         42network:
+    #             aliases:
+    #                 - chat
+    #     secrets:
+    #         - database-credentials
+    #     environment:
+    #         - DJANGO_SETTINGS_MODULE=chat.settings
+    #         - PG_HOST=database
+    #         - PG_PORT=5432
+    #     depends_on:
+    #         database:
+    #             condition: service_healthy
+    #         redis:
+    #             condition: service_healthy
+    #     healthcheck:
+    #         test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+    #         interval: 30s
+    #         timeout: 10s
+    #         retries: 3
+    #         start_period: 30s
+    #     restart: always
 
     # auth:
     #     image: auth:server
@@ -172,82 +174,88 @@ services:
     #         start_period: 10s
     #     restart: always
 
-    # elasticsearch:
-    #     image: docker.elastic.co/elasticsearch/elasticsearch:8.12.2
-    #     container_name: elasticsearch
-    #     environment:
-    #         - discovery.type=single-node
-    #         - ES_JAVA_OPTS=-Xms256m -Xmx256m
-    #         - xpack.security.enabled=true
-    #         - ELASTIC_PASSWORD_FILE=/run/secrets/elk-credentials
-    #         - bootstrap.memory_lock=true
-    #         - cluster.routing.allocation.disk.threshold_enabled=false
-    #     ulimits:
-    #         memlock:
-    #             soft: -1
-    #             hard: -1
-    #     volumes:
-    #         - elk-data:/usr/share/elasticsearch/data:delegated
-    #     networks:
-    #         42network:
-    #             aliases:
-    #                 - elasticsearch
-    #     secrets:
-    #         - elk-credentials
-    #     deploy:
-    #         resources:
-    #             limits:
-    #                 memory: 512M
-    #     healthcheck:
-    #         test: ["CMD", "curl", "-f", "http://localhost:9200"]
-    #         interval: 30s
-    #         timeout: 10s
-    #         retries: 3
-    #     restart: always
-    #
-    # logstash:
-    #     image: docker.elastic.co/logstash/logstash:8.12.2
-    #     container_name: logstash
-    #     environment:
-    #         - LS_JAVA_OPTS=-Xms128m -Xmx128m
-    #         - pipeline.workers=2
-    #         - pipeline.batch.size=125
-    #     networks:
-    #         42network:
-    #             aliases:
-    #                 - logstash
-    #     depends_on:
-    #         elasticsearch:
-    #             condition: service_healthy
-    #     deploy:
-    #         resources:
-    #             limits:
-    #                 memory: 256M
-    #     restart: always
-    #
-    # kibana:
-    #     image: docker.elastic.co/kibana/kibana:8.12.2
-    #     container_name: kibana
-    #     environment:
-    #         - ELASTICSEARCH_URL=http://elasticsearch:9200
-    #         - ELASTICSEARCH_USERNAME=${KIBANA_USERNAME}
-    #         - ELASTICSEARCH_PASSWORD_FILE=/run/secrets/elk-credentials
-    #         - SERVER_MAXPAYLOADBYTES=1048576
-    #         - KIBANA_CACHE_ENABLED=true
-    #     networks:
-    #         42network:
-    #             aliases:
-    #                 - kibana
-    #     secrets:
-    #         - elk-credentials
-    #     depends_on:
-    #         elasticsearch:
-    #             condition: service_healthy
-    #     deploy:
-    #         resources:
-    #             limits:
-    #                 memory: 256M
-    #     restart: always
+    elasticsearch:
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.12.2
+        container_name: elasticsearch
+        environment:
+            - discovery.type=single-node
+            - ES_JAVA_OPTS=-Xms256m -Xmx256m
+            - xpack.security.enabled=true
+            - ELASTIC_PASSWORD=Tarzan@1234 #i got problem of [File /run/secrets/elk-credentials from ELASTIC_PASSWORD_FILE is not readable.]
+            - bootstrap.memory_lock=true
+            - cluster.routing.allocation.disk.threshold_enabled=false
+        ulimits:
+            memlock:
+                soft: -1
+                hard: -1
+        volumes:
+            - elk-data:/usr/share/elasticsearch/data:delegated
+        networks:
+            42network:
+                aliases:
+                    - elasticsearch
+        secrets:
+            - elk-credentials
+        deploy:
+            resources:
+                limits:
+                    memory: 512M
+        healthcheck:
+            test: ["CMD", "curl", "-u", "elastic:Tarzan@1234", "-f", "http://localhost:9200"] 
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 60s
+            # test: ["CMD", "curl", "-f", "http://localhost:9200"]
+            # interval: 30s
+            # timeout: 10s
+            # retries: 3
+            # start_period: 50s
+        restart: always
+
+    logstash:
+        image: docker.elastic.co/logstash/logstash:8.12.2
+        container_name: logstash
+        environment:
+            - LS_JAVA_OPTS=-Xms128m -Xmx128m
+            - pipeline.workers=2
+            - pipeline.batch.size=125
+        networks:
+            42network:
+                aliases:
+                    - logstash
+        depends_on:
+            elasticsearch:
+                condition: service_healthy
+        deploy:
+            resources:
+                limits:
+                    memory: 256M
+        restart: always
+
+    kibana:
+        image: docker.elastic.co/kibana/kibana:8.12.2
+        container_name: kibana
+        environment:
+            - ELASTICSEARCH_URL=http://localhost:9200
+            - ELASTICSEARCH_USERNAME=kibana_system
+            - ELASTICSEARCH_PASSWORD=Tarzan@1234 #i got problem of [File /run/secrets/elk-credentials from ELASTIC_PASSWORD_FILE is not readable.]
+            - SERVER_MAXPAYLOADBYTES=1048576
+            - KIBANA_CACHE_ENABLED=true
+        networks:
+            42network:
+                aliases:
+                    - kibana
+        secrets:
+            - elk-credentials
+        depends_on:
+            elasticsearch:
+                condition: service_healthy
+        deploy:
+            resources:
+                limits:
+                    memory: 256M
+        restart: always
 
 volumes:
     database-data:
