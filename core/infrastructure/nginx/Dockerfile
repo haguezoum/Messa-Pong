@@ -12,17 +12,11 @@
 
 FROM		alpine:3.19
 
-RUN 		addgroup -S nginx && \
-		adduser -S -G nginx -h /var/cache/nginx -s /sbin/nologin nginx 
+RUN		apk update && apk add --no-cache nginx \
+		openssl curl && rm -rf /var/cache/apk/* 
 
 RUN 		mkdir -p /www /etc/nginx/ssl /var/log/nginx /run/nginx && \
 		chown -R nginx:nginx /var/log/nginx /run/nginx /www /etc/nginx/ssl 
-
-RUN		apk update && apk add --no-cache \
-		nginx \
-		openssl \
-		curl && \
-		rm -rf /var/cache/apk/* 
 
 COPY		./configuration/http.conf /etc/nginx/nginx.conf
 COPY		./configuration/default.conf /etc/nginx/http.d/default.conf
