@@ -22,7 +22,7 @@ class ChatRoomSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'created_at', 'messages', 'last_message']
         read_only_fields = ['id', 'created_at']
     
-    def get_last_message(self, obj):
+    def GetLastMessage(self, obj):
         last_message = obj.messages.order_by('-timestamp').first()
         if last_message:
             return MessageSerializer(last_message).data

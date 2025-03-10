@@ -126,7 +126,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
     @database_sync_to_async
     def GetLastMessages(self, limit=50):
         room = ChatRoom.objects.get(name=self.room_name)
-        return room.get_messages(limit)
+        return room.GetMessages(limit)
 
     async def SendLastMessages(self):
         messages = await self.GetLastMessages()

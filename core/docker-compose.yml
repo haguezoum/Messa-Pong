@@ -194,23 +194,18 @@ services:
             42network:
                 aliases:
                     - elasticsearch
-        secrets:
-            - elk-credentials
+        # secrets:
+        #     - elk-credentials
         deploy:
             resources:
                 limits:
                     memory: 512M
         healthcheck:
             test: ["CMD", "curl", "-u", "elastic:Tarzan@1234", "-f", "http://localhost:9200"] 
-            interval: 30s
-            timeout: 10s
+            interval: 15s
+            timeout: 5s
             retries: 3
-            start_period: 60s
-            # test: ["CMD", "curl", "-f", "http://localhost:9200"]
-            # interval: 30s
-            # timeout: 10s
-            # retries: 3
-            # start_period: 50s
+            start_period: 30s
         restart: always
 
     logstash:
@@ -239,15 +234,15 @@ services:
         environment:
             - ELASTICSEARCH_URL=http://localhost:9200
             - ELASTICSEARCH_USERNAME=kibana_system
-            - ELASTICSEARCH_PASSWORD=Tarzan@1234 #i got problem of [File /run/secrets/elk-credentials from ELASTIC_PASSWORD_FILE is not readable.]
+            - ELASTICSEARCH_PASSWORD=c2UOQ-PHvhwSomSwt3jk #i got problem of [File /run/secrets/elk-credentials from ELASTIC_PASSWORD_FILE is not readable.]
             - SERVER_MAXPAYLOADBYTES=1048576
             - KIBANA_CACHE_ENABLED=true
         networks:
             42network:
                 aliases:
                     - kibana
-        secrets:
-            - elk-credentials
+        # secrets:
+        #     - elk-credentials
         depends_on:
             elasticsearch:
                 condition: service_healthy

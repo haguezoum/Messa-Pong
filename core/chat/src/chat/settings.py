@@ -36,7 +36,6 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'apps.messenger',
-    'apps.messenger.apps.MessengerConfig',  # Recommended to add this line
 ]
 
 MIDDLEWARE = [

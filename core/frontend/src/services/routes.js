@@ -40,6 +40,13 @@ const routes = [
       view: async () => {
       await import('../pages/entrypoint.js');
       return '<entrypoint-page></entrypoint-page>';
+    }
+     },
+    {
+      path: '/chat',
+      view: async () => {
+      await import('../pages/chat.js');
+      return '<chat-page></chat-page>';
     },
      }
   ]
