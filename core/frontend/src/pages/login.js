@@ -68,20 +68,76 @@ class LOGIN extends HTMLElement {
     linkElem.setAttribute("rel", "stylesheet");
     linkElem.setAttribute("href", "src/assets/style/login-page.css");
     this.shadow.appendChild(linkElem);
-    // this.shadow.childeNodes.forEach((e) => e.remove());
+  }
+
+  async handleLogin(event) {
+    event.preventDefault();
+    const form = event.target;
+    const email = form.querySelector('#email').value;
+    const password = form.querySelector('#password').value;
+    const emailError = this.shadow.querySelector('#email-error');
+    const passwordError = this.shadow.querySelector('#password-error');
+
+    try {
+      const response = await fetch('http://localhost:8000/api/users/login/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          login: email,
+          password: password
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (data.error) {
+          emailError.textContent = data.error;
+          emailError.hidden = false;
+          passwordError.hidden = true;
+        }
+        return;
+      }
+
+      // Store tokens in localStorage
+      localStorage.setItem('accessToken', data.access);
+      localStorage.setItem('refreshToken', data.refresh);
+      localStorage.setItem('userData', JSON.stringify(data.user));
+
+      // Redirect to dashboard or home page
+      window.location.href = '/dashboard';
+    } catch (error) {
+      console.error('Login error:', error);
+      emailError.textContent = 'An error occurred during login. Please try again.';
+      emailError.hidden = false;
+      passwordError.hidden = true;
+    }
   }
 
   connectedCallback() {
     console.log("LOGIN is Connected");
-    console.log(this.shadow);
-    this.shadow.addEventListener("click", (e) => {
-      e.preventDefault();
-      console.log(e.target);
+    const form = this.shadow.querySelector('form');
+    form.addEventListener('submit', (e) => this.handleLogin(e));
+
+    // Handle 42 Network login
+    const btn42Network = this.shadow.querySelector('.btn_42Network');
+    btn42Network.addEventListener('click', () => {
+      window.location.href = 'http://localhost:8000/api/oauth/42/login/';
+    });
+
+    // Handle Google login
+    const btnGoogle = this.shadow.querySelector('.btn_google');
+    btnGoogle.addEventListener('click', () => {
+      window.location.href = 'http://localhost:8000/api/oauth/google/login/';
     });
   }
 
-  async disconnectedCallback() {
-    console.log("LOGIN is Disonnected");
+  disconnectedCallback() {
+    console.log("LOGIN is Disconnected");
+    const form = this.shadow.querySelector('form');
+    form.removeEventListener('submit', this.handleLogin);
   }
 
   static get observedAttributes() {

@@ -117,32 +117,63 @@ class SIGNUP extends HTMLElement {
     this.setFormBinging(this.shadow.querySelector("form"));
   }
 
-  connectedCallback() {
-    console.log("SIGNUP is Connected");
+  async handleSignup(event) {
+    event.preventDefault();
+    const form = event.target;
+    
+    // Validate passwords match
+    if (this.#newUser.password !== this.#newUser.confirm_password) {
+      this.errors.confirm_password.hidden = false;
+      return;
+    }
+
+    try {
+      const response = await fetch('http://localhost:8000/api/users/register/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          first_name: this.#newUser.firstname,
+          last_name: this.#newUser.lastname,
+          username: this.#newUser.username,
+          email: this.#newUser.email,
+          password: this.#newUser.password,
+          password2: this.#newUser.confirm_password
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // Handle validation errors
+        Object.keys(data).forEach(key => {
+          if (this.errors[key]) {
+            this.errors[key].textContent = Array.isArray(data[key]) ? data[key][0] : data[key];
+            this.errors[key].hidden = false;
+          }
+        });
+        return;
+      }
+
+      // Store tokens and user data
+      localStorage.setItem('accessToken', data.tokens.access);
+      localStorage.setItem('refreshToken', data.tokens.refresh);
+      localStorage.setItem('userData', JSON.stringify(data.user));
+
+      // Redirect to dashboard
+      window.location.href = '/dashboard';
+    } catch (error) {
+      console.error('Signup error:', error);
+      // Show general error message
+      Object.values(this.errors).forEach(error => {
+        error.hidden = true;
+      });
+      this.errors.email.textContent = 'An error occurred during registration. Please try again.';
+      this.errors.email.hidden = false;
+    }
   }
 
-  disconnectedCallback() {
-    console.log("SIGNUP is Disonnected");
-  }
-
-  static get observedAttributes() {
-    return [
-      /* array of attribute names to monitor for changes */
-    ];
-  }
-
-  attributeChangedCallback(name, oldValue, newValue) {
-    // called when one of attributes listed above is modified
-  }
-
-  get newUser() {
-    return this.#newUser;
-  }
-
-  /**
-   * Binds form validation and submission logic to the provided form element.
-   * @param {HTMLFormElement} form - The form element to bind.
-   */
   setFormBinging(form) {
     this.errors = {
       firstname: this.shadow.querySelector("#firstname-error"),
@@ -154,21 +185,9 @@ class SIGNUP extends HTMLElement {
     };
     
     if (form) {
-      form.addEventListener("submit", (event) => {
-        event.preventDefault();
-        if (form.checkValidity() === false) {
-          this.shadow.querySelector(".signupPage").classList.add("shake");
-          setTimeout(() => {
-            this.shadow.querySelector(".signupPage").classList.remove("shake");
-          }, 155);
-          return;
-        }
-        //  SUBMIT FORM TO THE SERVER FROM HERE
-        for (let key in this.#newUser) {
-          this.#newUser[key] = "";
-        }
-      });
+      form.addEventListener("submit", (event) => this.handleSignup(event));
     }
+
     this.#newUser = new Proxy(this.#newUser, {
       set: (target, key, value) => {
         target[key] = value;
@@ -184,7 +203,7 @@ class SIGNUP extends HTMLElement {
           if (element.name === "confirm_password") {
             if (element.value !== form.elements["password"].value) {
               error.hidden = false;
-              element.setCustomValidity("not the same Password ✋ !");
+              element.setCustomValidity("Passwords do not match!");
               return;
             }
           } else if (element.validity.valid || element.value === "") {
@@ -208,7 +227,45 @@ class SIGNUP extends HTMLElement {
         });
       }
     });
-  } // end of setFormBinging
+  }
+
+  connectedCallback() {
+    console.log("SIGNUP is Connected");
+    
+    // Handle 42 Network signup
+    const btn42Network = this.shadow.querySelector('.btn_42Network');
+    btn42Network.addEventListener('click', () => {
+      window.location.href = 'http://localhost:8000/api/oauth/42/login/';
+    });
+
+    // Handle Google signup
+    const btnGoogle = this.shadow.querySelector('.btn_google');
+    btnGoogle.addEventListener('click', () => {
+      window.location.href = 'http://localhost:8000/api/oauth/google/login/';
+    });
+  }
+
+  disconnectedCallback() {
+    console.log("SIGNUP is Disconnected");
+    const form = this.shadow.querySelector('form');
+    if (form) {
+      form.removeEventListener("submit", this.handleSignup);
+    }
+  }
+
+  static get observedAttributes() {
+    return [
+      /* array of attribute names to monitor for changes */
+    ];
+  }
+
+  attributeChangedCallback(name, oldValue, newValue) {
+    // called when one of attributes listed above is modified
+  }
+
+  get newUser() {
+    return this.#newUser;
+  }
 }
 customElements.define("signup-page", SIGNUP);
 

@@ -80,25 +80,35 @@ services:
                 condition: service_healthy
         restart: always
 
-    # auth:
-    #     image: auth:alpine
-    #     container_name: auth
-    #     build:
-    #         context: ./auth
-    #     volumes:
-    #         - auth_storage:/api/static
-    #     network:
-    #         42network:
-    #           aliases:
-    #               - authentication
-    #               - api_gateway
-    #     secrets:
-    #         - database-credentials
-    #         - api-credentials
-    #     depends_on:
-    #         database:
-    #             condition: service_healthy
-    #     restart: always
+    auth:
+        image: auth:alpine
+        container_name: auth
+        build:
+            context: ./auth
+        ports:
+            - "8000:8000"
+        volumes:
+            - auth_storage:/api/static
+            - ./auth:/app
+        networks:
+            42network:
+                aliases:
+                    - authentication
+                    - api_gateway
+        environment:
+            - DJANGO_SETTINGS_MODULE=restapi.settings
+            - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+            - DATABASE_URL=postgresql://postgres:${DB_PASSWORD}@database:5432/postgres
+            - REDIS_URL=redis://redis:6379/0
+        secrets:
+            - database-credentials
+            - api-credentials
+        depends_on:
+            database:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+        restart: always
 
 
 volumes:

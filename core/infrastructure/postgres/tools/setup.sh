@@ -14,9 +14,16 @@ SOCKET_DIR="/run/postgresql"
 mkdir -p "${SOCKET_DIR}" && chown postgres:postgres "${SOCKET_DIR}"
 mkdir -p "${DATA_DIR}" && chown postgres:postgres "${DATA_DIR}"
 
-if [ -z "$(ls -A ${DATA_DIR})" ]; then
+# Initialize PostgreSQL data directory if it doesn't exist
+if [ ! -s "${DATA_DIR}/PG_VERSION" ]; then
     echo "Initializing PostgreSQL database..."
     "${PG_BIN}/initdb" -U postgres -D "${DATA_DIR}" --locale=C.UTF-8
+
+    # Modify postgresql.conf to allow remote connections
+    echo "listen_addresses='*'" >> "${DATA_DIR}/postgresql.conf"
+    
+    # Configure authentication
+    echo "host all all all md5" >> "${DATA_DIR}/pg_hba.conf"
 fi
 
 echo "Starting PostgreSQL..."
