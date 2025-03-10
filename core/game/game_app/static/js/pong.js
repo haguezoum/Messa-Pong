@@ -149,20 +149,47 @@ function drawGame(currentTime) {
     const ballX = (gameState.ball_x / 100) * canvasWidth;
     const ballY = (gameState.ball_y / 100) * canvasHeight;
     
-    // Draw paddles with optimized rendering
-    ctx.fillStyle = "white";
-    
-    // Draw paddles using predicted positions with glow effect
+    // Draw paddles with enhanced rendering
+    // Create gradient for Player 1 paddle
+    const p1Gradient = ctx.createLinearGradient(0, p1Y - paddleHeight/2, paddleWidth * 2, p1Y + paddleHeight/2);
+    p1Gradient.addColorStop(0, "rgba(12, 53, 158, 0.9)");
+    p1Gradient.addColorStop(0.5, "rgba(20, 71, 207, 1)");
+    p1Gradient.addColorStop(1, "rgba(12, 53, 158, 0.9)");
+
+    // Create gradient for Player 2 paddle
+    const p2Gradient = ctx.createLinearGradient(canvasWidth - paddleWidth * 2, p2Y - paddleHeight/2, canvasWidth, p2Y + paddleHeight/2);
+    p2Gradient.addColorStop(0, "rgba(75, 123, 255, 0.9)");
+    p2Gradient.addColorStop(0.5, "rgba(75, 123, 255, 1)");
+    p2Gradient.addColorStop(1, "rgba(75, 123, 255, 0.9)");
+
+    // Draw paddles with inner glow
     ctx.shadowBlur = 15;
-    ctx.shadowColor = "#3CFFB5";
     
-    // Draw left paddle (Player 1)
-    ctx.fillStyle = "rgba(60, 255, 181, 0.9)";
-    ctx.fillRect(0, p1Y - paddleHeight/2, paddleWidth, paddleHeight);
+    // Draw left paddle (Player 1) with rounded corners
+    ctx.shadowColor = "#0C359E";
+    ctx.fillStyle = p1Gradient;
+    ctx.beginPath();
+    ctx.roundRect(0, p1Y - paddleHeight/2, paddleWidth, paddleHeight, [0, 4, 4, 0]);
+    ctx.fill();
+
+    // Add inner highlight to left paddle
+    ctx.fillStyle = "rgba(75, 123, 255, 0.3)";
+    ctx.beginPath();
+    ctx.roundRect(paddleWidth * 0.2, p1Y - paddleHeight/2 + 2, paddleWidth * 0.3, paddleHeight - 4, [0, 2, 2, 0]);
+    ctx.fill();
     
-    // Draw right paddle (Player 2)
-    ctx.fillStyle = "rgba(0, 200, 255, 0.9)";
-    ctx.fillRect(canvasWidth - paddleWidth, p2Y - paddleHeight/2, paddleWidth, paddleHeight);
+    // Draw right paddle (Player 2) with rounded corners
+    ctx.shadowColor = "#4B7BFF";
+    ctx.fillStyle = p2Gradient;
+    ctx.beginPath();
+    ctx.roundRect(canvasWidth - paddleWidth, p2Y - paddleHeight/2, paddleWidth, paddleHeight, [4, 0, 0, 4]);
+    ctx.fill();
+
+    // Add inner highlight to right paddle
+    ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+    ctx.beginPath();
+    ctx.roundRect(canvasWidth - paddleWidth * 0.5, p2Y - paddleHeight/2 + 2, paddleWidth * 0.3, paddleHeight - 4, [2, 0, 0, 2]);
+    ctx.fill();
     
     // Reset shadow for other elements
     ctx.shadowBlur = 0;
@@ -171,21 +198,37 @@ function drawGame(currentTime) {
     if (gameState.ball_x <= PADDLE_WIDTH * 2 && 
         gameState.ball_y >= gameState.player1_position - PADDLE_HEIGHT/2 && 
         gameState.ball_y <= gameState.player1_position + PADDLE_HEIGHT/2) {
-        // Player 1 paddle hit animation
-        ctx.fillStyle = "rgba(60, 255, 181, 1)";
+        // Player 1 paddle hit animation with enhanced effect
         ctx.shadowBlur = 30;
-        ctx.shadowColor = "#3CFFB5";
-        ctx.fillRect(0, p1Y - paddleHeight/2, paddleWidth, paddleHeight);
+        ctx.shadowColor = "#0C359E";
+        ctx.fillStyle = "rgba(20, 71, 207, 1)";
+        ctx.beginPath();
+        ctx.roundRect(0, p1Y - paddleHeight/2, paddleWidth, paddleHeight, [0, 4, 4, 0]);
+        ctx.fill();
+        
+        // Add hit flash effect
+        ctx.fillStyle = "rgba(75, 123, 255, 0.5)";
+        ctx.beginPath();
+        ctx.roundRect(0, p1Y - paddleHeight/2, paddleWidth, paddleHeight, [0, 4, 4, 0]);
+        ctx.fill();
     }
     
     if (gameState.ball_x >= canvasWidth - PADDLE_WIDTH * 2 && 
         gameState.ball_y >= gameState.player2_position - PADDLE_HEIGHT/2 && 
         gameState.ball_y <= gameState.player2_position + PADDLE_HEIGHT/2) {
-        // Player 2 paddle hit animation
-        ctx.fillStyle = "rgba(0, 200, 255, 1)";
+        // Player 2 paddle hit animation with enhanced effect
         ctx.shadowBlur = 30;
-        ctx.shadowColor = "#00C8FF";
-        ctx.fillRect(canvasWidth - paddleWidth, p2Y - paddleHeight/2, paddleWidth, paddleHeight);
+        ctx.shadowColor = "#4B7BFF";
+        ctx.fillStyle = "rgba(75, 123, 255, 1)";
+        ctx.beginPath();
+        ctx.roundRect(canvasWidth - paddleWidth, p2Y - paddleHeight/2, paddleWidth, paddleHeight, [4, 0, 0, 4]);
+        ctx.fill();
+        
+        // Add hit flash effect
+        ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
+        ctx.beginPath();
+        ctx.roundRect(canvasWidth - paddleWidth, p2Y - paddleHeight/2, paddleWidth, paddleHeight, [4, 0, 0, 4]);
+        ctx.fill();
     }
     
     // Reset shadow for ball
@@ -196,6 +239,7 @@ function drawGame(currentTime) {
     if (currentSpeed > 3) {
         const trailLength = Math.min(currentSpeed * 1.2, 3);
         ctx.globalAlpha = 0.15;
+        ctx.fillStyle = "#4B7BFF";
         ctx.beginPath();
         ctx.arc(ballX - (gameState.ball_dx * trailLength), ballY - (gameState.ball_dy * trailLength), ballSize * 0.8, 0, Math.PI * 2);
         ctx.fill();
@@ -204,8 +248,8 @@ function drawGame(currentTime) {
     
     // Draw main ball with glow
     ctx.shadowBlur = 15;
-    ctx.shadowColor = "white";
-    ctx.fillStyle = "white";
+    ctx.shadowColor = "#4B7BFF";
+    ctx.fillStyle = "#FFFFFF";
     ctx.beginPath();
     ctx.arc(ballX, ballY, ballSize, 0, Math.PI * 2);
     ctx.fill();
@@ -215,12 +259,12 @@ function drawGame(currentTime) {
     
     // Draw center line with glow
     ctx.shadowBlur = 5;
-    ctx.shadowColor = "#3CFFB5";
+    ctx.shadowColor = "#0C359E";
     ctx.setLineDash([5, 5]);
     ctx.beginPath();
     ctx.moveTo(canvasWidth / 2, 0);
     ctx.lineTo(canvasWidth / 2, canvasHeight);
-    ctx.strokeStyle = "rgba(60, 255, 181, 0.5)";
+    ctx.strokeStyle = "rgba(12, 53, 158, 0.5)";
     ctx.stroke();
     ctx.setLineDash([]);
     
