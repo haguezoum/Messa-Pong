@@ -181,9 +181,11 @@ services:
             - discovery.type=single-node
             - ES_JAVA_OPTS=-Xms256m -Xmx256m
             - xpack.security.enabled=true
-            - ELASTIC_PASSWORD=Tarzan@1234 #i got problem of [File /run/secrets/elk-credentials from ELASTIC_PASSWORD_FILE is not readable.]
+            - ELASTIC_PASSWORD=Tarzan@1234
             - bootstrap.memory_lock=true
             - cluster.routing.allocation.disk.threshold_enabled=false
+            - xpack.security.autoconfigure=true
+            - KIBANA_SYSTEM_PASSWORD=KibanaPassword123
         ulimits:
             memlock:
                 soft: -1
@@ -194,8 +196,6 @@ services:
             42network:
                 aliases:
                     - elasticsearch
-        # secrets:
-        #     - elk-credentials
         deploy:
             resources:
                 limits:
@@ -232,17 +232,15 @@ services:
         image: docker.elastic.co/kibana/kibana:8.12.2
         container_name: kibana
         environment:
-            - ELASTICSEARCH_URL=http://localhost:9200
+            - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
             - ELASTICSEARCH_USERNAME=kibana_system
-            - ELASTICSEARCH_PASSWORD=c2UOQ-PHvhwSomSwt3jk #i got problem of [File /run/secrets/elk-credentials from ELASTIC_PASSWORD_FILE is not readable.]
+            - ELASTICSEARCH_PASSWORD=KibanaPassword123
             - SERVER_MAXPAYLOADBYTES=1048576
             - KIBANA_CACHE_ENABLED=true
         networks:
             42network:
                 aliases:
                     - kibana
-        # secrets:
-        #     - elk-credentials
         depends_on:
             elasticsearch:
                 condition: service_healthy
@@ -250,6 +248,12 @@ services:
             resources:
                 limits:
                     memory: 256M
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost:5601"]
+            interval: 15s
+            timeout: 5s
+            retries: 3
+            start_period: 30s
         restart: always
 
 volumes:
