@@ -5,9 +5,8 @@ set -e
 # Initialize PostgreSQL data directory
 PGDATA="/var/lib/postgresql/data"
 
-# Create necessary directories
+# Create necessary directories if they don't exist
 mkdir -p "${PGDATA}"
-chown -R postgres:postgres "${PGDATA}"
 chmod 700 "${PGDATA}"
 
 # Initialize database if needed
@@ -27,6 +26,7 @@ logging_collector = on
 log_directory = 'log'
 log_filename = 'postgresql-%Y-%m-%d_%H%M%S.log'
 log_statement = 'all'
+max_prepared_transactions = 0
 EOF
 
     # Configure client authentication
@@ -40,4 +40,4 @@ EOF
 fi
 
 echo "Starting PostgreSQL server..."
-exec postgres -D "${PGDATA}"
+postgres -D "${PGDATA}"
