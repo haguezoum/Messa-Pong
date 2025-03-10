@@ -1,11 +1,10 @@
 #!/bin/sh
 
-# Install netcat for database connection check
-apt-get update && apt-get install -y netcat-openbsd
+set -e
 
 # Wait for PostgreSQL to be ready
 echo "Waiting for PostgreSQL..."
-while ! nc -z database 5432; do
+while ! pg_isready -h database -p 5432 -U postgres; do
     echo "Waiting for PostgreSQL to be ready..."
     sleep 2
 done
@@ -34,4 +33,4 @@ python manage.py collectstatic --noinput
 
 # Start Django development server
 echo "Starting Django server..."
-python manage.py runserver 0.0.0.0:8000 
+exec python manage.py runserver 0.0.0.0:8000 

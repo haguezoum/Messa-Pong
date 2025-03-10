@@ -93,7 +93,6 @@ services:
         ports:
             - "8000:8000"
         volumes:
-            - auth_storage:/api/static
             - ./auth:/app
         networks:
             42network:

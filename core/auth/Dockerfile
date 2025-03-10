@@ -22,16 +22,17 @@ RUN		apt-get update -y && \
 
 RUN		useradd --create-home tarzan 
 
-USER		tarzan
-
-WORKDIR		/home/tarzan/restapi
+WORKDIR		/app
 
 COPY		requirements.txt .
-
 COPY		./tools/launcher.sh .
 
-RUN		pip install --no-cache-dir -r requirements.txt
+RUN		chmod +x launcher.sh && \
+		pip install --no-cache-dir -r requirements.txt && \
+		chown -R tarzan:tarzan /app
+
+USER		tarzan
 
 EXPOSE		8000/tcp
 
-ENTRYPOINT	["/home/tarzan/restapi/launcher.sh"]
+CMD		["./launcher.sh"]
