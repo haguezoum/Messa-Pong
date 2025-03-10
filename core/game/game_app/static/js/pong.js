@@ -152,9 +152,44 @@ function drawGame(currentTime) {
     // Draw paddles with optimized rendering
     ctx.fillStyle = "white";
     
-    // Draw paddles using predicted positions
+    // Draw paddles using predicted positions with glow effect
+    ctx.shadowBlur = 15;
+    ctx.shadowColor = "#3CFFB5";
+    
+    // Draw left paddle (Player 1)
+    ctx.fillStyle = "rgba(60, 255, 181, 0.9)";
     ctx.fillRect(0, p1Y - paddleHeight/2, paddleWidth, paddleHeight);
+    
+    // Draw right paddle (Player 2)
+    ctx.fillStyle = "rgba(0, 200, 255, 0.9)";
     ctx.fillRect(canvasWidth - paddleWidth, p2Y - paddleHeight/2, paddleWidth, paddleHeight);
+    
+    // Reset shadow for other elements
+    ctx.shadowBlur = 0;
+    
+    // Add paddle hit animation when ball collides
+    if (gameState.ball_x <= PADDLE_WIDTH * 2 && 
+        gameState.ball_y >= gameState.player1_position - PADDLE_HEIGHT/2 && 
+        gameState.ball_y <= gameState.player1_position + PADDLE_HEIGHT/2) {
+        // Player 1 paddle hit animation
+        ctx.fillStyle = "rgba(60, 255, 181, 1)";
+        ctx.shadowBlur = 30;
+        ctx.shadowColor = "#3CFFB5";
+        ctx.fillRect(0, p1Y - paddleHeight/2, paddleWidth, paddleHeight);
+    }
+    
+    if (gameState.ball_x >= canvasWidth - PADDLE_WIDTH * 2 && 
+        gameState.ball_y >= gameState.player2_position - PADDLE_HEIGHT/2 && 
+        gameState.ball_y <= gameState.player2_position + PADDLE_HEIGHT/2) {
+        // Player 2 paddle hit animation
+        ctx.fillStyle = "rgba(0, 200, 255, 1)";
+        ctx.shadowBlur = 30;
+        ctx.shadowColor = "#00C8FF";
+        ctx.fillRect(canvasWidth - paddleWidth, p2Y - paddleHeight/2, paddleWidth, paddleHeight);
+    }
+    
+    // Reset shadow for ball
+    ctx.shadowBlur = 0;
     
     // Optimize ball trail effect
     const currentSpeed = Math.sqrt(gameState.ball_dx * gameState.ball_dx + gameState.ball_dy * gameState.ball_dy);
@@ -167,19 +202,30 @@ function drawGame(currentTime) {
         ctx.globalAlpha = 1.0;
     }
     
-    // Draw main ball
+    // Draw main ball with glow
+    ctx.shadowBlur = 15;
+    ctx.shadowColor = "white";
+    ctx.fillStyle = "white";
     ctx.beginPath();
     ctx.arc(ballX, ballY, ballSize, 0, Math.PI * 2);
     ctx.fill();
     
-    // Draw center line - Always draw regardless of pause state
+    // Reset shadow
+    ctx.shadowBlur = 0;
+    
+    // Draw center line with glow
+    ctx.shadowBlur = 5;
+    ctx.shadowColor = "#3CFFB5";
     ctx.setLineDash([5, 5]);
     ctx.beginPath();
     ctx.moveTo(canvasWidth / 2, 0);
     ctx.lineTo(canvasWidth / 2, canvasHeight);
-    ctx.strokeStyle = "white";
+    ctx.strokeStyle = "rgba(60, 255, 181, 0.5)";
     ctx.stroke();
     ctx.setLineDash([]);
+    
+    // Reset shadow
+    ctx.shadowBlur = 0;
     
     // Request next animation frame, but only if the game isn't paused
     if (!isPaused && isGameStarted) {
@@ -1352,9 +1398,6 @@ function updateScoreWithAnimation(oldP1Score, newP1Score, oldP2Score, newP2Score
         
         // Add the animation class
         p1ScoreElem.classList.add("score-changed");
-        
-        // Add a chat message
-        addSystemChatMessage(`Player 1 scores! (${newP1Score}-${newP2Score})`);
     }
     
     // Update Player 2 score with animation if changed
@@ -1370,24 +1413,5 @@ function updateScoreWithAnimation(oldP1Score, newP1Score, oldP2Score, newP2Score
         
         // Add the animation class
         p2ScoreElem.classList.add("score-changed");
-        
-        // Add a chat message
-        addSystemChatMessage(`Player 2 scores! (${newP1Score}-${newP2Score})`);
     }
-}
-
-// Helper function to add system messages to chat
-function addSystemChatMessage(message) {
-    const chatBox = document.getElementById("chat-box");
-    const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-    
-    const messageHTML = `
-        <div class="chat-message system">
-            <div class="content">${message}</div>
-            <div class="time">${time}</div>
-        </div>
-    `;
-    
-    chatBox.innerHTML += messageHTML;
-    chatBox.scrollTop = chatBox.scrollHeight;
 } 
