@@ -2,7 +2,7 @@
 
 set -e
 
-cd /app
+cd /home/aet-tass/app
 
 # Wait for PostgreSQL to be ready
 echo "Waiting for PostgreSQL..."

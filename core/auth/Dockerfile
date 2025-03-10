@@ -20,17 +20,19 @@ RUN		apt-get update -y && \
 		apt-get install --no-install-recommends -y gcc libpq-dev postgresql-client && \
 		rm -rf /var/lib/apt/lists/* 
 
-RUN		useradd --create-home aet-tass
+RUN		groupadd -r app && \
+		useradd -r -g app -d /home/aet-tass -m aet-tass
 
-WORKDIR		/app
+WORKDIR		/home/aet-tass/app
 
-COPY		. /app/
-RUN		chmod +x /app/tools/launcher.sh && \
+COPY		--chown=aet-tass:app . .
+
+RUN		chmod +x tools/launcher.sh && \
 		pip install --no-cache-dir -r requirements.txt && \
-		chown -R aet-tass:aet-tass /app
+		chown -R aet-tass:app /home/aet-tass
 
 USER		aet-tass
 
 EXPOSE		8000/tcp
 
-CMD		["/app/tools/launcher.sh"]
+CMD		["./tools/launcher.sh"]
