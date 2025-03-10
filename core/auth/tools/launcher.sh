@@ -2,6 +2,8 @@
 
 set -e
 
+cd /app
+
 # Wait for PostgreSQL to be ready
 echo "Waiting for PostgreSQL..."
 while ! pg_isready -h database -p 5432 -U postgres; do

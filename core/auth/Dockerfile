@@ -17,22 +17,20 @@ ENV		PYTHONUNBUFFERED=1 \
 		DJANGO_SETTINGS_MODULE=restapi.settings
 
 RUN		apt-get update -y && \
-		apt-get install --no-install-recommends -y gcc libpq-dev && \
+		apt-get install --no-install-recommends -y gcc libpq-dev postgresql-client && \
 		rm -rf /var/lib/apt/lists/* 
 
-RUN		useradd --create-home tarzan 
+RUN		useradd --create-home aet-tass
 
 WORKDIR		/app
 
-COPY		requirements.txt .
-COPY		./tools/launcher.sh .
-
-RUN		chmod +x launcher.sh && \
+COPY		. /app/
+RUN		chmod +x /app/tools/launcher.sh && \
 		pip install --no-cache-dir -r requirements.txt && \
-		chown -R tarzan:tarzan /app
+		chown -R aet-tass:aet-tass /app
 
-USER		tarzan
+USER		aet-tass
 
 EXPOSE		8000/tcp
 
-CMD		["./launcher.sh"]
+CMD		["/app/tools/launcher.sh"]

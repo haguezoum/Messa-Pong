@@ -93,7 +93,8 @@ services:
         ports:
             - "8000:8000"
         volumes:
-            - ./auth:/app
+            - ./auth:/app:delegated
+            - auth_storage:/app/static
         networks:
             42network:
                 aliases:
@@ -101,9 +102,10 @@ services:
                     - api_gateway
         environment:
             - DJANGO_SETTINGS_MODULE=restapi.settings
-            - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
-            - DATABASE_URL=postgresql://postgres:${DB_PASSWORD}@database:5432/postgres
+            - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-your-secret-key}
+            - DATABASE_URL=postgresql://postgres:postgres123@database:5432/postgres
             - REDIS_URL=redis://redis:6379/0
+            - PYTHONPATH=/app
         secrets:
             - database-credentials
             - api-credentials
