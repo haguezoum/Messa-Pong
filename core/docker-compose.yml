@@ -93,11 +93,12 @@ services:
         ports:
             - "8000:8000"
         volumes:
-            - ./auth:/home/aet-tass/app:delegated
-            - auth_storage:/home/aet-tass/app/static
+            - ./auth:/home/app:delegated
+            - auth_storage:/home/app/static
         networks:
             42network:
                 aliases:
+                    - auth
                     - authentication
                     - api_gateway
         environment:
@@ -105,7 +106,7 @@ services:
             - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-your-secret-key}
             - DATABASE_URL=postgresql://postgres:postgres123@database:5432/postgres
             - REDIS_URL=redis://redis:6379/0
-            - PYTHONPATH=/home/aet-tass/app
+            - PYTHONPATH=/home/app
         secrets:
             - database-credentials
             - api-credentials
