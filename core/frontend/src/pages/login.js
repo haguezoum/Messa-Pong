@@ -1,3 +1,5 @@
+import { notificationStyles } from '../components/notification-styles.js';
+
 let template = document.createElement("template");
 
 template.innerHTML = /*html*/ `
@@ -59,55 +61,15 @@ template.innerHTML = /*html*/ `
   </div>
 `;
 
-// Add notification styles to the existing CSS
-const styles = /*css*/ `
-  .notification {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    padding: 15px 25px;
-    border-radius: 4px;
-    color: white;
-    font-weight: 500;
-    z-index: 1000;
-    transform: translateX(150%);
-    transition: transform 0.3s ease-in-out;
-  }
-
-  .notification.show {
-    transform: translateX(0);
-  }
-
-  .notification.error {
-    background-color: #ff4444;
-    box-shadow: 0 4px 15px rgba(255, 68, 68, 0.2);
-  }
-
-  .notification.success {
-    background-color: #00C851;
-    box-shadow: 0 4px 15px rgba(0, 200, 81, 0.2);
-  }
-
-  @keyframes slideIn {
-    from { transform: translateX(150%); }
-    to { transform: translateX(0); }
-  }
-
-  @keyframes fadeOut {
-    from { opacity: 1; }
-    to { opacity: 0; }
-  }
-`;
-
 class LOGIN extends HTMLElement {
   constructor() {
     super();
     this.shadow = this.attachShadow({ mode: "open" });
     this.shadow.appendChild(template.content.cloneNode(true));
     
-    // Add styles
+    // Add notification styles
     const styleSheet = document.createElement("style");
-    styleSheet.textContent = styles;
+    styleSheet.textContent = notificationStyles;
     this.shadow.appendChild(styleSheet);
     
     const linkElem = document.createElement("link");
@@ -116,7 +78,7 @@ class LOGIN extends HTMLElement {
     this.shadow.appendChild(linkElem);
   }
 
-  showNotification(message, type = 'error') {
+  showNotification(message, type = 'error', duration = 3000) {
     const notification = this.shadow.getElementById('notification');
     notification.textContent = message;
     notification.className = `notification ${type}`;
@@ -164,7 +126,7 @@ class LOGIN extends HTMLElement {
         } else if (data.errors) {
           errorMessage = Object.values(data.errors)[0];
         }
-        this.showNotification(errorMessage, 'error');
+        this.showNotification(errorMessage, 'error', 4000);
         return;
       }
 
@@ -173,13 +135,16 @@ class LOGIN extends HTMLElement {
       localStorage.setItem('refreshToken', data.tokens.refresh);
       localStorage.setItem('userData', JSON.stringify(data.user));
 
-      // Show success message before redirect
-      this.showNotification('Login successful! Redirecting...', 'success');
+      // Show success message
+      this.showNotification('Login successful! Welcome back!', 'success', 2000);
 
-      // Redirect after a short delay
+      // Clear form
+      form.reset();
+
+      // Redirect after success message
       setTimeout(() => {
         window.location.href = '/dashboard';
-      }, 1000);
+      }, 2500);
 
     } catch (error) {
       console.error('Login error:', error);

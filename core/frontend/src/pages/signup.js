@@ -1,3 +1,5 @@
+import { notificationStyles } from '../components/notification-styles.js';
+
 let template = document.createElement("template");
 
 template.innerHTML =
@@ -90,7 +92,7 @@ template.innerHTML =
       </div>
     </div>
     <cloud-moving></cloud-moving>
-    <div id="notification" class="notification"></div>
+    <div class="notification-container"></div>
   </div>`;
 
 
@@ -116,25 +118,48 @@ class SIGNUP extends HTMLElement {
     this.shadow.appendChild(linkElem);
     this.shadow.appendChild(template.content.cloneNode(true));
     this.setFormBinging(this.shadow.querySelector("form"));
+    
+    // Add notification styles
+    const styleSheet = document.createElement("style");
+    styleSheet.textContent = notificationStyles;
+    this.shadow.appendChild(styleSheet);
   }
 
-  showNotification(message, type = 'error') {
-    const notification = this.shadow.getElementById('notification');
-    notification.textContent = message;
+  showNotification(message, type = 'error', duration = 3000) {
+    const container = this.shadow.querySelector('.notification-container');
+    const notification = document.createElement('div');
+    
+    const icon = type === 'success' ? '✓' : type === 'error' ? '✕' : 'ℹ';
+    
     notification.className = `notification ${type}`;
-    notification.classList.add('show');
+    notification.innerHTML = `
+      <span class="icon">${icon}</span>
+      <span class="message">${message}</span>
+      <span class="close-btn">✕</span>
+    `;
+
+    container.appendChild(notification);
 
     // Trigger animation
-    notification.style.animation = 'slideIn 0.3s forwards';
+    setTimeout(() => notification.classList.add('show'), 10);
 
-    // Remove notification after 3 seconds
+    // Add shake effect for errors
+    if (type === 'error') {
+      notification.classList.add('shake');
+    }
+
+    // Handle close button
+    const closeBtn = notification.querySelector('.close-btn');
+    closeBtn.addEventListener('click', () => {
+      notification.classList.remove('show');
+      setTimeout(() => notification.remove(), 500);
+    });
+
+    // Auto remove after duration
     setTimeout(() => {
-      notification.style.animation = 'fadeOut 0.3s forwards';
-      setTimeout(() => {
-        notification.classList.remove('show');
-        notification.className = 'notification';
-      }, 300);
-    }, 3000);
+      notification.classList.remove('show');
+      setTimeout(() => notification.remove(), 500);
+    }, duration);
   }
 
   async handleSignup(event) {
@@ -162,24 +187,28 @@ class SIGNUP extends HTMLElement {
 
       if (!response.ok) {
         if (data.errors) {
-          const firstError = Object.values(data.errors)[0];
-          this.showNotification(firstError, 'error');
+          Object.values(data.errors).forEach((error, index) => {
+            setTimeout(() => {
+              this.showNotification(error, 'error', 4000);
+            }, index * 400); // Stagger multiple errors
+          });
         }
         return;
       }
 
-      // Store tokens and user data
-      localStorage.setItem('accessToken', data.tokens.access);
-      localStorage.setItem('refreshToken', data.tokens.refresh);
-      localStorage.setItem('userData', JSON.stringify(data.user));
+      // Show success message
+      this.showNotification('Registration successful! Redirecting to login...', 'success', 2000);
 
-      // Show success message before redirect
-      this.showNotification('Registration successful! Redirecting...', 'success');
+      // Clear form
+      event.target.reset();
 
-      // Redirect after a short delay
+      // Redirect to login after a delay
       setTimeout(() => {
-        window.location.href = '/dashboard';
-      }, 1000);
+        const loginEvent = new CustomEvent('navigate', {
+          detail: { path: '/login' }
+        });
+        window.dispatchEvent(loginEvent);
+      }, 2500);
 
     } catch (error) {
       console.error('Registration error:', error);
