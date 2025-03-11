@@ -1,36 +1,36 @@
 let template = document.createElement("template");
 
 template.innerHTML = /*html*/ `
-<div id="login-page" class="loginPage" > <!-- take the whole window size -->
-    <div  class="container">
+<div id="login-page" class="loginPage">
+    <div class="container">
       <form class="form shadow">
         <div class="form-header">
           <span>
             <img src="src/assets/images/42_logo.svg" alt="logo" />
           </span>
           <h2 class="title">Welcome back</h2>
-          <p class="slugan">Enter you email and password to access your account</p>
+          <p class="slugan">Enter your email/username and password to access your account</p>
         </div>
         <div class="form-body">
           <div class="form-group">
               <div class="form-field">
-                <label for="email">Email</label>
-                <input type="email" class="email" id="email" autofocus name="email" placeholder="Username or email" autocomplete="email" pattern=".+@[a-z]+.[a-z]"
-                        title="Please provide only a Best Startup Ever corporate email address" required>
-                <p class="error" id="email-error" hidden>Error</p>
+                <label for="login">Email or Username</label>
+                <input type="text" class="login" id="login" autofocus name="login" 
+                       placeholder="Email or username" required>
               </div>
               <div class="form-field">
                 <label for="password">Password</label>
-                <input type="password" class="password" id="password" name="password" placeholder="Password" autocomplete="current-password" required minlength="10">
-                <p class="error" id="password-error" hidden>Error</p>
+                <input type="password" class="password" id="password" name="password" 
+                       placeholder="Password" required>
               </div>
               <p class="password_forget">Forgot password?</p>
               <div class="form-field">
-                <button class="btn_submit"  type="submit">Login</button>
+                <button class="btn_submit" type="submit">Login</button>
               </div>
           </div>
         </div>
       </form>
+      <div id="notification" class="notification"></div>
       <div class="form-footer">
         <p>Or sign in with</p>
         <div class="remote-login">
@@ -57,29 +57,91 @@ template.innerHTML = /*html*/ `
     </div>
     <cloud-moving></cloud-moving>
   </div>
-  `;
+`;
+
+// Add notification styles to the existing CSS
+const styles = /*css*/ `
+  .notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 25px;
+    border-radius: 4px;
+    color: white;
+    font-weight: 500;
+    z-index: 1000;
+    transform: translateX(150%);
+    transition: transform 0.3s ease-in-out;
+  }
+
+  .notification.show {
+    transform: translateX(0);
+  }
+
+  .notification.error {
+    background-color: #ff4444;
+    box-shadow: 0 4px 15px rgba(255, 68, 68, 0.2);
+  }
+
+  .notification.success {
+    background-color: #00C851;
+    box-shadow: 0 4px 15px rgba(0, 200, 81, 0.2);
+  }
+
+  @keyframes slideIn {
+    from { transform: translateX(150%); }
+    to { transform: translateX(0); }
+  }
+
+  @keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+`;
 
 class LOGIN extends HTMLElement {
   constructor() {
     super();
     this.shadow = this.attachShadow({ mode: "open" });
     this.shadow.appendChild(template.content.cloneNode(true));
+    
+    // Add styles
+    const styleSheet = document.createElement("style");
+    styleSheet.textContent = styles;
+    this.shadow.appendChild(styleSheet);
+    
     const linkElem = document.createElement("link");
     linkElem.setAttribute("rel", "stylesheet");
     linkElem.setAttribute("href", "src/assets/style/login-page.css");
     this.shadow.appendChild(linkElem);
   }
 
+  showNotification(message, type = 'error') {
+    const notification = this.shadow.getElementById('notification');
+    notification.textContent = message;
+    notification.className = `notification ${type}`;
+    notification.classList.add('show');
+
+    // Trigger animation
+    notification.style.animation = 'slideIn 0.3s forwards';
+
+    // Remove notification after 3 seconds
+    setTimeout(() => {
+      notification.style.animation = 'fadeOut 0.3s forwards';
+      setTimeout(() => {
+        notification.classList.remove('show');
+        notification.className = 'notification';
+      }, 300);
+    }, 3000);
+  }
+
   async handleLogin(event) {
     event.preventDefault();
     const form = event.target;
-    const email = form.querySelector('#email').value;
+    const login = form.querySelector('#login').value;
     const password = form.querySelector('#password').value;
-    const emailError = this.shadow.querySelector('#email-error');
-    const passwordError = this.shadow.querySelector('#password-error');
 
     try {
-      console.log('Login attempt for:', email);
       const response = await fetch('/api/login/', {
         method: 'POST',
         headers: {
@@ -88,36 +150,40 @@ class LOGIN extends HTMLElement {
         },
         credentials: 'include',
         body: JSON.stringify({
-          login: email,
-          password: password
+          login,
+          password
         })
       });
 
-      console.log('Login response status:', response.status);
       const data = await response.json();
-      console.log('Login response data:', data);
 
       if (!response.ok) {
+        let errorMessage = 'An error occurred during login.';
         if (data.error) {
-          emailError.textContent = data.error;
-          emailError.hidden = false;
-          passwordError.hidden = true;
+          errorMessage = data.error;
+        } else if (data.errors) {
+          errorMessage = Object.values(data.errors)[0];
         }
+        this.showNotification(errorMessage, 'error');
         return;
       }
 
-      // Store tokens in localStorage
-      localStorage.setItem('accessToken', data.access);
-      localStorage.setItem('refreshToken', data.refresh);
+      // Store tokens and user data
+      localStorage.setItem('accessToken', data.tokens.access);
+      localStorage.setItem('refreshToken', data.tokens.refresh);
       localStorage.setItem('userData', JSON.stringify(data.user));
 
-      // Redirect to dashboard or home page
-      window.location.href = '/dashboard';
+      // Show success message before redirect
+      this.showNotification('Login successful! Redirecting...', 'success');
+
+      // Redirect after a short delay
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 1000);
+
     } catch (error) {
       console.error('Login error:', error);
-      emailError.textContent = 'An error occurred during login. Please try again.';
-      emailError.hidden = false;
-      passwordError.hidden = true;
+      this.showNotification('Network error. Please try again.', 'error');
     }
   }
 

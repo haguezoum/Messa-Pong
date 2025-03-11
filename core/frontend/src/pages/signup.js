@@ -90,6 +90,7 @@ template.innerHTML =
       </div>
     </div>
     <cloud-moving></cloud-moving>
+    <div id="notification" class="notification"></div>
   </div>`;
 
 
@@ -117,58 +118,72 @@ class SIGNUP extends HTMLElement {
     this.setFormBinging(this.shadow.querySelector("form"));
   }
 
+  showNotification(message, type = 'error') {
+    const notification = this.shadow.getElementById('notification');
+    notification.textContent = message;
+    notification.className = `notification ${type}`;
+    notification.classList.add('show');
+
+    // Trigger animation
+    notification.style.animation = 'slideIn 0.3s forwards';
+
+    // Remove notification after 3 seconds
+    setTimeout(() => {
+      notification.style.animation = 'fadeOut 0.3s forwards';
+      setTimeout(() => {
+        notification.classList.remove('show');
+        notification.className = 'notification';
+      }, 300);
+    }, 3000);
+  }
+
   async handleSignup(event) {
     event.preventDefault();
     
     try {
-        const response = await fetch('/api/register/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-            },
-            credentials: 'include',
-            body: JSON.stringify({
-                first_name: this.#newUser.firstname,
-                last_name: this.#newUser.lastname,
-                username: this.#newUser.username,
-                email: this.#newUser.email,
-                password: this.#newUser.password,
-                password2: this.#newUser.confirm_password
-            })
-        });
+      const response = await fetch('/api/register/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          first_name: this.#newUser.firstname,
+          last_name: this.#newUser.lastname,
+          username: this.#newUser.username,
+          email: this.#newUser.email,
+          password: this.#newUser.password,
+          password2: this.#newUser.confirm_password
+        })
+      });
 
-        const data = await response.json();
+      const data = await response.json();
 
-        if (!response.ok) {
-            // Handle validation errors
-            if (data.errors) {
-                Object.keys(data.errors).forEach(key => {
-                    const fieldMap = {
-                        'first_name': 'firstname',
-                        'last_name': 'lastname'
-                    };
-                    const frontendKey = fieldMap[key] || key;
-                    if (this.errors[frontendKey]) {
-                        this.errors[frontendKey].textContent = data.errors[key];
-                        this.errors[frontendKey].hidden = false;
-                    }
-                });
-            }
-            return;
+      if (!response.ok) {
+        if (data.errors) {
+          const firstError = Object.values(data.errors)[0];
+          this.showNotification(firstError, 'error');
         }
+        return;
+      }
 
-        // Store tokens and user data
-        localStorage.setItem('accessToken', data.tokens.access);
-        localStorage.setItem('refreshToken', data.tokens.refresh);
-        localStorage.setItem('userData', JSON.stringify(data.user));
+      // Store tokens and user data
+      localStorage.setItem('accessToken', data.tokens.access);
+      localStorage.setItem('refreshToken', data.tokens.refresh);
+      localStorage.setItem('userData', JSON.stringify(data.user));
 
-        // Redirect to dashboard
+      // Show success message before redirect
+      this.showNotification('Registration successful! Redirecting...', 'success');
+
+      // Redirect after a short delay
+      setTimeout(() => {
         window.location.href = '/dashboard';
+      }, 1000);
+
     } catch (error) {
-        console.error('Registration error:', error);
-        this.errors.email.textContent = 'An unexpected error occurred. Please try again.';
-        this.errors.email.hidden = false;
+      console.error('Registration error:', error);
+      this.showNotification('An unexpected error occurred. Please try again.', 'error');
     }
   }
 
