@@ -122,22 +122,21 @@ class SIGNUP extends HTMLElement {
     const form = event.target;
     
     console.log('Form submission started');
-    console.log('Form data:', {
-      first_name: this.#newUser.firstname,
-      last_name: this.#newUser.lastname,
-      username: this.#newUser.username,
-      email: this.#newUser.email,
+    
+    // Clear previous errors
+    Object.values(this.errors).forEach(error => {
+      error.hidden = true;
     });
     
     // Validate passwords match
     if (this.#newUser.password !== this.#newUser.confirm_password) {
       console.log('Password mismatch');
+      this.errors.confirm_password.textContent = "Passwords do not match!";
       this.errors.confirm_password.hidden = false;
       return;
     }
 
     try {
-      // Use relative URL to ensure it goes through nginx
       const apiUrl = '/api/register/';
       console.log('Attempting to fetch from:', apiUrl);
 
@@ -164,19 +163,44 @@ class SIGNUP extends HTMLElement {
       console.log('Response status:', response.status);
       console.log('Response headers:', Object.fromEntries([...response.headers]));
 
-      const data = await response.json();
-      console.log('Response data:', data);
+      let data;
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        data = await response.json();
+        console.log('Response data:', data);
+      } else {
+        const text = await response.text();
+        console.log('Response text:', text);
+        throw new Error('Received non-JSON response');
+      }
 
       if (!response.ok) {
         console.log('Response not OK:', response.status, data);
+        
         // Handle validation errors
-        Object.keys(data).forEach(key => {
-          if (this.errors[key]) {
-            this.errors[key].textContent = Array.isArray(data[key]) ? data[key][0] : data[key];
-            this.errors[key].hidden = false;
-            console.log('Validation error for', key, ':', this.errors[key].textContent);
-          }
-        });
+        if (typeof data === 'object') {
+          Object.keys(data).forEach(key => {
+            const errorMessage = Array.isArray(data[key]) ? data[key][0] : data[key];
+            console.log('Error for field:', key, 'Message:', errorMessage);
+            
+            // Map backend field names to frontend field names
+            const fieldMap = {
+              'first_name': 'firstname',
+              'last_name': 'lastname',
+              'non_field_errors': 'email' // Use email field for general errors
+            };
+            
+            const frontendKey = fieldMap[key] || key;
+            if (this.errors[frontendKey]) {
+              this.errors[frontendKey].textContent = errorMessage;
+              this.errors[frontendKey].hidden = false;
+            }
+          });
+        } else {
+          // Handle non-object error response
+          this.errors.email.textContent = 'An unexpected error occurred. Please try again.';
+          this.errors.email.hidden = false;
+        }
         return;
       }
 
@@ -195,11 +219,9 @@ class SIGNUP extends HTMLElement {
         message: error.message,
         stack: error.stack
       });
+      
       // Show general error message
-      Object.values(this.errors).forEach(error => {
-        error.hidden = true;
-      });
-      this.errors.email.textContent = 'An error occurred during registration. Please try again.';
+      this.errors.email.textContent = 'A network error occurred. Please check your connection and try again.';
       this.errors.email.hidden = false;
     }
   }
