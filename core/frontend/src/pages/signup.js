@@ -137,7 +137,8 @@ class SIGNUP extends HTMLElement {
     }
 
     try {
-      const apiUrl = window.location.protocol + '//' + window.location.host + '/api/register/';
+      // Use relative URL to ensure it goes through nginx
+      const apiUrl = '/api/register/';
       console.log('Attempting to fetch from:', apiUrl);
 
       const requestData = {
@@ -264,13 +265,13 @@ class SIGNUP extends HTMLElement {
     // Handle 42 Network signup
     const btn42Network = this.shadow.querySelector('.btn_42Network');
     btn42Network.addEventListener('click', () => {
-      window.location.href = 'http://localhost:8000/api/oauth/42/login/';
+      window.location.href = '/api/oauth/42/login/';
     });
 
     // Handle Google signup
     const btnGoogle = this.shadow.querySelector('.btn_google');
     btnGoogle.addEventListener('click', () => {
-      window.location.href = 'http://localhost:8000/api/oauth/google/login/';
+      window.location.href = '/api/oauth/google/login/';
     });
   }
 

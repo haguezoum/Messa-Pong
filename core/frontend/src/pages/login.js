@@ -79,18 +79,23 @@ class LOGIN extends HTMLElement {
     const passwordError = this.shadow.querySelector('#password-error');
 
     try {
-      const response = await fetch('http://localhost:8000/api/users/login/', {
+      console.log('Login attempt for:', email);
+      const response = await fetch('/api/login/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           login: email,
           password: password
         })
       });
 
+      console.log('Login response status:', response.status);
       const data = await response.json();
+      console.log('Login response data:', data);
 
       if (!response.ok) {
         if (data.error) {
@@ -124,13 +129,13 @@ class LOGIN extends HTMLElement {
     // Handle 42 Network login
     const btn42Network = this.shadow.querySelector('.btn_42Network');
     btn42Network.addEventListener('click', () => {
-      window.location.href = 'http://localhost:8000/api/oauth/42/login/';
+      window.location.href = '/api/oauth/42/login/';
     });
 
     // Handle Google login
     const btnGoogle = this.shadow.querySelector('.btn_google');
     btnGoogle.addEventListener('click', () => {
-      window.location.href = 'http://localhost:8000/api/oauth/google/login/';
+      window.location.href = '/api/oauth/google/login/';
     });
   }
 
