@@ -319,7 +319,6 @@ button:disabled {
     flex-direction: row;
     gap: 20px;
     width: 100%;
-    min-height: 700px;
 }
 
 .game-main {
@@ -344,7 +343,6 @@ canvas, .score-board {
     border: 1px solid rgba(127, 199, 217, 0.3);
     box-shadow: var(--box-shadow);
     overflow: hidden;
-    min-height: 700px;
 }
 
 .chat-header {
@@ -377,7 +375,7 @@ canvas, .score-board {
 
 .chat-messages {
     padding: 10px;
-    flex-grow: 1;
+    height: 577px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
@@ -509,9 +507,7 @@ canvas, .score-board {
     border-top: 1px solid rgba(127, 199, 217, 0.3);
     padding: 10px;
     background-color: rgba(127, 199, 217, 0.1);
-    width: 100%;
-    align-items: center;
-    box-sizing: border-box;
+    margin-top: 100px;
 }
 
 #chat-message {
@@ -523,7 +519,6 @@ canvas, .score-board {
     padding: 8px 15px;
     outline: none;
     transition: all var(--transition-speed);
-    margin-right: 10px;
 }
 
 #chat-message:focus {
@@ -537,11 +532,8 @@ canvas, .score-board {
     color: #7FC7D9;
     font-size: 20px;
     cursor: pointer;
-    padding: 8px;
-    min-width: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    margin-left: 10px;
+    padding: 0 10px;
     transition: all var(--transition-speed);
 }
 
