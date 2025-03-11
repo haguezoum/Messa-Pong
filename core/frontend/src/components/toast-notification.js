@@ -2,6 +2,7 @@ export class ToastNotification extends HTMLElement {
     constructor() {
         super();
         this.attachShadow({ mode: 'open' });
+        this.activeToasts = new Set();
     }
 
     static get styles() {
@@ -176,6 +177,9 @@ export class ToastNotification extends HTMLElement {
     }
 
     show({ title, message, type = 'info', duration = 3000 }) {
+        // Clear existing toasts
+        this.clearAll();
+
         const container = this.shadowRoot.querySelector('.toast-container');
         const toast = document.createElement('div');
         
@@ -197,6 +201,7 @@ export class ToastNotification extends HTMLElement {
         `;
 
         container.appendChild(toast);
+        this.activeToasts.add(toast);
 
         // Trigger animation
         requestAnimationFrame(() => {
@@ -215,8 +220,21 @@ export class ToastNotification extends HTMLElement {
     }
 
     hide(toast) {
+        if (!toast) return;
+        
         toast.style.animation = 'fadeOut 0.5s forwards';
-        setTimeout(() => toast.remove(), 500);
+        setTimeout(() => {
+            toast.remove();
+            this.activeToasts.delete(toast);
+        }, 500);
+    }
+
+    clearAll() {
+        const container = this.shadowRoot.querySelector('.toast-container');
+        if (container) {
+            container.innerHTML = '';
+        }
+        this.activeToasts.clear();
     }
 }
 

@@ -132,87 +132,99 @@ class SIGNUP extends HTMLElement {
 
   async handleSignup(event) {
     event.preventDefault();
+
+    const requestData = {
+      first_name: this.#newUser.firstname,
+      last_name: this.#newUser.lastname,
+      username: this.#newUser.username,
+      email: this.#newUser.email,
+      password: this.#newUser.password,
+      password2: this.#newUser.confirm_password
+    };
+
+    console.log('Sending registration request with data:', requestData);
     
     try {
-        const response = await fetch('/api/register/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-            },
-            credentials: 'include',
-            body: JSON.stringify({
-                first_name: this.#newUser.firstname,
-                last_name: this.#newUser.lastname,
-                username: this.#newUser.username,
-                email: this.#newUser.email,
-                password: this.#newUser.password,
-                password2: this.#newUser.confirm_password
-            })
+      const response = await fetch('/api/register/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(requestData)
+      });
+
+      console.log('Response status:', response.status);
+      const data = await response.json();
+      console.log('Response data:', data);
+
+      // Clear any existing notifications
+      const container = this.shadow.querySelector('.toast-container');
+      if (container) {
+        container.innerHTML = '';
+      }
+
+      // Handle successful registration
+      if (response.status === 201) {
+        console.log('Registration successful');
+        
+        // Show success notification
+        this.toastNotification.show({
+          title: 'Success!',
+          message: 'Registration successful! Redirecting to login...',
+          type: 'success',
+          duration: 2000
         });
 
-        const data = await response.json();
+        // Clear form
+        event.target.reset();
 
-        // Check specifically for successful registration (status 201)
-        if (response.status === 201 && data.user) {
-            // Registration successful
-            this.toastNotification.show({
-                title: 'Success!',
-                message: 'Registration successful! Redirecting to login...',
-                type: 'success',
-                duration: 2000
-            });
-
-            // Clear form
-            event.target.reset();
-
-            // Store user data if needed
-            if (data.tokens) {
-                localStorage.setItem('accessToken', data.tokens.access);
-                localStorage.setItem('refreshToken', data.tokens.refresh);
-                localStorage.setItem('userData', JSON.stringify(data.user));
-            }
-
-            // Redirect to login after a delay
-            setTimeout(() => {
-                window.location.href = '/login';
-            }, 2500);
-            
-            return; // Exit the function here to prevent further execution
+        // Store user data
+        if (data.tokens) {
+          localStorage.setItem('accessToken', data.tokens.access);
+          localStorage.setItem('refreshToken', data.tokens.refresh);
+          localStorage.setItem('userData', JSON.stringify(data.user));
         }
 
-        // If we get here, there was an error
-        if (data.errors) {
-            // Handle validation errors
-            const firstError = Object.entries(data.errors)[0];
-            if (firstError) {
-                const [field, error] = firstError;
-                this.toastNotification.show({
-                    title: 'Validation Error',
-                    message: typeof error === 'string' ? error : error[0],
-                    type: 'error',
-                    duration: 4000
-                });
-            }
-        } else if (data.error) {
-            // Handle general error
-            this.toastNotification.show({
-                title: 'Error',
-                message: data.error,
-                type: 'error',
-                duration: 4000
-            });
-        }
+        // Redirect to login after delay
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 2500);
+        
+        return;
+      }
+
+      // Handle validation errors
+      if (response.status === 400 && data.errors) {
+        console.log('Validation errors:', data.errors);
+        const errorMessage = Object.values(data.errors)[0];
+        this.toastNotification.show({
+          title: 'Validation Error',
+          message: errorMessage,
+          type: 'error',
+          duration: 4000
+        });
+        return;
+      }
+
+      // Handle unexpected server error
+      console.log('Server error:', data.error || 'Unknown error');
+      this.toastNotification.show({
+        title: 'Server Error',
+        message: data.error || 'An unexpected error occurred',
+        type: 'error',
+        duration: 4000
+      });
 
     } catch (error) {
-        console.error('Registration error:', error);
-        // Only show error notification for actual errors
-        this.toastNotification.show({
-            title: 'Error',
-            message: 'Network error occurred. Please try again.',
-            type: 'error',
-            duration: 4000
-        });
+      console.error('Network error:', error);
+      this.toastNotification.show({
+        title: 'Connection Error',
+        message: 'Unable to connect to the server. Please try again.',
+        type: 'error',
+        duration: 4000
+      });
     }
   }
 
@@ -281,9 +293,9 @@ class SIGNUP extends HTMLElement {
     console.log("SIGNUP is Connected");
     const form = this.shadow.querySelector('form');
     // Remove any existing event listeners
-    form.removeEventListener('submit', this.handleSignup.bind(this));
+    form.removeEventListener('submit', this.handleSignup);
     // Add new event listener
-    form.addEventListener('submit', this.handleSignup.bind(this));
+    form.addEventListener('submit', this.handleSignup);
 
     // Handle OAuth buttons
     const btn42Network = this.shadow.querySelector('.btn_42Network');
@@ -301,7 +313,7 @@ class SIGNUP extends HTMLElement {
   disconnectedCallback() {
     console.log("SIGNUP is Disconnected");
     const form = this.shadow.querySelector('form');
-    form.removeEventListener('submit', this.handleSignup.bind(this));
+    form.removeEventListener('submit', this.handleSignup);
   }
 
   static get observedAttributes() {
