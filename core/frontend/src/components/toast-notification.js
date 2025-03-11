@@ -2,7 +2,6 @@ export class ToastNotification extends HTMLElement {
     constructor() {
         super();
         this.attachShadow({ mode: 'open' });
-        this.activeToasts = new Set();
     }
 
     static get styles() {
@@ -165,22 +164,13 @@ export class ToastNotification extends HTMLElement {
         `;
     }
 
-    connectedCallback() {
-        this.render();
-    }
-
-    render() {
-        this.shadowRoot.innerHTML = `
-            <style>${ToastNotification.styles}</style>
-            <div class="toast-container"></div>
-        `;
-    }
-
     show({ title, message, type = 'info', duration = 3000 }) {
-        // Clear existing toasts
-        this.clearAll();
-
+        // Clear any existing notifications first
         const container = this.shadowRoot.querySelector('.toast-container');
+        if (container) {
+            container.innerHTML = '';
+        }
+
         const toast = document.createElement('div');
         
         const icons = {
@@ -201,7 +191,6 @@ export class ToastNotification extends HTMLElement {
         `;
 
         container.appendChild(toast);
-        this.activeToasts.add(toast);
 
         // Trigger animation
         requestAnimationFrame(() => {
@@ -211,30 +200,39 @@ export class ToastNotification extends HTMLElement {
 
         // Handle close button
         const closeBtn = toast.querySelector('.close-btn');
-        closeBtn.addEventListener('click', () => this.hide(toast));
+        const handleClose = () => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 500);
+        };
+        
+        closeBtn.addEventListener('click', handleClose);
 
         // Auto hide
-        setTimeout(() => this.hide(toast), duration);
+        const timer = setTimeout(handleClose, duration);
+
+        // Clean up if the component is removed
+        toast.cleanup = () => {
+            clearTimeout(timer);
+            closeBtn.removeEventListener('click', handleClose);
+        };
 
         return toast;
     }
 
-    hide(toast) {
-        if (!toast) return;
-        
-        toast.style.animation = 'fadeOut 0.5s forwards';
-        setTimeout(() => {
-            toast.remove();
-            this.activeToasts.delete(toast);
-        }, 500);
+    connectedCallback() {
+        this.shadowRoot.innerHTML = `
+            <style>${ToastNotification.styles}</style>
+            <div class="toast-container"></div>
+        `;
     }
 
-    clearAll() {
+    disconnectedCallback() {
         const container = this.shadowRoot.querySelector('.toast-container');
         if (container) {
-            container.innerHTML = '';
+            Array.from(container.children).forEach(toast => {
+                if (toast.cleanup) toast.cleanup();
+            });
         }
-        this.activeToasts.clear();
     }
 }
 

@@ -133,18 +133,8 @@ class SIGNUP extends HTMLElement {
   async handleSignup(event) {
     event.preventDefault();
 
-    const requestData = {
-      first_name: this.#newUser.firstname,
-      last_name: this.#newUser.lastname,
-      username: this.#newUser.username,
-      email: this.#newUser.email,
-      password: this.#newUser.password,
-      password2: this.#newUser.confirm_password
-    };
-
-    console.log('Sending registration request with data:', requestData);
-    
     try {
+      // Make the registration request
       const response = await fetch('/api/register/', {
         method: 'POST',
         headers: {
@@ -152,52 +142,48 @@ class SIGNUP extends HTMLElement {
           'Accept': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify(requestData)
+        body: JSON.stringify({
+          first_name: this.#newUser.firstname,
+          last_name: this.#newUser.lastname,
+          username: this.#newUser.username,
+          email: this.#newUser.email,
+          password: this.#newUser.password,
+          password2: this.#newUser.confirm_password
+        })
       });
 
-      console.log('Response status:', response.status);
       const data = await response.json();
-      console.log('Response data:', data);
-
-      // Clear any existing notifications
-      const container = this.shadow.querySelector('.toast-container');
-      if (container) {
-        container.innerHTML = '';
-      }
 
       // Handle successful registration
       if (response.status === 201) {
-        console.log('Registration successful');
-        
         // Show success notification
         this.toastNotification.show({
-          title: 'Success!',
+          title: 'Welcome!',
           message: 'Registration successful! Redirecting to login...',
           type: 'success',
           duration: 2000
         });
 
-        // Clear form
-        event.target.reset();
-
-        // Store user data
+        // Store tokens if provided
         if (data.tokens) {
           localStorage.setItem('accessToken', data.tokens.access);
           localStorage.setItem('refreshToken', data.tokens.refresh);
           localStorage.setItem('userData', JSON.stringify(data.user));
         }
 
-        // Redirect to login after delay
+        // Clear the form
+        event.target.reset();
+
+        // Redirect to login page after delay
         setTimeout(() => {
           window.location.href = '/login';
         }, 2500);
-        
+
         return;
       }
 
       // Handle validation errors
-      if (response.status === 400 && data.errors) {
-        console.log('Validation errors:', data.errors);
+      if (data.errors) {
         const errorMessage = Object.values(data.errors)[0];
         this.toastNotification.show({
           title: 'Validation Error',
@@ -208,20 +194,20 @@ class SIGNUP extends HTMLElement {
         return;
       }
 
-      // Handle unexpected server error
-      console.log('Server error:', data.error || 'Unknown error');
-      this.toastNotification.show({
-        title: 'Server Error',
-        message: data.error || 'An unexpected error occurred',
-        type: 'error',
-        duration: 4000
-      });
+      // Handle any other errors
+      if (data.error) {
+        this.toastNotification.show({
+          title: 'Error',
+          message: data.error,
+          type: 'error',
+          duration: 4000
+        });
+      }
 
     } catch (error) {
-      console.error('Network error:', error);
       this.toastNotification.show({
-        title: 'Connection Error',
-        message: 'Unable to connect to the server. Please try again.',
+        title: 'Error',
+        message: 'Unable to complete registration. Please try again.',
         type: 'error',
         duration: 4000
       });
