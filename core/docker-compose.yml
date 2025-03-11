@@ -11,12 +11,13 @@ services:
             - 443:443/tcp
         volumes:
             - frontend-files:/www
+            - ./infrastructure/nginx/logs:/var/log/nginx
         networks:
             42network:
                 aliases:
                     - nginx
         depends_on:
-            redis:
+            auth:
                 condition: service_healthy
         restart: always
 
@@ -104,9 +105,20 @@ services:
         environment:
             - DJANGO_SETTINGS_MODULE=restapi.settings
             - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-your-secret-key}
-            - DATABASE_URL=postgresql://postgres:postgres123@database:5432/postgres
+            - PG_NAME=${PG_NAME:-postgres}
+            - PG_USER=${PG_USER:-postgres}
+            - PG_PASSWD=${PG_PASSWD:-postgres123}
+            - PG_HOST=${PG_HOST:-database}
+            - PG_PORT=${PG_PORT:-5432}
             - REDIS_URL=redis://redis:6379/0
             - PYTHONPATH=/home/app
+            - DEBUG=True
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost:8000/api/health/"]
+            interval: 10s
+            timeout: 5s
+            retries: 3
+            start_period: 10s
         secrets:
             - database-credentials
             - api-credentials
@@ -116,7 +128,6 @@ services:
             redis:
                 condition: service_healthy
         restart: always
-
 
 volumes:
     database-data:

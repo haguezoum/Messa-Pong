@@ -9,7 +9,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-key-for-development-only')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'True') == 'True'
+DEBUG = True  # Temporarily enable for debugging
 
 ALLOWED_HOSTS = ['*']
 
@@ -65,11 +65,11 @@ WSGI_APPLICATION = 'restapi.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME', 'postgres'),
-        'USER': os.environ.get('DB_USER', 'postgres'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', 'postgres'),
-        'HOST': os.environ.get('DB_HOST', 'database'),
-        'PORT': os.environ.get('DB_PORT', '5432'),
+        'NAME': os.environ.get('PG_NAME', 'postgres'),
+        'USER': os.environ.get('PG_USER', 'postgres'),
+        'PASSWORD': os.environ.get('PG_PASSWD', 'postgres123'),
+        'HOST': os.environ.get('PG_HOST', 'database'),
+        'PORT': os.environ.get('PG_PORT', '5432'),
     }
 }
 
@@ -130,27 +130,34 @@ SIMPLE_JWT = {
     'TOKEN_TYPE_CLAIM': 'token_type',
 }
 
-# Security settings
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-SECURE_SSL_REDIRECT = False  # Nginx handles HTTPS redirect
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
-CSRF_TRUSTED_ORIGINS = [
-    'https://localhost',
-    'http://localhost',  # Add this for development
-]
-USE_X_FORWARDED_HOST = True
-USE_X_FORWARDED_PORT = True
-SECURE_HSTS_SECONDS = 31536000  # 1 year
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-SECURE_HSTS_PRELOAD = True
+# Logging configuration
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+    },
+}
 
 # CORS settings
 CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
     "https://localhost",
-    "http://localhost",  # Add this for development
+    "http://localhost",
 ]
 CORS_EXPOSE_HEADERS = [
     'content-type',
@@ -170,6 +177,21 @@ CORS_ALLOW_HEADERS = [
     'x-forwarded-for',
     'x-real-ip',
 ]
+
+# Security settings
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_SSL_REDIRECT = False
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+CSRF_TRUSTED_ORIGINS = [
+    'https://localhost',
+    'http://localhost',
+]
+USE_X_FORWARDED_HOST = True
+USE_X_FORWARDED_PORT = True
+SECURE_HSTS_SECONDS = 31536000  # 1 year
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
 
 # Email settings
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # For development
