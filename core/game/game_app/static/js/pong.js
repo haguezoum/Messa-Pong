@@ -709,22 +709,36 @@ function showVictoryAnimation(message, finalScore) {
     const title = overlay.querySelector('.victory-title');
     const scoreElement = overlay.querySelector('#final-score');
     const messageElement = overlay.querySelector('.victory-message');
+    const button = overlay.querySelector('.victory-button');
+    
+    // Determine if it's a victory or game over
+    const isVictory = message === "You win!";
+    
+    // Update overlay class
+    overlay.classList.remove('game-over');
+    if (!isVictory) {
+        overlay.classList.add('game-over');
+    }
     
     // Update content
-    title.textContent = message === "You win!" ? "Victory!" : "Game Over!";
+    title.textContent = isVictory ? "Victory!" : "Game Over";
     messageElement.textContent = message;
     scoreElement.textContent = finalScore;
+    button.textContent = isVictory ? "Play Again" : "Try Again";
     
     // Show overlay
     overlay.classList.add('active');
     
-    // Create effects
-    createConfetti();
-    createParticles();
+    // Only show confetti for victory
+    if (isVictory) {
+        createConfetti();
+        createParticles();
+    }
     
     // Set timeout to remove the overlay
     setTimeout(() => {
         overlay.classList.remove('active');
+        overlay.classList.remove('game-over');
         
         // Clean up particles after animation
         setTimeout(() => {
