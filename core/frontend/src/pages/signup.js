@@ -121,50 +121,79 @@ class SIGNUP extends HTMLElement {
     event.preventDefault();
     const form = event.target;
     
+    console.log('Form submission started');
+    console.log('Form data:', {
+      first_name: this.#newUser.firstname,
+      last_name: this.#newUser.lastname,
+      username: this.#newUser.username,
+      email: this.#newUser.email,
+    });
+    
     // Validate passwords match
     if (this.#newUser.password !== this.#newUser.confirm_password) {
+      console.log('Password mismatch');
       this.errors.confirm_password.hidden = false;
       return;
     }
 
     try {
-      const response = await fetch('/api/register/', {
+      const apiUrl = window.location.protocol + '//' + window.location.host + '/api/register/';
+      console.log('Attempting to fetch from:', apiUrl);
+
+      const requestData = {
+        first_name: this.#newUser.firstname,
+        last_name: this.#newUser.lastname,
+        username: this.#newUser.username,
+        email: this.#newUser.email,
+        password: this.#newUser.password,
+        password2: this.#newUser.confirm_password
+      };
+      console.log('Request data:', requestData);
+
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
-        body: JSON.stringify({
-          first_name: this.#newUser.firstname,
-          last_name: this.#newUser.lastname,
-          username: this.#newUser.username,
-          email: this.#newUser.email,
-          password: this.#newUser.password,
-          password2: this.#newUser.confirm_password
-        })
+        credentials: 'include',
+        body: JSON.stringify(requestData)
       });
 
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries([...response.headers]));
+
       const data = await response.json();
+      console.log('Response data:', data);
 
       if (!response.ok) {
+        console.log('Response not OK:', response.status, data);
         // Handle validation errors
         Object.keys(data).forEach(key => {
           if (this.errors[key]) {
             this.errors[key].textContent = Array.isArray(data[key]) ? data[key][0] : data[key];
             this.errors[key].hidden = false;
+            console.log('Validation error for', key, ':', this.errors[key].textContent);
           }
         });
         return;
       }
 
+      console.log('Registration successful, storing tokens');
       // Store tokens and user data
       localStorage.setItem('accessToken', data.tokens.access);
       localStorage.setItem('refreshToken', data.tokens.refresh);
       localStorage.setItem('userData', JSON.stringify(data.user));
 
+      console.log('Redirecting to dashboard');
       // Redirect to dashboard
       window.location.href = '/dashboard';
     } catch (error) {
-      console.error('Signup error:', error);
+      console.error('Detailed signup error:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      });
       // Show general error message
       Object.values(this.errors).forEach(error => {
         error.hidden = true;
