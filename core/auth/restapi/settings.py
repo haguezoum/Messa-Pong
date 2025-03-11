@@ -9,9 +9,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-key-for-development-only')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True  # Temporarily enable for debugging
+DEBUG = False
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 # Application definition
 INSTALLED_APPS = [
@@ -135,18 +135,16 @@ LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
+        'file': {
+            'level': 'ERROR',
+            'class': 'logging.FileHandler',
+            'filename': 'django-errors.log',
         },
-    },
-    'root': {
-        'handlers': ['console'],
-        'level': 'INFO',
     },
     'loggers': {
         'django': {
-            'handlers': ['console'],
-            'level': 'INFO',
+            'handlers': ['file'],
+            'level': 'ERROR',
             'propagate': True,
         },
     },
@@ -195,4 +193,11 @@ SECURE_HSTS_PRELOAD = True
 
 # Email settings
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # For development
-DEFAULT_FROM_EMAIL = 'noreply@ft-transcendence.com' 
+DEFAULT_FROM_EMAIL = 'noreply@ft-transcendence.com'
+
+# Update allowed hosts for production
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+
+# Ensure CSRF settings are properly configured
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True 

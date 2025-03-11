@@ -119,110 +119,56 @@ class SIGNUP extends HTMLElement {
 
   async handleSignup(event) {
     event.preventDefault();
-    const form = event.target;
     
-    console.log('Form submission started');
-    
-    // Clear previous errors
-    Object.values(this.errors).forEach(error => {
-      error.hidden = true;
-    });
-    
-    // Validate passwords match
-    if (this.#newUser.password !== this.#newUser.confirm_password) {
-      console.log('Password mismatch');
-      this.errors.confirm_password.textContent = "Passwords do not match!";
-      this.errors.confirm_password.hidden = false;
-      return;
-    }
-
     try {
-      const apiUrl = '/api/register/';
-      console.log('Attempting to fetch from:', apiUrl);
+        const response = await fetch('/api/register/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+                first_name: this.#newUser.firstname,
+                last_name: this.#newUser.lastname,
+                username: this.#newUser.username,
+                email: this.#newUser.email,
+                password: this.#newUser.password,
+                password2: this.#newUser.confirm_password
+            })
+        });
 
-      const requestData = {
-        first_name: this.#newUser.firstname,
-        last_name: this.#newUser.lastname,
-        username: this.#newUser.username,
-        email: this.#newUser.email,
-        password: this.#newUser.password,
-        password2: this.#newUser.confirm_password
-      };
-      console.log('Request data:', requestData);
+        const data = await response.json();
 
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(requestData)
-      });
-
-      console.log('Response status:', response.status);
-      console.log('Response headers:', Object.fromEntries([...response.headers]));
-
-      let data;
-      const contentType = response.headers.get("content-type");
-      if (contentType && contentType.includes("application/json")) {
-        data = await response.json();
-        console.log('Response data:', data);
-      } else {
-        const text = await response.text();
-        console.log('Response text:', text);
-        throw new Error('Received non-JSON response');
-      }
-
-      if (!response.ok) {
-        console.log('Response not OK:', response.status, data);
-        
-        // Handle validation errors
-        if (typeof data === 'object') {
-          Object.keys(data).forEach(key => {
-            const errorMessage = Array.isArray(data[key]) ? data[key][0] : data[key];
-            console.log('Error for field:', key, 'Message:', errorMessage);
-            
-            // Map backend field names to frontend field names
-            const fieldMap = {
-              'first_name': 'firstname',
-              'last_name': 'lastname',
-              'non_field_errors': 'email' // Use email field for general errors
-            };
-            
-            const frontendKey = fieldMap[key] || key;
-            if (this.errors[frontendKey]) {
-              this.errors[frontendKey].textContent = errorMessage;
-              this.errors[frontendKey].hidden = false;
+        if (!response.ok) {
+            // Handle validation errors
+            if (data.errors) {
+                Object.keys(data.errors).forEach(key => {
+                    const fieldMap = {
+                        'first_name': 'firstname',
+                        'last_name': 'lastname'
+                    };
+                    const frontendKey = fieldMap[key] || key;
+                    if (this.errors[frontendKey]) {
+                        this.errors[frontendKey].textContent = data.errors[key];
+                        this.errors[frontendKey].hidden = false;
+                    }
+                });
             }
-          });
-        } else {
-          // Handle non-object error response
-          this.errors.email.textContent = 'An unexpected error occurred. Please try again.';
-          this.errors.email.hidden = false;
+            return;
         }
-        return;
-      }
 
-      console.log('Registration successful, storing tokens');
-      // Store tokens and user data
-      localStorage.setItem('accessToken', data.tokens.access);
-      localStorage.setItem('refreshToken', data.tokens.refresh);
-      localStorage.setItem('userData', JSON.stringify(data.user));
+        // Store tokens and user data
+        localStorage.setItem('accessToken', data.tokens.access);
+        localStorage.setItem('refreshToken', data.tokens.refresh);
+        localStorage.setItem('userData', JSON.stringify(data.user));
 
-      console.log('Redirecting to dashboard');
-      // Redirect to dashboard
-      window.location.href = '/dashboard';
+        // Redirect to dashboard
+        window.location.href = '/dashboard';
     } catch (error) {
-      console.error('Detailed signup error:', {
-        name: error.name,
-        message: error.message,
-        stack: error.stack
-      });
-      
-      // Show general error message
-      this.errors.email.textContent = 'A network error occurred. Please check your connection and try again.';
-      this.errors.email.hidden = false;
+        console.error('Registration error:', error);
+        this.errors.email.textContent = 'An unexpected error occurred. Please try again.';
+        this.errors.email.hidden = false;
     }
   }
 

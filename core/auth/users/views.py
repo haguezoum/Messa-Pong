@@ -6,6 +6,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model, authenticate
 from rest_framework.views import APIView
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Q
 
 from .serializers import (
     UserSerializer,
@@ -22,39 +23,37 @@ class LoginView(APIView):
     serializer_class = LoginSerializer
 
     def post(self, request):
-        serializer = self.serializer_class(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        serializer = LoginSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({
+                'errors': serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         login = serializer.validated_data['login']
         password = serializer.validated_data['password']
-        user = None
 
-        # Check if login is an email
-        if '@' in login:
-            try:
-                user = User.objects.get(email=login)
-                user = authenticate(username=user.username, password=password)
-            except User.DoesNotExist:
-                pass
-        else:
-            # Login with username directly
-            user = authenticate(username=login, password=password)
-
-        if user is None:
+        # Try to find user by email or username
+        try:
+            user = User.objects.get(Q(email=login) | Q(username=login))
+        except User.DoesNotExist:
             return Response({
-                'error': 'Invalid login credentials'
+                'error': 'No account found with this email or username.'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        # Verify password
+        if not user.check_password(password):
+            return Response({
+                'error': 'Incorrect password. Please try again.'
             }, status=status.HTTP_401_UNAUTHORIZED)
 
+        # Generate tokens
         refresh = RefreshToken.for_user(user)
+        
         return Response({
-            'access': str(refresh.access_token),
-            'refresh': str(refresh),
-            'user': {
-                'id': user.id,
-                'username': user.username,
-                'email': user.email,
-                'first_name': user.first_name,
-                'last_name': user.last_name
+            'user': UserSerializer(user).data,
+            'tokens': {
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
             }
         })
 
@@ -64,33 +63,31 @@ class RegisterView(APIView):
 
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        if serializer.is_valid():
+            user = serializer.save()
+            
+            # Automatically log in the user
+            refresh = RefreshToken.for_user(user)
+            
+            return Response({
+                'user': UserSerializer(user).data,
+                'tokens': {
+                    'refresh': str(refresh),
+                    'access': str(refresh.access_token),
+                }
+            }, status=status.HTTP_201_CREATED)
         
-        # Create user
-        user = User.objects.create_user(
-            username=serializer.validated_data['username'],
-            email=serializer.validated_data['email'],
-            password=serializer.validated_data['password'],
-            first_name=serializer.validated_data['first_name'],
-            last_name=serializer.validated_data['last_name']
-        )
+        # Improve error messages
+        errors = {}
+        for field, error_list in serializer.errors.items():
+            if field == 'email' and 'unique' in str(error_list[0]):
+                errors[field] = 'This email is already registered. Please use a different email or try logging in.'
+            elif field == 'username' and 'unique' in str(error_list[0]):
+                errors[field] = 'This username is already taken. Please choose another one.'
+            else:
+                errors[field] = error_list[0]
         
-        # Generate tokens
-        refresh = RefreshToken.for_user(user)
-        
-        return Response({
-            'user': {
-                'id': user.id,
-                'username': user.username,
-                'email': user.email,
-                'first_name': user.first_name,
-                'last_name': user.last_name
-            },
-            'tokens': {
-                'access': str(refresh.access_token),
-                'refresh': str(refresh)
-            }
-        }, status=status.HTTP_201_CREATED)
+        return Response({'errors': errors}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
