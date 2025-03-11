@@ -16,9 +16,9 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     DJANGO_SETTINGS_MODULE=restapi.settings
 
-# Install dependencies
+# Install dependencies including curl
 RUN apt-get update -y && \
-    apt-get install --no-install-recommends -y gcc libpq-dev postgresql-client && \
+    apt-get install --no-install-recommends -y gcc libpq-dev postgresql-client curl && \
     rm -rf /var/lib/apt/lists/* 
 
 # Create non-root user
