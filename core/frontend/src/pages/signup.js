@@ -1,4 +1,5 @@
 import { notificationStyles } from '../components/notification-styles.js';
+import { ToastNotification } from '../components/toast-notification.js';
 
 let template = document.createElement("template");
 
@@ -123,54 +124,10 @@ class SIGNUP extends HTMLElement {
     const styleSheet = document.createElement("style");
     styleSheet.textContent = notificationStyles;
     this.shadow.appendChild(styleSheet);
-  }
 
-  showNotification(message, type = 'error', duration = 3000) {
-    // Clear any existing notifications first
-    const container = this.shadow.querySelector('.notification-container');
-    if (container) {
-        container.innerHTML = '';
-    }
-
-    const notification = document.createElement('div');
-    
-    // Choose icon based on type
-    const icon = type === 'success' ? '✓' : type === 'error' ? '✕' : 'ℹ';
-    
-    notification.className = `notification ${type}`;
-    notification.innerHTML = `
-        <span class="icon">${icon}</span>
-        <span class="message">${message}</span>
-        <span class="close-btn">✕</span>
-    `;
-
-    container.appendChild(notification);
-
-    // Trigger animation
-    requestAnimationFrame(() => {
-        notification.classList.add('show');
-    });
-
-    // Add shake effect for errors
-    if (type === 'error') {
-        notification.classList.add('shake');
-    }
-
-    // Handle close button
-    const closeBtn = notification.querySelector('.close-btn');
-    closeBtn.addEventListener('click', () => {
-        notification.classList.remove('show');
-        setTimeout(() => notification.remove(), 500);
-    });
-
-    // Auto remove after duration
-    const timer = setTimeout(() => {
-        notification.classList.remove('show');
-        setTimeout(() => notification.remove(), 500);
-    }, duration);
-
-    // Store the timer ID on the notification element
-    notification.dataset.timerId = timer;
+    // Add toast notification
+    this.toastNotification = document.createElement('toast-notification');
+    this.shadow.appendChild(this.toastNotification);
   }
 
   async handleSignup(event) {
@@ -196,10 +153,14 @@ class SIGNUP extends HTMLElement {
 
         const data = await response.json();
 
-        // Check if registration was successful (status 201 Created)
         if (response.status === 201) {
             // Registration successful
-            this.showNotification('Registration successful! Redirecting to login...', 'success', 2000);
+            this.toastNotification.show({
+                title: 'Success!',
+                message: 'Registration successful! Redirecting to login...',
+                type: 'success',
+                duration: 2000
+            });
 
             // Clear form
             event.target.reset();
@@ -216,27 +177,31 @@ class SIGNUP extends HTMLElement {
                 window.location.href = '/login';
             }, 2500);
             
-            return; // Exit the function after successful registration
+            return;
         }
 
-        // If we get here, there was an error
+        // Handle validation errors
         if (data.errors) {
             Object.entries(data.errors).forEach(([field, error], index) => {
                 setTimeout(() => {
-                    this.showNotification(
-                        typeof error === 'string' ? error : error[0],
-                        'error',
-                        4000
-                    );
+                    this.toastNotification.show({
+                        title: 'Validation Error',
+                        message: typeof error === 'string' ? error : error[0],
+                        type: 'error',
+                        duration: 4000
+                    });
                 }, index * 400);
             });
-        } else if (data.error) {
-            this.showNotification(data.error, 'error', 4000);
         }
 
     } catch (error) {
         console.error('Registration error:', error);
-        this.showNotification('Registration failed. Please try again.', 'error', 4000);
+        this.toastNotification.show({
+            title: 'Error',
+            message: 'An unexpected error occurred. Please try again.',
+            type: 'error',
+            duration: 4000
+        });
     }
   }
 

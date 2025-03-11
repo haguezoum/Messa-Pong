@@ -1,4 +1,5 @@
 import { notificationStyles } from '../components/notification-styles.js';
+import { ToastNotification } from '../components/toast-notification.js';
 
 let template = document.createElement("template");
 
@@ -76,25 +77,10 @@ class LOGIN extends HTMLElement {
     linkElem.setAttribute("rel", "stylesheet");
     linkElem.setAttribute("href", "src/assets/style/login-page.css");
     this.shadow.appendChild(linkElem);
-  }
 
-  showNotification(message, type = 'error', duration = 3000) {
-    const notification = this.shadow.getElementById('notification');
-    notification.textContent = message;
-    notification.className = `notification ${type}`;
-    notification.classList.add('show');
-
-    // Trigger animation
-    notification.style.animation = 'slideIn 0.3s forwards';
-
-    // Remove notification after 3 seconds
-    setTimeout(() => {
-      notification.style.animation = 'fadeOut 0.3s forwards';
-      setTimeout(() => {
-        notification.classList.remove('show');
-        notification.className = 'notification';
-      }, 300);
-    }, 3000);
+    // Add toast notification
+    this.toastNotification = document.createElement('toast-notification');
+    this.shadow.appendChild(this.toastNotification);
   }
 
   async handleLogin(event) {
@@ -126,7 +112,13 @@ class LOGIN extends HTMLElement {
         } else if (data.errors) {
           errorMessage = Object.values(data.errors)[0];
         }
-        this.showNotification(errorMessage, 'error', 4000);
+        
+        this.toastNotification.show({
+          title: 'Login Failed',
+          message: errorMessage,
+          type: 'error',
+          duration: 4000
+        });
         return;
       }
 
@@ -136,7 +128,12 @@ class LOGIN extends HTMLElement {
       localStorage.setItem('userData', JSON.stringify(data.user));
 
       // Show success message
-      this.showNotification('Login successful! Welcome back!', 'success', 2000);
+      this.toastNotification.show({
+        title: 'Welcome Back!',
+        message: 'Login successful! Redirecting...',
+        type: 'success',
+        duration: 2000
+      });
 
       // Clear form
       form.reset();
@@ -148,7 +145,12 @@ class LOGIN extends HTMLElement {
 
     } catch (error) {
       console.error('Login error:', error);
-      this.showNotification('Network error. Please try again.', 'error');
+      this.toastNotification.show({
+        title: 'Error',
+        message: 'Network error. Please try again.',
+        type: 'error',
+        duration: 4000
+      });
     }
   }
 
