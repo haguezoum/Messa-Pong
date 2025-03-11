@@ -10,28 +10,22 @@
 #                                                                              #
 # **************************************************************************** #
 
-FROM		python:3.10-slim
+FROM		python:latest
 
-ENV		PYTHONUNBUFFERED=1 \
-		PYTHONDONTWRITEBYTECODE=1 \
-		DJANGO_SETTINGS_MODULE=restapi.settings
+SHELL		["/bin/bash", "-c"]
 
-RUN		apt-get update -y && \
-		apt-get install --no-install-recommends -y gcc libpq-dev && \
-		rm -rf /var/lib/apt/lists/* 
+RUN		apt update -y && apt install wget openssl -y
 
-RUN		useradd --create-home tarzan 
+WORKDIR /api
 
-USER		tarzan
+COPY . /api
 
-WORKDIR		/home/tarzan/restapi
-
-COPY		requirements.txt .
-
-COPY		./tools/launcher.sh .
-
-RUN		pip install --no-cache-dir -r requirements.txt
+RUN		pip3 install virtualenv && \
+		python3 -m virtualenv /api && \
+		python3 -m venv env && \
+		source env/bin/activate
 
 EXPOSE		8000/tcp
 
-ENTRYPOINT	["/home/tarzan/restapi/launcher.sh"]
+ENTRYPOINT	["bash", "./init.sh"]
+

@@ -37,9 +37,9 @@ services:
             42network:
                 aliases:
                     - frontend
-        # depends_on:
-        #     auth:
-        #         condition: service_healthy
+        depends_on:
+            auth:
+                condition: service_healthy
         deploy:
             resources:
                 limits:
@@ -110,7 +110,7 @@ services:
     #         redis:
     #             condition: service_healthy
     #     healthcheck:
-    #         test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+    #         test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
     #         interval: 30s
     #         timeout: 10s
     #         retries: 3
@@ -138,42 +138,41 @@ services:
     #         redis:
     #             condition: service_healthy
     #     healthcheck:
-    #         test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+    #         test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
     #         interval: 30s
     #         timeout: 10s
     #         retries: 3
     #         start_period: 30s
     #     restart: always
 
-    # auth:
-    #     image: auth:server
-    #     container_name: auth
-    #     build:
-    #         context: ./auth
-    #     volumes:
-    #         - auth_storage:/storage
-    #     networks:
-    #         42network:
-    #           aliases:
-    #               - authentication
-    #               - api_gateway
-    #     secrets:
-    #         - database-credentials
-    #         - api-credentials
-    #     depends_on:
-    #         database:
-    #             condition: service_healthy
-    #     deploy:
-    #         resources:
-    #             limits:
-    #                 memory: 256M
-    #     healthcheck:
-    #         test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-    #         interval: 5s
-    #         timeout: 2s
-    #         retries: 3
-    #         start_period: 10s
-    #     restart: always
+    auth:
+        image: auth:server
+        container_name: auth
+        build:
+            context: ./auth
+        volumes:
+            - auth_storage:/storage
+        networks:
+            42network:
+              aliases:
+                  - authentication
+                  - api_gateway
+        env_file:
+            - ../secrets/api-credentials.env
+        depends_on:
+            database:
+                condition: service_healthy
+        deploy:
+            resources:
+                limits:
+                    memory: 256M
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+            interval: 5s
+            timeout: 2s
+            retries: 3
+            start_period: 10s
+        restart: always
 
 
 volumes:
