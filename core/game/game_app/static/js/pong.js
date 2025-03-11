@@ -406,8 +406,8 @@ function updateGameState(state) {
     }
     
     // Update score
-    document.getElementById("player1-score").innerText = `Player 1: ${state.player1_score}`;
-    document.getElementById("player2-score").innerText = `Player 2: ${state.player2_score}`;
+    document.getElementById("player1-score").innerText = state.player1_score;
+    document.getElementById("player2-score").innerText = state.player2_score;
     
     // Start animation if not already running
     if (!animationFrameId && !isPaused && isGameStarted) {
