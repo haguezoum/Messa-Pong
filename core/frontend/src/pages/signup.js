@@ -243,39 +243,45 @@ class SIGNUP extends HTMLElement {
     this.#newUser = new Proxy(this.#newUser, {
       set: (target, key, value) => {
         target[key] = value;
-        form.elements[key].value = value;
+        if (form.elements[key]) {
+          form.elements[key].value = value;
+        }
         return true;
       },
     });
 
     Array.from(form.elements).forEach((element) => {
       if (element.name) {
-        element.addEventListener("change", () => {
+        element.addEventListener("input", () => {
+          // Store the value in the newUser object first
+          this.#newUser[element.name] = element.value;
+          
           const error = this.errors[element.name];
-          if (element.name === "confirm_password") {
-            if (element.value !== form.elements["password"].value) {
-              error.hidden = false;
+          
+          // Handle password confirmation
+          if (element.name === "confirm_password" || element.name === "password") {
+            const password = form.elements["password"].value;
+            const confirmPassword = form.elements["confirm_password"].value;
+            
+            if (confirmPassword && password !== confirmPassword) {
+              this.errors.confirm_password.hidden = false;
+              this.errors.confirm_password.textContent = "Passwords do not match!";
               element.setCustomValidity("Passwords do not match!");
-              return;
+            } else {
+              this.errors.confirm_password.hidden = true;
+              form.elements["confirm_password"].setCustomValidity("");
             }
-          } else if (element.validity.valid || element.value === "") {
+          } 
+          // Handle other field validations
+          else if (element.validity.valid || element.value === "") {
             error.hidden = true;
             element.setCustomValidity("");
-            return;
           } else {
             error.hidden = false;
-            return;
           }
-          error.hidden = true;
-          element.setCustomValidity("");
-          this.#newUser[element.name] = element.value;
-        });
-        ["input", "change", "paste"].forEach((event) => {
-          element.addEventListener(event, () => {
-            form.checkValidity()
-              ? form.querySelector(".btn_submit").classList.add("active")
-              : form.querySelector(".btn_submit").classList.remove("active");
-          });
+
+          // Update submit button state
+          form.querySelector(".btn_submit").classList.toggle("active", form.checkValidity());
         });
       }
     });
