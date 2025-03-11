@@ -10,29 +10,37 @@
 #                                                                              #
 # **************************************************************************** #
 
-FROM		python:3.10-slim
+FROM python:3.10-slim
 
-ENV		PYTHONUNBUFFERED=1 \
-		PYTHONDONTWRITEBYTECODE=1 \
-		DJANGO_SETTINGS_MODULE=restapi.settings
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    DJANGO_SETTINGS_MODULE=restapi.settings
 
-RUN		apt-get update -y && \
-		apt-get install --no-install-recommends -y gcc libpq-dev postgresql-client && \
-		rm -rf /var/lib/apt/lists/* 
+# Install dependencies
+RUN apt-get update -y && \
+    apt-get install --no-install-recommends -y gcc libpq-dev postgresql-client && \
+    rm -rf /var/lib/apt/lists/* 
 
-RUN		groupadd -r app && \
-		useradd -r -g app -d /home/aet-tass -m aet-tass
+# Create non-root user
+RUN groupadd -r app && \
+    useradd -r -g app -d /home/app -m app
 
-WORKDIR		/home/aet-tass/app
+WORKDIR /home/app
 
-COPY		--chown=aet-tass:app . .
+# Copy requirements first to leverage Docker cache
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-RUN		chmod +x /home/aet-tass/app/tools/launcher.sh && \
-		pip install --no-cache-dir -r requirements.txt && \
-		chown -R aet-tass:app /home/aet-tass
+# Copy the rest of the application
+COPY . .
 
-USER		aet-tass
+# Set proper permissions
+RUN chown -R app:app /home/app
 
-EXPOSE		8000/tcp
+# Switch to non-root user
+USER app
 
-CMD		["./tools/launcher.sh"]
+EXPOSE 8000/tcp
+
+# Start Django server directly
+CMD ["sh", "-c", "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"]
