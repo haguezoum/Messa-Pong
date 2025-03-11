@@ -19,9 +19,10 @@ RUN mkdir -p /var/lib/postgresql/data /run/postgresql && \
     chown -R postgres:postgres /var/lib/postgresql /run/postgresql && \
     chmod 700 /var/lib/postgresql/data /run/postgresql
 
-COPY		--chown=postgres:postgres ./tools/setup.sh /setup.sh
+# Copy initialization script
+COPY		--chown=postgres:postgres ./tools/setup.sh /docker-entrypoint-initdb.d/setup.sh
 
-RUN		chmod +x /setup.sh
+RUN		chmod +x /docker-entrypoint-initdb.d/setup.sh
 
 USER		postgres
 WORKDIR /var/lib/postgresql
@@ -29,8 +30,10 @@ WORKDIR /var/lib/postgresql
 VOLUME ["/var/lib/postgresql/data"]
 EXPOSE		5432/tcp
 
-# More robust health check
-HEALTHCHECK --interval=5s --timeout=3s --retries=5 --start-period=10s \
-  CMD pg_isready -U postgres -h localhost || exit 1
+# Initialize database with environment variables
+ENV POSTGRES_USER=postgres \
+    POSTGRES_PASSWORD=postgres123 \
+    POSTGRES_DB=postgres \
+    PGDATA=/var/lib/postgresql/data
 
-CMD ["/setup.sh"]
+CMD ["postgres"]
