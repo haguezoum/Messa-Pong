@@ -9,27 +9,46 @@ PGDATA="/var/lib/postgresql/data"
 mkdir -p /run/postgresql
 chmod 700 /run/postgresql
 
-# Initialize database if needed
-if [ ! -s "${PGDATA}/PG_VERSION" ]; then
+# Initialize PostgreSQL data directory if it's empty
+if [ ! -s "$PGDATA/PG_VERSION" ]; then
     echo "Initializing PostgreSQL database..."
-    initdb -D "${PGDATA}"
+    initdb -D "$PGDATA"
     
-    # Modify pg_hba.conf to allow password authentication
-    echo "host all all all md5" >> "${PGDATA}/pg_hba.conf"
-    
-    # Start PostgreSQL temporarily to create user and database
-    pg_ctl -D "${PGDATA}" -o "-c listen_addresses='*'" -w start
-    
-    # Create user and database
-    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" <<-EOSQL
+    # Configure PostgreSQL
+    cat >> "$PGDATA/postgresql.conf" <<EOF
+listen_addresses = '*'
+max_connections = 100
+shared_buffers = 128MB
+EOF
+
+    # Configure authentication
+    cat > "$PGDATA/pg_hba.conf" <<EOF
+# TYPE  DATABASE        USER            ADDRESS                 METHOD
+local   all            all                                     trust
+host    all            all             127.0.0.1/32           md5
+host    all            all             ::1/128                 md5
+host    all            all             0.0.0.0/0              md5
+EOF
+
+    # Start PostgreSQL temporarily
+    pg_ctl -D "$PGDATA" -w start
+
+    # Create user and database (only if they don't exist)
+    psql -v ON_ERROR_STOP=0 --username "$POSTGRES_USER" <<-EOSQL
         ALTER USER $POSTGRES_USER WITH PASSWORD '$POSTGRES_PASSWORD';
-        CREATE DATABASE $POSTGRES_DB WITH OWNER $POSTGRES_USER;
+        DO \$\$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = '$POSTGRES_DB') THEN
+                CREATE DATABASE $POSTGRES_DB WITH OWNER $POSTGRES_USER;
+            END IF;
+        END
+        \$\$;
         GRANT ALL PRIVILEGES ON DATABASE $POSTGRES_DB TO $POSTGRES_USER;
 EOSQL
-    
+
     # Stop PostgreSQL
-    pg_ctl -D "${PGDATA}" -m fast -w stop
+    pg_ctl -D "$PGDATA" -m fast -w stop
 fi
 
 echo "Starting PostgreSQL server..."
-exec postgres -D "${PGDATA}" -c listen_addresses='*'
+exec postgres -D "$PGDATA"
