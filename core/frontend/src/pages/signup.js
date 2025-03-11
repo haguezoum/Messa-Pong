@@ -126,39 +126,44 @@ class SIGNUP extends HTMLElement {
   }
 
   showNotification(message, type = 'error', duration = 3000) {
+    // Clear any existing notifications first
     const container = this.shadow.querySelector('.notification-container');
+    container.innerHTML = '';
+
     const notification = document.createElement('div');
     
     const icon = type === 'success' ? '✓' : type === 'error' ? '✕' : 'ℹ';
     
     notification.className = `notification ${type}`;
     notification.innerHTML = `
-      <span class="icon">${icon}</span>
-      <span class="message">${message}</span>
-      <span class="close-btn">✕</span>
+        <span class="icon">${icon}</span>
+        <span class="message">${message}</span>
+        <span class="close-btn">✕</span>
     `;
 
     container.appendChild(notification);
 
     // Trigger animation
-    setTimeout(() => notification.classList.add('show'), 10);
+    requestAnimationFrame(() => {
+        notification.classList.add('show');
+    });
 
     // Add shake effect for errors
     if (type === 'error') {
-      notification.classList.add('shake');
+        notification.classList.add('shake');
     }
 
     // Handle close button
     const closeBtn = notification.querySelector('.close-btn');
     closeBtn.addEventListener('click', () => {
-      notification.classList.remove('show');
-      setTimeout(() => notification.remove(), 500);
+        notification.classList.remove('show');
+        setTimeout(() => notification.remove(), 500);
     });
 
     // Auto remove after duration
     setTimeout(() => {
-      notification.classList.remove('show');
-      setTimeout(() => notification.remove(), 500);
+        notification.classList.remove('show');
+        setTimeout(() => notification.remove(), 500);
     }, duration);
   }
 
@@ -166,15 +171,6 @@ class SIGNUP extends HTMLElement {
     event.preventDefault();
     
     try {
-        console.log('Sending registration data:', {
-            first_name: this.#newUser.firstname,
-            last_name: this.#newUser.lastname,
-            username: this.#newUser.username,
-            email: this.#newUser.email,
-            password: this.#newUser.password,
-            password2: this.#newUser.confirm_password
-        });
-
         const response = await fetch('/api/register/', {
             method: 'POST',
             headers: {
@@ -192,19 +188,7 @@ class SIGNUP extends HTMLElement {
             })
         });
 
-        console.log('Response status:', response.status);
-        const contentType = response.headers.get("content-type");
-        console.log('Content-Type:', contentType);
-
-        let data;
-        if (contentType && contentType.includes("application/json")) {
-            data = await response.json();
-            console.log('Response data:', data);
-        } else {
-            const text = await response.text();
-            console.log('Response text:', text);
-            throw new Error('Received non-JSON response');
-        }
+        const data = await response.json();
 
         if (!response.ok) {
             if (data.errors) {
@@ -219,37 +203,31 @@ class SIGNUP extends HTMLElement {
                 });
             } else if (data.error) {
                 this.showNotification(data.error, 'error', 4000);
-            } else {
-                this.showNotification('Validation failed. Please check your input.', 'error', 4000);
             }
             return;
         }
 
-        // Show success message
+        // Registration successful
         this.showNotification('Registration successful! Redirecting to login...', 'success', 2000);
 
         // Clear form
         event.target.reset();
 
+        // Store user data if needed
+        if (data.tokens) {
+            localStorage.setItem('accessToken', data.tokens.access);
+            localStorage.setItem('refreshToken', data.tokens.refresh);
+            localStorage.setItem('userData', JSON.stringify(data.user));
+        }
+
         // Redirect to login after a delay
         setTimeout(() => {
-            const loginEvent = new CustomEvent('navigate', {
-                detail: { path: '/login' }
-            });
-            window.dispatchEvent(loginEvent);
+            window.location.href = '/login';  // Direct URL navigation instead of event
         }, 2500);
 
     } catch (error) {
-        console.error('Detailed registration error:', {
-            name: error.name,
-            message: error.message,
-            stack: error.stack
-        });
-        this.showNotification(
-            'Registration failed. Please check your input and try again.',
-            'error',
-            4000
-        );
+        console.error('Registration error:', error);
+        this.showNotification('Registration failed. Please try again.', 'error', 4000);
     }
   }
 
@@ -316,26 +294,29 @@ class SIGNUP extends HTMLElement {
 
   connectedCallback() {
     console.log("SIGNUP is Connected");
-    
-    // Handle 42 Network signup
+    const form = this.shadow.querySelector('form');
+    // Remove any existing event listeners
+    form.removeEventListener('submit', this.handleSignup.bind(this));
+    // Add new event listener
+    form.addEventListener('submit', this.handleSignup.bind(this));
+
+    // Handle OAuth buttons
     const btn42Network = this.shadow.querySelector('.btn_42Network');
-    btn42Network.addEventListener('click', () => {
-      window.location.href = '/api/oauth/42/login/';
+    const btnGoogle = this.shadow.querySelector('.btn_google');
+
+    btn42Network?.addEventListener('click', () => {
+        window.location.href = '/api/oauth/42/login/';
     });
 
-    // Handle Google signup
-    const btnGoogle = this.shadow.querySelector('.btn_google');
-    btnGoogle.addEventListener('click', () => {
-      window.location.href = '/api/oauth/google/login/';
+    btnGoogle?.addEventListener('click', () => {
+        window.location.href = '/api/oauth/google/login/';
     });
   }
 
   disconnectedCallback() {
     console.log("SIGNUP is Disconnected");
     const form = this.shadow.querySelector('form');
-    if (form) {
-      form.removeEventListener("submit", this.handleSignup);
-    }
+    form.removeEventListener('submit', this.handleSignup.bind(this));
   }
 
   static get observedAttributes() {
