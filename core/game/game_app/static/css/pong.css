@@ -1,23 +1,23 @@
 /* Modern Pong Game Theme - Dark Neon Style */
 :root {
-    --main-bg-color: #040B1C;
-    --secondary-bg-color: #061330;
-    --accent-color: #7FC7D9;
-    --accent-color-bright: #7FC7D9;
-    --accent-color-alt: #DCF2F1;
-    --text-color: #ffffff;
+    --main-bg-color: rgb(14, 12, 40);
+    --secondary-bg-color: rgb(40, 105, 161);
+    --accent-color: rgb(135, 205, 234);
+    --accent-color-bright: rgb(255, 255, 255);
+    --accent-color-alt: rgb(135, 205, 234);
+    --text-color: rgb(255, 255, 255);
     --danger-color: #ff3b30;
     --success-color: #34c759;
-    --text-shadow: 0 0 8px rgba(127, 199, 217, 0.8);
-    --box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-    --neon-glow: 0 0 15px rgba(127, 199, 217, 0.8);
+    --text-shadow: 0 0 8px rgba(135, 205, 234, 0.8);
+    --box-shadow: 0 4px 20px rgba(14, 12, 40, 0.5);
+    --neon-glow: 0 0 15px rgba(135, 205, 234, 0.8);
     --transition-speed: 0.3s;
-    --paddle-glow: 0 0 20px rgba(127, 199, 217, 0.9);
+    --paddle-glow: 0 0 20px rgba(135, 205, 234, 0.9);
 }
 
 body {
     font-family: 'Montserrat', 'Segoe UI', Roboto, sans-serif;
-    background: linear-gradient(135deg, #040B1C 0%, #061330 100%);
+    background: linear-gradient(135deg, rgb(14, 12, 40) 0%, rgb(40, 105, 161) 100%);
     color: var(--text-color);
     margin: 0;
     padding: 0;
@@ -41,18 +41,18 @@ body {
     margin: 115px auto;
     border-radius: 15px;
     padding: 25px;
-    background-color: rgba(127, 199, 217, 0.1);
-    box-shadow: var(--box-shadow), inset 0 0 30px rgba(127, 199, 217, 0.1);
+    background-color: rgba(40, 105, 161, 0.1);
+    box-shadow: var(--box-shadow), inset 0 0 30px rgba(135, 205, 234, 0.1);
     backdrop-filter: blur(10px);
-    border: 2px solid rgba(127, 199, 217, 0.5);
+    border: 2px solid rgba(135, 205, 234, 0.5);
     max-width: 1200px;
     width: 95%;
     animation: containerGlow 2s ease-in-out infinite alternate;
 }
 
 @keyframes containerGlow {
-    from { box-shadow: var(--box-shadow), inset 0 0 30px rgba(127, 199, 217, 0.1); }
-    to { box-shadow: var(--box-shadow), inset 0 0 50px rgba(127, 199, 217, 0.2); }
+    from { box-shadow: var(--box-shadow), inset 0 0 30px rgba(135, 205, 234, 0.1); }
+    to { box-shadow: var(--box-shadow), inset 0 0 50px rgba(135, 205, 234, 0.2); }
 }
 
 /* Game header with title and status */
@@ -62,7 +62,7 @@ body {
     align-items: center;
     margin-bottom: 25px;
     padding-bottom: 15px;
-    border-bottom: 2px solid rgba(127, 199, 217, 0.3);
+    border-bottom: 2px solid rgba(135, 205, 234, 0.3);
 }
 
 .game-title {
@@ -76,7 +76,7 @@ body {
 
 @keyframes titlePulse {
     from { text-shadow: var(--text-shadow); }
-    to { text-shadow: 0 0 15px rgba(127, 199, 217, 0.9); }
+    to { text-shadow: 0 0 15px rgba(135, 205, 234, 0.9); }
 }
 
 /* Game canvas with neon border */
@@ -89,7 +89,7 @@ canvas {
     aspect-ratio: 1;
     margin: 0;
     display: block;
-    background-color: rgba(4, 11, 28, 0.95);
+    background-color: rgba(14, 12, 40, 0.95);
     border-radius: 12px;
     box-shadow: var(--box-shadow), var(--neon-glow);
     border: 3px solid var(--accent-color);
@@ -100,7 +100,7 @@ canvas {
 }
 
 canvas:focus {
-    box-shadow: 0 0 30px rgba(127, 199, 217, 0.8);
+    box-shadow: 0 0 30px rgba(135, 205, 234, 0.8);
     border-color: var(--accent-color-bright);
 }
 
@@ -112,9 +112,9 @@ canvas:focus {
     gap: clamp(20px, 5vw, 100px);
     margin: 15px 0;
     padding: 15px 0;
-    background: rgba(12, 53, 158, 0.1);
+    background: rgba(40, 105, 161, 0.2);
     border-radius: 12px;
-    border: 3px solid rgba(12, 53, 158, 0.3);
+    border: 3px solid rgba(135, 205, 234, 0.3);
     width: 100%;
     max-width: 800px;
     box-sizing: border-box;
@@ -126,7 +126,7 @@ canvas:focus {
     font-family: 'Montserrat', sans-serif;
     font-weight: 900;
     font-size: 2.2em;
-    color: #DCF2F1;
+    color: rgb(255, 255, 255);
     width: 65px;
     height: 65px;
     display: flex;
@@ -134,9 +134,9 @@ canvas:focus {
     justify-content: center;
     text-transform: uppercase;
     position: relative;
-    text-shadow: 0 0 10px rgba(220, 242, 241, 1),
-                 0 0 20px rgba(127, 199, 217, 0.9),
-                 0 0 30px rgba(12, 53, 158, 0.8);
+    text-shadow: 0 0 10px rgba(135, 205, 234, 1),
+                 0 0 20px rgba(40, 105, 161, 0.9),
+                 0 0 30px rgba(14, 12, 40, 0.8);
     letter-spacing: 1px;
     z-index: 1;
     background: transparent;
@@ -152,18 +152,18 @@ canvas:focus {
     right: -100px;
     height: 3px;
     background: linear-gradient(90deg, 
-        rgba(127, 199, 217, 0.2),
-        rgba(220, 242, 241, 1) 30%,
-        rgba(127, 199, 217, 1) 50%,
-        rgba(220, 242, 241, 1) 70%,
-        rgba(127, 199, 217, 0.2)
+        rgba(40, 105, 161, 0.2),
+        rgba(135, 205, 234, 1) 30%,
+        rgba(255, 255, 255, 1) 50%,
+        rgba(135, 205, 234, 1) 70%,
+        rgba(40, 105, 161, 0.2)
     );
     transform: translateY(-50%) rotate(-15deg);
     z-index: -1;
     filter: blur(2px);
-    box-shadow: 0 0 20px rgba(127, 199, 217, 0.8),
-                0 0 40px rgba(127, 199, 217, 0.4),
-                0 0 60px rgba(127, 199, 217, 0.2);
+    box-shadow: 0 0 20px rgba(135, 205, 234, 0.8),
+                0 0 40px rgba(135, 205, 234, 0.4),
+                0 0 60px rgba(135, 205, 234, 0.2);
     animation: lineGlow 3s ease-in-out infinite;
 }
 
@@ -174,7 +174,7 @@ canvas:focus {
     left: -100px;
     right: -100px;
     height: 1px;
-    background: rgba(220, 242, 241, 0.8);
+    background: rgba(135, 205, 234, 0.8);
     transform: translateY(-50%) rotate(-15deg);
     z-index: -1;
     filter: blur(1px);
@@ -215,26 +215,26 @@ canvas:focus {
     color: var(--accent-color-bright);
     text-transform: uppercase;
     letter-spacing: 1px;
-    text-shadow: 0 0 8px rgba(127, 199, 217, 0.5);
+    text-shadow: 0 0 8px rgba(135, 205, 234, 0.5);
     white-space: nowrap;
 }
 
 /* Score number styling */
 #player1-score, #player2-score {
     font-size: clamp(28px, 4vw, 42px);
-    text-shadow: 0 0 10px rgba(127, 199, 217, 0.5);
+    text-shadow: 0 0 10px rgba(135, 205, 234, 0.5);
     min-width: 60px;
     text-align: center;
-    background-color: rgba(127, 199, 217, 0.1);
-    border: 2px solid rgba(127, 199, 217, 0.4);
+    background-color: rgba(135, 205, 234, 0.1);
+    border: 2px solid rgba(135, 205, 234, 0.4);
     border-radius: 8px;
     padding: 5px 15px;
-    box-shadow: 0 0 20px rgba(127, 199, 217, 0.2);
+    box-shadow: 0 0 20px rgba(135, 205, 234, 0.2);
     transition: all 0.3s ease;
 }
 
 #player1-score:hover, #player2-score:hover {
-    box-shadow: 0 0 30px rgba(127, 199, 217, 0.3);
+    box-shadow: 0 0 30px rgba(135, 205, 234, 0.3);
     transform: translateY(-2px);
 }
 
@@ -242,18 +242,18 @@ canvas:focus {
 @keyframes scoreChange {
     0% { 
         transform: scale(1); 
-        text-shadow: 0 0 10px rgba(127, 199, 217, 0.5);
-        box-shadow: 0 0 20px rgba(127, 199, 217, 0.2);
+        text-shadow: 0 0 10px rgba(135, 205, 234, 0.5);
+        box-shadow: 0 0 20px rgba(135, 205, 234, 0.2);
     }
     50% { 
         transform: scale(1.1); 
-        text-shadow: 0 0 20px rgba(127, 199, 217, 1);
-        box-shadow: 0 0 30px rgba(127, 199, 217, 0.5);
+        text-shadow: 0 0 20px rgba(135, 205, 234, 1);
+        box-shadow: 0 0 30px rgba(135, 205, 234, 0.5);
     }
     100% { 
         transform: scale(1); 
-        text-shadow: 0 0 10px rgba(127, 199, 217, 0.5);
-        box-shadow: 0 0 20px rgba(127, 199, 217, 0.2);
+        text-shadow: 0 0 10px rgba(135, 205, 234, 0.5);
+        box-shadow: 0 0 20px rgba(135, 205, 234, 0.2);
     }
 }
 
@@ -263,7 +263,7 @@ canvas:focus {
 
 /* Status indicator */
 .status {
-    background-color: rgba(127, 199, 217, 0.2);
+    background-color: rgba(135, 205, 234, 0.2);
     padding: 8px 15px;
     border-radius: 20px;
     font-size: 14px;
@@ -283,7 +283,7 @@ canvas:focus {
 
 /* Stylish buttons */
 button {
-    background: linear-gradient(to bottom, rgba(127, 199, 217, 0.9), rgba(127, 199, 217, 0.7));
+    background: linear-gradient(to bottom, rgba(135, 205, 234, 0.9), rgba(135, 205, 234, 0.7));
     color: white;
     font-weight: bold;
     border: none;
@@ -294,17 +294,17 @@ button {
     font-size: 14px;
     text-transform: uppercase;
     letter-spacing: 1px;
-    box-shadow: 0 4px 10px rgba(127, 199, 217, 0.3);
+    box-shadow: 0 4px 10px rgba(135, 205, 234, 0.3);
 }
 
 button:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 6px 15px rgba(127, 199, 217, 0.5);
+    box-shadow: 0 6px 15px rgba(135, 205, 234, 0.5);
 }
 
 button:active:not(:disabled) {
     transform: translateY(1px);
-    box-shadow: 0 2px 5px rgba(127, 199, 217, 0.4);
+    box-shadow: 0 2px 5px rgba(135, 205, 234, 0.4);
 }
 
 button:disabled {
@@ -355,18 +355,18 @@ canvas, .score-board {
     width: 300px;
     display: flex;
     flex-direction: column;
-    background-color: rgba(127, 199, 217, 0.1);
+    background-color: rgba(40, 105, 161, 0.1);
     border-radius: 10px;
-    border: 1px solid rgba(127, 199, 217, 0.3);
+    border: 1px solid rgba(135, 205, 234, 0.3);
     box-shadow: var(--box-shadow);
     overflow: hidden;
     margin-top: 15px;
 }
 
 .chat-header {
-    background-color: rgba(127, 199, 217, 0.2);
+    background-color: rgba(40, 105, 161, 0.2);
     padding: 10px 15px;
-    border-bottom: 1px solid rgba(127, 199, 217, 0.3);
+    border-bottom: 1px solid rgba(135, 205, 234, 0.3);
     font-weight: bold;
     display: flex;
     justify-content: space-between;
@@ -375,7 +375,7 @@ canvas, .score-board {
 
 .chat-header h3 {
     margin: 0;
-    color: #7FC7D9;
+    color: rgb(135, 205, 234);
     font-size: 16px;
     text-transform: uppercase;
     letter-spacing: 1px;
@@ -384,7 +384,7 @@ canvas, .score-board {
 .chat-toggle {
     background: none;
     border: none;
-    color: #7FC7D9;
+    color: rgb(135, 205, 234);
     cursor: pointer;
     padding: 0;
     font-size: 20px;
@@ -399,7 +399,7 @@ canvas, .score-board {
     flex-direction: column;
     gap: 8px;
     scrollbar-width: thin;
-    scrollbar-color: #7FC7D9 var(--secondary-bg-color);
+    scrollbar-color: rgb(135, 205, 234) var(--secondary-bg-color);
 }
 
 .chat-messages::-webkit-scrollbar {
@@ -412,7 +412,7 @@ canvas, .score-board {
 }
 
 .chat-messages::-webkit-scrollbar-thumb {
-    background-color: #7FC7D9;
+    background-color: rgb(135, 205, 234);
     border-radius: 3px;
 }
 
@@ -429,21 +429,21 @@ canvas, .score-board {
 
 .chat-message.self {
     align-self: flex-end;
-    background-color: rgba(127, 199, 217, 0.2);
+    background-color: rgba(135, 205, 234, 0.2);
     border-bottom-right-radius: 0;
 }
 
 .chat-message.other {
     align-self: flex-start;
-    background-color: rgba(220, 242, 241, 0.2);
+    background-color: rgba(135, 205, 234, 0.2);
     border-bottom-left-radius: 0;
 }
 
 .chat-message.system {
     align-self: center;
-    color: #7FC7D9;
+    color: rgb(135, 205, 234);
     background-color: rgba(0, 0, 0, 0.5);
-    border-left: 3px solid #7FC7D9;
+    border-left: 3px solid rgb(135, 205, 234);
     padding: 5px 10px;
     padding-bottom: 18px;
     border-radius: 15px;
@@ -500,7 +500,7 @@ canvas, .score-board {
     font-weight: bold;
     font-size: 14px;
     margin-bottom: 3px;
-    color: #7FC7D9;
+    color: rgb(135, 205, 234);
 }
 
 .chat-message .content {
@@ -522,16 +522,16 @@ canvas, .score-board {
 
 .chat-input-container {
     display: flex;
-    border-top: 1px solid rgba(127, 199, 217, 0.3);
+    border-top: 1px solid rgba(135, 205, 234, 0.3);
     padding: 10px;
-    background-color: rgba(127, 199, 217, 0.1);
+    background-color: rgba(135, 205, 234, 0.1);
     margin-top: 155px;
 }
 
 #chat-message {
     flex: 1;
-    background-color: rgba(220, 242, 241, 0.1);
-    border: 1px solid rgba(127, 199, 217, 0.3);
+    background-color: rgba(14, 12, 40, 0.1);
+    border: 1px solid rgba(135, 205, 234, 0.3);
     border-radius: 20px;
     color: white;
     padding: 8px 15px;
@@ -540,14 +540,14 @@ canvas, .score-board {
 }
 
 #chat-message:focus {
-    border-color: #7FC7D9;
-    box-shadow: 0 0 10px rgba(127, 199, 217, 0.3);
+    border-color: rgb(135, 205, 234);
+    box-shadow: 0 0 10px rgba(135, 205, 234, 0.3);
 }
 
 #send-button {
     background: none;
     border: none;
-    color: #7FC7D9;
+    color: rgb(135, 205, 234);
     font-size: 20px;
     cursor: pointer;
     margin-left: 10px;
@@ -557,7 +557,7 @@ canvas, .score-board {
 
 #send-button:hover {
     transform: scale(1.1);
-    color: #DCF2F1;
+    color: rgb(255, 255, 255);
 }
 
 .system-message {
@@ -581,106 +581,357 @@ canvas, .score-board {
 }
 
 /* Game message overlays */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
+
 .game-message {
-    padding: 25px;
-    background-color: rgba(127, 199, 217, 0.95);
-    border-radius: 12px;
+    padding: 45px;
+    background: rgba(14, 12, 40, 0.95);
+    border-radius: 25px;
     text-align: center;
     width: 90%;
-    max-width: 500px;
-    box-shadow: var(--box-shadow);
-    border: 1px solid var(--accent-color-bright);
+    max-width: 550px;
+    box-shadow: 0 0 50px rgba(135, 205, 234, 0.4),
+                inset 0 0 70px rgba(135, 205, 234, 0.1);
+    border: 4px solid rgb(135, 205, 234);
     margin: 20px auto;
+    animation: messageAppear 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55), 
+               messageGlow 3s infinite alternate,
+               messageFloat 6s ease-in-out infinite;
+    backdrop-filter: blur(15px);
+    position: relative;
+    overflow: hidden;
+    transform-style: preserve-3d;
+    perspective: 1000px;
+}
+
+@keyframes messageFloat {
+    0%, 100% {
+        transform: translateY(0) rotateX(0deg);
+    }
+    50% {
+        transform: translateY(-10px) rotateX(2deg);
+    }
+}
+
+@keyframes messageAppear {
+    0% {
+        opacity: 0;
+        transform: scale(0.7) translateY(-50px) rotateX(-20deg);
+    }
+    70% {
+        transform: scale(1.05) translateY(10px) rotateX(5deg);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0) rotateX(0deg);
+    }
+}
+
+.game-message::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(
+        circle at center,
+        rgba(135, 205, 234, 0.15) 0%,
+        rgba(135, 205, 234, 0.1) 30%,
+        transparent 70%
+    );
+    animation: rotateGradient 12s linear infinite;
+    transform-origin: center;
+}
+
+@keyframes rotateGradient {
+    0% {
+        transform: rotate(0deg) scale(1);
+    }
+    50% {
+        transform: rotate(180deg) scale(1.1);
+    }
+    100% {
+        transform: rotate(360deg) scale(1);
+    }
+}
+
+.game-message::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -150%;
+    width: 200%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(135, 205, 234, 0.2),
+        rgba(255, 255, 255, 0.4),
+        rgba(135, 205, 234, 0.2),
+        transparent
+    );
+    animation: shine 4s infinite;
+    transform: skewX(-20deg);
 }
 
 .game-message h2 {
-    color: var(--accent-color-bright);
-    margin-bottom: 15px;
-    font-size: 24px;
+    font-family: 'Orbitron', sans-serif;
+    color: rgb(135, 205, 234);
+    margin-bottom: 30px;
+    font-size: 36px;
+    font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 4px;
+    text-shadow: 0 0 10px rgba(135, 205, 234, 0.5),
+                 0 0 20px rgba(135, 205, 234, 0.3),
+                 0 0 30px rgba(135, 205, 234, 0.2);
+    animation: pulseText 2s infinite alternate,
+               glitchText 5s infinite;
+    position: relative;
+    z-index: 1;
+}
+
+@keyframes glitchText {
+    0%, 100% { transform: translateZ(0); opacity: 1; }
+    98% { transform: translateZ(0); opacity: 1; }
+    99% { transform: translateZ(10px) skewX(2deg); opacity: 0.8; }
+}
+
+@keyframes pulseText {
+    from {
+        text-shadow: 0 0 10px rgba(135, 205, 234, 0.5),
+                     0 0 20px rgba(135, 205, 234, 0.3),
+                     0 0 30px rgba(135, 205, 234, 0.2);
+        transform: translateZ(0);
+        letter-spacing: 4px;
+    }
+    to {
+        text-shadow: 0 0 20px rgba(135, 205, 234, 0.7),
+                     0 0 40px rgba(135, 205, 234, 0.5),
+                     0 0 60px rgba(135, 205, 234, 0.3);
+        transform: translateZ(30px);
+        letter-spacing: 6px;
+    }
 }
 
 .game-message p {
-    margin-bottom: 20px;
+    font-family: 'Rajdhani', sans-serif;
+    margin-bottom: 35px;
     color: var(--text-color);
-    font-size: 16px;
-    line-height: 1.5;
+    font-size: 20px;
+    line-height: 1.6;
+    font-weight: 500;
+    text-shadow: 0 0 8px rgba(135, 205, 234, 0.3);
+    position: relative;
+    z-index: 1;
+    animation: floatText 3s ease-in-out infinite;
+    opacity: 0;
+    animation: fadeInText 0.5s ease-out 0.3s forwards;
 }
 
-/* Disconnection message */
-.disconnection-message {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 1000;
-    background-color: rgba(127, 199, 217, 0.95);
-    border: 3px solid var(--danger-color);
-    box-shadow: 0 0 30px rgba(255, 59, 48, 0.7);
-    padding: 25px;
-    width: 80%;
-    max-width: 400px;
-    text-align: center;
-    animation: pulse 1.5s infinite alternate;
-}
-
-@keyframes pulse {
+@keyframes fadeInText {
     from {
-        box-shadow: 0 0 20px rgba(255, 59, 48, 0.7);
+        opacity: 0;
+        transform: translateY(20px);
     }
     to {
-        box-shadow: 0 0 40px rgba(255, 59, 48, 0.9);
+        opacity: 1;
+        transform: translateY(0);
     }
 }
 
-.disconnection-message h2 {
-    color: var(--danger-color);
-    margin-bottom: 15px;
-    font-size: 24px;
-    text-transform: uppercase;
-}
-
-#new-game-button, #create-new-room {
-    background: linear-gradient(to bottom, rgba(52, 199, 89, 0.9), rgba(52, 199, 89, 0.7));
+.game-message button {
+    font-family: 'Orbitron', sans-serif;
+    background: linear-gradient(45deg, 
+        rgba(40, 105, 161, 0.9),
+        rgba(135, 205, 234, 0.9)
+    );
     color: white;
-    margin-top: 20px;
-    padding: 12px 24px;
-    font-size: 16px;
-    border-radius: 30px;
-    transition: all var(--transition-speed);
-    border: none;
+    padding: 18px 40px;
+    font-size: 18px;
+    border-radius: 35px;
+    border: 2px solid rgba(135, 205, 234, 0.5);
     cursor: pointer;
     text-transform: uppercase;
     font-weight: bold;
-    letter-spacing: 1px;
+    letter-spacing: 2px;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    margin-top: 25px;
+    box-shadow: 0 0 25px rgba(135, 205, 234, 0.3),
+                inset 0 0 15px rgba(255, 255, 255, 0.2);
+    position: relative;
+    z-index: 1;
+    overflow: hidden;
+    opacity: 0;
+    animation: fadeInButton 0.5s ease-out 0.6s forwards;
 }
 
-#new-game-button:hover, #create-new-room:hover {
-    transform: scale(1.05);
-    box-shadow: 0 2px 15px rgba(52, 199, 89, 0.7);
-    background: linear-gradient(to bottom, rgba(52, 199, 89, 1), rgba(52, 199, 89, 0.8));
+@keyframes fadeInButton {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
-/* Disconnect overlay */
+.game-message button::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(45deg,
+        rgba(135, 205, 234, 0.5),
+        rgba(255, 255, 255, 0.5),
+        rgba(135, 205, 234, 0.5)
+    );
+    border-radius: 35px;
+    z-index: -1;
+    animation: borderGlow 2s linear infinite;
+}
+
+@keyframes borderGlow {
+    0% { opacity: 0.5; }
+    50% { opacity: 1; }
+    100% { opacity: 0.5; }
+}
+
+.game-message button:hover {
+    transform: translateY(-5px) scale(1.05);
+    background: linear-gradient(45deg, 
+        rgba(40, 105, 161, 1),
+        rgba(135, 205, 234, 1)
+    );
+    border-color: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 0 40px rgba(135, 205, 234, 0.6),
+                inset 0 0 20px rgba(255, 255, 255, 0.4);
+    letter-spacing: 4px;
+}
+
+.game-message button:hover::before {
+    animation: borderGlow 1s linear infinite;
+}
+
+.game-message button:active {
+    transform: translateY(2px) scale(0.95);
+    box-shadow: 0 0 20px rgba(135, 205, 234, 0.4);
+}
+
+@keyframes messageGlow {
+    from {
+        box-shadow: 0 0 40px rgba(135, 205, 234, 0.4),
+                    inset 0 0 50px rgba(135, 205, 234, 0.1);
+        border-color: rgba(135, 205, 234, 0.8);
+    }
+    to {
+        box-shadow: 0 0 60px rgba(135, 205, 234, 0.6),
+                    inset 0 0 70px rgba(135, 205, 234, 0.2);
+        border-color: rgba(255, 255, 255, 1);
+    }
+}
+
+/* Disconnection message */
 #disconnect-overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.9);
+    background: linear-gradient(135deg, rgba(14, 12, 40, 0.97), rgba(40, 105, 161, 0.97));
     z-index: 10000;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     animation: fadeIn 0.5s ease-in-out;
+    backdrop-filter: blur(10px);
+}
+
+.disconnection-message {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    background: rgba(14, 12, 40, 0.95);
+    border: 3px solid rgb(135, 205, 234);
+    box-shadow: 0 0 30px rgba(135, 205, 234, 0.4),
+                inset 0 0 50px rgba(135, 205, 234, 0.1);
+    padding: 30px;
+    width: 80%;
+    max-width: 400px;
+    text-align: center;
+    animation: messageGlow 2s infinite alternate;
+    border-radius: 15px;
+}
+
+@keyframes messageGlow {
+    from {
+        box-shadow: 0 0 20px rgba(135, 205, 234, 0.4),
+                    inset 0 0 30px rgba(135, 205, 234, 0.1);
+        border-color: rgba(135, 205, 234, 0.8);
+    }
+    to {
+        box-shadow: 0 0 40px rgba(135, 205, 234, 0.6),
+                    inset 0 0 50px rgba(135, 205, 234, 0.2);
+        border-color: rgba(255, 255, 255, 0.9);
+    }
+}
+
+.disconnection-message h2 {
+    color: rgb(135, 205, 234);
+    margin-bottom: 20px;
+    font-size: 28px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    text-shadow: 0 0 10px rgba(135, 205, 234, 0.5);
+}
+
+.disconnection-message p {
+    color: rgb(255, 255, 255);
+    font-size: 16px;
+    line-height: 1.6;
+    margin-bottom: 25px;
+    text-shadow: 0 0 5px rgba(135, 205, 234, 0.3);
+}
+
+#new-game-button, #create-new-room {
+    background: linear-gradient(to bottom, rgba(135, 205, 234, 0.9), rgba(40, 105, 161, 0.8));
+    color: white;
+    margin-top: 20px;
+    padding: 15px 30px;
+    font-size: 16px;
+    border-radius: 30px;
+    transition: all var(--transition-speed);
+    border: 2px solid rgba(135, 205, 234, 0.3);
+    cursor: pointer;
+    text-transform: uppercase;
+    font-weight: bold;
+    letter-spacing: 1px;
+    box-shadow: 0 0 20px rgba(135, 205, 234, 0.2);
+}
+
+#new-game-button:hover, #create-new-room:hover {
+    transform: scale(1.05) translateY(-2px);
+    box-shadow: 0 0 30px rgba(135, 205, 234, 0.4);
+    background: linear-gradient(to bottom, rgba(135, 205, 234, 1), rgba(40, 105, 161, 0.9));
+    border-color: rgba(255, 255, 255, 0.5);
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from { 
+        opacity: 0;
+        backdrop-filter: blur(0px);
+    }
+    to { 
+        opacity: 1;
+        backdrop-filter: blur(10px);
+    }
 }
 
 /* Responsive design */
@@ -772,8 +1023,8 @@ canvas, .score-board {
 }
 
 .controls-help kbd {
-    background-color: rgba(127, 199, 217, 0.2);
-    border: 1px solid rgba(127, 199, 217, 0.3);
+    background-color: rgba(135, 205, 234, 0.2);
+    border: 1px solid rgba(135, 205, 234, 0.3);
     border-radius: 4px;
     padding: 2px 6px;
     font-family: monospace;
@@ -790,6 +1041,6 @@ canvas, .score-board {
 
 @keyframes paddleGlow {
     0% { box-shadow: var(--paddle-glow); }
-    50% { box-shadow: 0 0 30px rgba(127, 199, 217, 1); }
+    50% { box-shadow: 0 0 30px rgba(135, 205, 234, 1); }
     100% { box-shadow: var(--paddle-glow); }
 } 
