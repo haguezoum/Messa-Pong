@@ -128,10 +128,13 @@ class SIGNUP extends HTMLElement {
   showNotification(message, type = 'error', duration = 3000) {
     // Clear any existing notifications first
     const container = this.shadow.querySelector('.notification-container');
-    container.innerHTML = '';
+    if (container) {
+        container.innerHTML = '';
+    }
 
     const notification = document.createElement('div');
     
+    // Choose icon based on type
     const icon = type === 'success' ? '✓' : type === 'error' ? '✕' : 'ℹ';
     
     notification.className = `notification ${type}`;
@@ -161,10 +164,13 @@ class SIGNUP extends HTMLElement {
     });
 
     // Auto remove after duration
-    setTimeout(() => {
+    const timer = setTimeout(() => {
         notification.classList.remove('show');
         setTimeout(() => notification.remove(), 500);
     }, duration);
+
+    // Store the timer ID on the notification element
+    notification.dataset.timerId = timer;
   }
 
   async handleSignup(event) {
@@ -190,40 +196,43 @@ class SIGNUP extends HTMLElement {
 
         const data = await response.json();
 
-        if (!response.ok) {
-            if (data.errors) {
-                Object.entries(data.errors).forEach(([field, error], index) => {
-                    setTimeout(() => {
-                        this.showNotification(
-                            typeof error === 'string' ? error : error[0],
-                            'error',
-                            4000
-                        );
-                    }, index * 400);
-                });
-            } else if (data.error) {
-                this.showNotification(data.error, 'error', 4000);
+        // Check if registration was successful (status 201 Created)
+        if (response.status === 201) {
+            // Registration successful
+            this.showNotification('Registration successful! Redirecting to login...', 'success', 2000);
+
+            // Clear form
+            event.target.reset();
+
+            // Store user data if needed
+            if (data.tokens) {
+                localStorage.setItem('accessToken', data.tokens.access);
+                localStorage.setItem('refreshToken', data.tokens.refresh);
+                localStorage.setItem('userData', JSON.stringify(data.user));
             }
-            return;
+
+            // Redirect to login after a delay
+            setTimeout(() => {
+                window.location.href = '/login';
+            }, 2500);
+            
+            return; // Exit the function after successful registration
         }
 
-        // Registration successful
-        this.showNotification('Registration successful! Redirecting to login...', 'success', 2000);
-
-        // Clear form
-        event.target.reset();
-
-        // Store user data if needed
-        if (data.tokens) {
-            localStorage.setItem('accessToken', data.tokens.access);
-            localStorage.setItem('refreshToken', data.tokens.refresh);
-            localStorage.setItem('userData', JSON.stringify(data.user));
+        // If we get here, there was an error
+        if (data.errors) {
+            Object.entries(data.errors).forEach(([field, error], index) => {
+                setTimeout(() => {
+                    this.showNotification(
+                        typeof error === 'string' ? error : error[0],
+                        'error',
+                        4000
+                    );
+                }, index * 400);
+            });
+        } else if (data.error) {
+            this.showNotification(data.error, 'error', 4000);
         }
-
-        // Redirect to login after a delay
-        setTimeout(() => {
-            window.location.href = '/login';  // Direct URL navigation instead of event
-        }, 2500);
 
     } catch (error) {
         console.error('Registration error:', error);

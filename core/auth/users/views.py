@@ -79,7 +79,7 @@ class RegisterView(APIView):
                     'message': 'Registration successful'
                 }, status=status.HTTP_201_CREATED)
             
-            # Improve error messages
+            # Handle validation errors
             errors = {}
             for field, error_list in serializer.errors.items():
                 if field == 'email' and 'unique' in str(error_list[0]):
@@ -95,7 +95,7 @@ class RegisterView(APIView):
             }, status=status.HTTP_400_BAD_REQUEST)
 
         except Exception as e:
-            print(f"Registration error: {str(e)}")  # Log the error
+            print(f"Registration error: {str(e)}")
             return Response({
                 'error': 'An error occurred during registration. Please try again.',
                 'detail': str(e)
