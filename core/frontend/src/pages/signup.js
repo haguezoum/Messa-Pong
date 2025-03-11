@@ -110,24 +110,24 @@ class SIGNUP extends HTMLElement {
   constructor() {
     super(); 
     
-    const linkElem = document.createElement("link");
-    linkElem.setAttribute("rel", "preload");
-    linkElem.setAttribute("as", "style");
-    linkElem.setAttribute("onload", "this.onload=null;this.rel='stylesheet'");
-    linkElem.setAttribute("href", "src/assets/style/signup-page.css");
     this.shadow = this.attachShadow({ mode: "open" });
-    this.shadow.appendChild(linkElem);
     this.shadow.appendChild(template.content.cloneNode(true));
-    this.setFormBinging(this.shadow.querySelector("form"));
     
-    // Add notification styles
+    // Add styles
     const styleSheet = document.createElement("style");
     styleSheet.textContent = notificationStyles;
     this.shadow.appendChild(styleSheet);
-
+    
+    const linkElem = document.createElement("link");
+    linkElem.setAttribute("rel", "stylesheet");
+    linkElem.setAttribute("href", "src/assets/style/signup-page.css");
+    this.shadow.appendChild(linkElem);
+    
     // Add toast notification
     this.toastNotification = document.createElement('toast-notification');
     this.shadow.appendChild(this.toastNotification);
+
+    this.setFormBinging(this.shadow.querySelector("form"));
   }
 
   async handleSignup(event) {
@@ -153,7 +153,8 @@ class SIGNUP extends HTMLElement {
 
         const data = await response.json();
 
-        if (response.status === 201) {
+        // Check specifically for successful registration (status 201)
+        if (response.status === 201 && data.user) {
             // Registration successful
             this.toastNotification.show({
                 title: 'Success!',
@@ -177,28 +178,38 @@ class SIGNUP extends HTMLElement {
                 window.location.href = '/login';
             }, 2500);
             
-            return;
+            return; // Exit the function here to prevent further execution
         }
 
-        // Handle validation errors
+        // If we get here, there was an error
         if (data.errors) {
-            Object.entries(data.errors).forEach(([field, error], index) => {
-                setTimeout(() => {
-                    this.toastNotification.show({
-                        title: 'Validation Error',
-                        message: typeof error === 'string' ? error : error[0],
-                        type: 'error',
-                        duration: 4000
-                    });
-                }, index * 400);
+            // Handle validation errors
+            const firstError = Object.entries(data.errors)[0];
+            if (firstError) {
+                const [field, error] = firstError;
+                this.toastNotification.show({
+                    title: 'Validation Error',
+                    message: typeof error === 'string' ? error : error[0],
+                    type: 'error',
+                    duration: 4000
+                });
+            }
+        } else if (data.error) {
+            // Handle general error
+            this.toastNotification.show({
+                title: 'Error',
+                message: data.error,
+                type: 'error',
+                duration: 4000
             });
         }
 
     } catch (error) {
         console.error('Registration error:', error);
+        // Only show error notification for actual errors
         this.toastNotification.show({
             title: 'Error',
-            message: 'An unexpected error occurred. Please try again.',
+            message: 'Network error occurred. Please try again.',
             type: 'error',
             duration: 4000
         });
