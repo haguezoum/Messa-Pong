@@ -665,7 +665,86 @@ function escapeHTML(unsafe) {
         .replace(/'/g, "&#039;");
 }
 
-// Function to handle game over
+// Function to create confetti particles
+function createConfetti() {
+    const confettiContainer = document.querySelector('.confetti-container');
+    confettiContainer.innerHTML = '';
+    
+    const colors = ['#ff7675', '#74b9ff', '#55efc4', '#a29bfe', '#ffeaa7', '#fd79a8'];
+    const totalConfetti = 100;
+    
+    for (let i = 0; i < totalConfetti; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+        confetti.style.left = Math.random() * 100 + 'vw';
+        confetti.style.animationDelay = Math.random() * 3 + 's';
+        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        confetti.style.width = Math.random() * 10 + 5 + 'px';
+        confetti.style.height = Math.random() * 10 + 5 + 'px';
+        confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+        confettiContainer.appendChild(confetti);
+    }
+}
+
+// Function to create floating particles
+function createParticles() {
+    const confettiContainer = document.querySelector('.confetti-container');
+    const totalParticles = 50;
+    
+    for (let i = 0; i < totalParticles; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        particle.style.left = Math.random() * 100 + 'vw';
+        particle.style.top = Math.random() * 100 + 'vh';
+        particle.style.setProperty('--x', `${(Math.random() - 0.5) * 200}px`);
+        particle.style.setProperty('--y', `${(Math.random() - 0.5) * 200}px`);
+        particle.style.animationDelay = Math.random() * 2 + 's';
+        confettiContainer.appendChild(particle);
+    }
+}
+
+// Function to show victory animation
+function showVictoryAnimation(message, finalScore) {
+    const overlay = document.getElementById('victory-overlay');
+    const title = overlay.querySelector('.victory-title');
+    const scoreElement = overlay.querySelector('#final-score');
+    const messageElement = overlay.querySelector('.victory-message');
+    
+    // Update content
+    title.textContent = message === "You win!" ? "Victory!" : "Game Over!";
+    messageElement.textContent = message;
+    scoreElement.textContent = finalScore;
+    
+    // Show overlay
+    overlay.classList.add('active');
+    
+    // Create effects
+    createConfetti();
+    createParticles();
+    
+    // Set timeout to remove the overlay
+    setTimeout(() => {
+        overlay.classList.remove('active');
+        
+        // Clean up particles after animation
+        setTimeout(() => {
+            const confettiContainer = document.querySelector('.confetti-container');
+            confettiContainer.innerHTML = '';
+        }, 500);
+    }, 5000);
+}
+
+// Function to close victory overlay
+function closeVictoryOverlay() {
+    const overlay = document.getElementById('victory-overlay');
+    overlay.classList.remove('active');
+    
+    // Clean up particles
+    const confettiContainer = document.querySelector('.confetti-container');
+    confettiContainer.innerHTML = '';
+}
+
+// Update the handleGameOver function to include victory animation
 function handleGameOver(data) {
     const winnerId = data.winner_id;
     let message = "";
@@ -687,6 +766,13 @@ function handleGameOver(data) {
         }
     }
     
+    // Get final score
+    const finalScore = `${gameState.player1_score} - ${gameState.player2_score}`;
+    
+    // Show victory animation
+    showVictoryAnimation(message, finalScore);
+    
+    // Update game status
     document.getElementById("game-status").innerText = message;
     
     // Add chat message as a system message with special styling
