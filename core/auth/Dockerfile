@@ -27,7 +27,7 @@ WORKDIR		/home/aet-tass/app
 
 COPY		--chown=aet-tass:app . .
 
-RUN		chmod +x tools/launcher.sh && \
+RUN		chmod +x /home/aet-tass/app/tools/launcher.sh && \
 		pip install --no-cache-dir -r requirements.txt && \
 		chown -R aet-tass:app /home/aet-tass
 
