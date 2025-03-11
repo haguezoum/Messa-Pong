@@ -86,7 +86,7 @@ canvas {
     height: 500px;
     min-height: 400px;
     max-height: 500px;
-    aspect-ratio: 3/2;
+    aspect-ratio: 1;
     margin: 0;
     display: block;
     background-color: rgba(4, 11, 28, 0.95);
@@ -95,7 +95,7 @@ canvas {
     border: 3px solid var(--accent-color);
     outline: none;
     transition: all var(--transition-speed);
-    image-rendering: pixelated;
+    image-rendering: -webkit-optimize-contrast;
     image-rendering: crisp-edges;
 }
 
@@ -721,7 +721,7 @@ canvas, .score-board {
         height: 450px;
         min-height: 350px;
         max-height: 450px;
-        aspect-ratio: 3/2;
+        aspect-ratio: 1;
     }
 }
 
@@ -744,7 +744,7 @@ canvas, .score-board {
         height: 400px;
         min-height: 300px;
         max-height: 400px;
-        aspect-ratio: 3/2;
+        aspect-ratio: 1;
     }
 
     .score-board {
