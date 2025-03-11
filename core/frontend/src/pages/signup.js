@@ -166,53 +166,90 @@ class SIGNUP extends HTMLElement {
     event.preventDefault();
     
     try {
-      const response = await fetch('/api/register/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          first_name: this.#newUser.firstname,
-          last_name: this.#newUser.lastname,
-          username: this.#newUser.username,
-          email: this.#newUser.email,
-          password: this.#newUser.password,
-          password2: this.#newUser.confirm_password
-        })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        if (data.errors) {
-          Object.values(data.errors).forEach((error, index) => {
-            setTimeout(() => {
-              this.showNotification(error, 'error', 4000);
-            }, index * 400); // Stagger multiple errors
-          });
-        }
-        return;
-      }
-
-      // Show success message
-      this.showNotification('Registration successful! Redirecting to login...', 'success', 2000);
-
-      // Clear form
-      event.target.reset();
-
-      // Redirect to login after a delay
-      setTimeout(() => {
-        const loginEvent = new CustomEvent('navigate', {
-          detail: { path: '/login' }
+        console.log('Sending registration data:', {
+            first_name: this.#newUser.firstname,
+            last_name: this.#newUser.lastname,
+            username: this.#newUser.username,
+            email: this.#newUser.email,
+            password: this.#newUser.password,
+            password2: this.#newUser.confirm_password
         });
-        window.dispatchEvent(loginEvent);
-      }, 2500);
+
+        const response = await fetch('/api/register/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+                first_name: this.#newUser.firstname,
+                last_name: this.#newUser.lastname,
+                username: this.#newUser.username,
+                email: this.#newUser.email,
+                password: this.#newUser.password,
+                password2: this.#newUser.confirm_password
+            })
+        });
+
+        console.log('Response status:', response.status);
+        const contentType = response.headers.get("content-type");
+        console.log('Content-Type:', contentType);
+
+        let data;
+        if (contentType && contentType.includes("application/json")) {
+            data = await response.json();
+            console.log('Response data:', data);
+        } else {
+            const text = await response.text();
+            console.log('Response text:', text);
+            throw new Error('Received non-JSON response');
+        }
+
+        if (!response.ok) {
+            if (data.errors) {
+                Object.entries(data.errors).forEach(([field, error], index) => {
+                    setTimeout(() => {
+                        this.showNotification(
+                            typeof error === 'string' ? error : error[0],
+                            'error',
+                            4000
+                        );
+                    }, index * 400);
+                });
+            } else if (data.error) {
+                this.showNotification(data.error, 'error', 4000);
+            } else {
+                this.showNotification('Validation failed. Please check your input.', 'error', 4000);
+            }
+            return;
+        }
+
+        // Show success message
+        this.showNotification('Registration successful! Redirecting to login...', 'success', 2000);
+
+        // Clear form
+        event.target.reset();
+
+        // Redirect to login after a delay
+        setTimeout(() => {
+            const loginEvent = new CustomEvent('navigate', {
+                detail: { path: '/login' }
+            });
+            window.dispatchEvent(loginEvent);
+        }, 2500);
 
     } catch (error) {
-      console.error('Registration error:', error);
-      this.showNotification('An unexpected error occurred. Please try again.', 'error');
+        console.error('Detailed registration error:', {
+            name: error.name,
+            message: error.message,
+            stack: error.stack
+        });
+        this.showNotification(
+            'Registration failed. Please check your input and try again.',
+            'error',
+            4000
+        );
     }
   }
 

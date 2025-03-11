@@ -62,32 +62,44 @@ class RegisterView(APIView):
     permission_classes = (AllowAny,)
 
     def post(self, request):
-        serializer = RegisterSerializer(data=request.data)
-        if serializer.is_valid():
-            user = serializer.save()
+        try:
+            serializer = RegisterSerializer(data=request.data)
+            if serializer.is_valid():
+                user = serializer.save()
+                
+                # Automatically log in the user
+                refresh = RefreshToken.for_user(user)
+                
+                return Response({
+                    'user': UserSerializer(user).data,
+                    'tokens': {
+                        'refresh': str(refresh),
+                        'access': str(refresh.access_token),
+                    },
+                    'message': 'Registration successful'
+                }, status=status.HTTP_201_CREATED)
             
-            # Automatically log in the user
-            refresh = RefreshToken.for_user(user)
+            # Improve error messages
+            errors = {}
+            for field, error_list in serializer.errors.items():
+                if field == 'email' and 'unique' in str(error_list[0]):
+                    errors[field] = 'This email is already registered. Please use a different email or try logging in.'
+                elif field == 'username' and 'unique' in str(error_list[0]):
+                    errors[field] = 'This username is already taken. Please choose another one.'
+                else:
+                    errors[field] = str(error_list[0])
             
             return Response({
-                'user': UserSerializer(user).data,
-                'tokens': {
-                    'refresh': str(refresh),
-                    'access': str(refresh.access_token),
-                }
-            }, status=status.HTTP_201_CREATED)
-        
-        # Improve error messages
-        errors = {}
-        for field, error_list in serializer.errors.items():
-            if field == 'email' and 'unique' in str(error_list[0]):
-                errors[field] = 'This email is already registered. Please use a different email or try logging in.'
-            elif field == 'username' and 'unique' in str(error_list[0]):
-                errors[field] = 'This username is already taken. Please choose another one.'
-            else:
-                errors[field] = error_list[0]
-        
-        return Response({'errors': errors}, status=status.HTTP_400_BAD_REQUEST)
+                'errors': errors,
+                'message': 'Validation failed'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            print(f"Registration error: {str(e)}")  # Log the error
+            return Response({
+                'error': 'An error occurred during registration. Please try again.',
+                'detail': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):

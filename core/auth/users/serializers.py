@@ -15,7 +15,13 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class RegisterSerializer(serializers.ModelSerializer):
-    password2 = serializers.CharField(write_only=True)
+    password2 = serializers.CharField(
+        write_only=True,
+        required=True,
+        error_messages={
+            'required': 'Please confirm your password.'
+        }
+    )
     email = serializers.EmailField(
         validators=[
             RegexValidator(
@@ -29,31 +35,55 @@ class RegisterSerializer(serializers.ModelSerializer):
         model = User
         fields = ('first_name', 'last_name', 'username', 'email', 'password', 'password2')
         extra_kwargs = {
-            'first_name': {'required': True, 'error_messages': {
-                'required': 'First name is required to complete your registration.'
-            }},
-            'last_name': {'required': True, 'error_messages': {
-                'required': 'Last name is required to complete your registration.'
-            }},
-            'username': {'required': True, 'error_messages': {
-                'required': 'Username is required to complete your registration.',
-                'unique': 'This username is already taken. Please choose another one.'
-            }},
-            'password': {'write_only': True}
+            'first_name': {
+                'required': True,
+                'error_messages': {
+                    'required': 'First name is required to complete your registration.'
+                }
+            },
+            'last_name': {
+                'required': True,
+                'error_messages': {
+                    'required': 'Last name is required to complete your registration.'
+                }
+            },
+            'username': {
+                'required': True,
+                'error_messages': {
+                    'required': 'Username is required to complete your registration.',
+                    'unique': 'This username is already taken. Please choose another one.'
+                }
+            },
+            'email': {
+                'required': True,
+                'error_messages': {
+                    'required': 'Email is required to complete your registration.',
+                    'unique': 'This email is already registered. Please use a different email.',
+                    'invalid': 'Please enter a valid email address.'
+                }
+            },
+            'password': {
+                'write_only': True,
+                'required': True,
+                'error_messages': {
+                    'required': 'Password is required to complete your registration.'
+                }
+            }
         }
-
-    def validate_username(self, value):
-        if not re.match(r'^[a-zA-Z0-9_]{3,20}$', value):
-            raise serializers.ValidationError(
-                'Username must be 3-20 characters long and contain only letters, numbers, and underscores.'
-            )
-        return value
 
     def validate(self, data):
         if data.get('password') != data.get('password2'):
             raise serializers.ValidationError({
-                'password': 'The passwords do not match. Please try again.'
+                'password2': 'The passwords do not match. Please try again.'
             })
+        
+        # Validate password strength
+        password = data.get('password')
+        if len(password) < 8:
+            raise serializers.ValidationError({
+                'password': 'Password must be at least 8 characters long.'
+            })
+        
         return data
 
     def create(self, validated_data):
