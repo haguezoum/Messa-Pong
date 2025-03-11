@@ -12,32 +12,24 @@ chmod 700 /run/postgresql
 # Initialize database if needed
 if [ ! -s "${PGDATA}/PG_VERSION" ]; then
     echo "Initializing PostgreSQL database..."
-    initdb -D "${PGDATA}" --auth=trust --username=postgres
-
-    # Configure PostgreSQL
-    cat > "${PGDATA}/postgresql.conf" << EOF
-listen_addresses = '*'
-port = 5432
-max_connections = 100
-shared_buffers = 128MB
-dynamic_shared_memory_type = posix
-log_destination = 'stderr'
-logging_collector = on
-log_directory = 'log'
-log_filename = 'postgresql-%Y-%m-%d_%H%M%S.log'
-log_statement = 'all'
-unix_socket_directories = '/run/postgresql'
-EOF
-
-    # Configure client authentication
-    cat > "${PGDATA}/pg_hba.conf" << EOF
-# TYPE  DATABASE        USER            ADDRESS                 METHOD
-local   all            all                                     trust
-host    all            all             127.0.0.1/32           trust
-host    all            all             ::1/128                trust
-host    all            all             0.0.0.0/0              md5
-EOF
+    initdb -D "${PGDATA}"
+    
+    # Modify pg_hba.conf to allow password authentication
+    echo "host all all all md5" >> "${PGDATA}/pg_hba.conf"
+    
+    # Start PostgreSQL temporarily to create user and database
+    pg_ctl -D "${PGDATA}" -o "-c listen_addresses='*'" -w start
+    
+    # Create user and database
+    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" <<-EOSQL
+        ALTER USER $POSTGRES_USER WITH PASSWORD '$POSTGRES_PASSWORD';
+        CREATE DATABASE $POSTGRES_DB WITH OWNER $POSTGRES_USER;
+        GRANT ALL PRIVILEGES ON DATABASE $POSTGRES_DB TO $POSTGRES_USER;
+EOSQL
+    
+    # Stop PostgreSQL
+    pg_ctl -D "${PGDATA}" -m fast -w stop
 fi
 
 echo "Starting PostgreSQL server..."
-exec postgres -D "${PGDATA}"
+exec postgres -D "${PGDATA}" -c listen_addresses='*'
