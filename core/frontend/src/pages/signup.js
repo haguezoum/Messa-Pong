@@ -299,3 +299,5 @@ class SIGNUP extends HTMLElement {
 customElements.define("signup-page", SIGNUP);
 
 export default SIGNUP;
+
+//#test only
