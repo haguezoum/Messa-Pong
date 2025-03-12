@@ -836,24 +836,30 @@ canvas, .score-board {
     opacity: 0;
     visibility: hidden;
     backdrop-filter: blur(10px);
-    transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out;
-}
-
-#victory-overlay.active {
-    opacity: 1;
-    visibility: visible;
-    animation: victoryFadeIn 0.5s ease-in-out;
+    transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out, background 0.5s ease-in-out;
 }
 
 #victory-overlay.game-over {
     background: linear-gradient(135deg, rgba(40, 12, 40, 0.95), rgba(161, 40, 40, 0.95));
 }
 
+#victory-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
 .victory-content {
     text-align: center;
     position: relative;
     z-index: 2;
-    animation: victoryContentScale 0.5s ease-out;
+    opacity: 0;
+    transform: scale(0.8);
+    transition: all 0.5s ease-out;
+}
+
+#victory-overlay.active .victory-content {
+    opacity: 1;
+    transform: scale(1);
 }
 
 .victory-title {
@@ -863,13 +869,12 @@ canvas, .score-board {
     text-transform: uppercase;
     margin-bottom: 20px;
     text-shadow: var(--victory-text-glow);
-    animation: victoryTitleGlow 2s infinite alternate;
+    transition: color 0.3s ease, text-shadow 0.3s ease;
 }
 
 .game-over .victory-title {
     color: #ff3b30;
     text-shadow: 0 0 20px rgba(255, 59, 48, 0.8);
-    animation: gameOverTitleGlow 2s infinite alternate;
 }
 
 .victory-message {
@@ -878,6 +883,7 @@ canvas, .score-board {
     margin-bottom: 30px;
     opacity: 0.9;
     text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    transition: color 0.3s ease, text-shadow 0.3s ease;
 }
 
 .game-over .victory-message {
@@ -890,13 +896,12 @@ canvas, .score-board {
     color: white;
     margin: 20px 0;
     text-shadow: 0 0 15px rgba(255, 255, 255, 0.6);
-    animation: victoryScorePulse 1.5s infinite alternate;
+    transition: color 0.3s ease, text-shadow 0.3s ease;
 }
 
 .game-over .victory-score {
     color: #ff8080;
     text-shadow: 0 0 15px rgba(255, 59, 48, 0.6);
-    animation: gameOverScorePulse 1.5s infinite alternate;
 }
 
 /* Game Over specific animations */

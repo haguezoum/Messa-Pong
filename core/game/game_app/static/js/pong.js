@@ -711,13 +711,24 @@ function showVictoryAnimation(message, finalScore) {
     const messageElement = overlay.querySelector('.victory-message');
     const button = overlay.querySelector('.victory-button');
     
+    // Clear any existing classes and timeouts
+    overlay.classList.remove('active', 'game-over');
+    
     // Determine if it's a victory or game over
     const isVictory = message === "You win!";
     
-    // Update overlay class
-    overlay.classList.remove('game-over');
+    // Set the appropriate class before showing the overlay
     if (!isVictory) {
-        overlay.classList.add('game-over');
+        // Small delay to ensure game-over class is applied before showing
+        setTimeout(() => {
+            overlay.classList.add('game-over');
+            // Then add active class
+            requestAnimationFrame(() => {
+                overlay.classList.add('active');
+            });
+        }, 50);
+    } else {
+        overlay.classList.add('active');
     }
     
     // Update content
@@ -725,9 +736,6 @@ function showVictoryAnimation(message, finalScore) {
     messageElement.textContent = message;
     scoreElement.textContent = finalScore;
     button.textContent = isVictory ? "Play Again" : "Try Again";
-    
-    // Show overlay
-    overlay.classList.add('active');
     
     // Only show confetti for victory
     if (isVictory) {
@@ -738,24 +746,34 @@ function showVictoryAnimation(message, finalScore) {
     // Set timeout to remove the overlay
     setTimeout(() => {
         overlay.classList.remove('active');
-        overlay.classList.remove('game-over');
-        
-        // Clean up particles after animation
+        // Add a delay before removing game-over class
         setTimeout(() => {
+            overlay.classList.remove('game-over');
+            // Clean up particles
             const confettiContainer = document.querySelector('.confetti-container');
-            confettiContainer.innerHTML = '';
-        }, 500);
+            if (confettiContainer) {
+                confettiContainer.innerHTML = '';
+            }
+        }, 500); // Wait for fade out transition to complete
     }, 5000);
 }
 
 // Function to close victory overlay
 function closeVictoryOverlay() {
     const overlay = document.getElementById('victory-overlay');
+    
+    // Remove active class first
     overlay.classList.remove('active');
     
-    // Clean up particles
-    const confettiContainer = document.querySelector('.confetti-container');
-    confettiContainer.innerHTML = '';
+    // Wait for fade out transition before removing game-over class
+    setTimeout(() => {
+        overlay.classList.remove('game-over');
+        // Clean up particles
+        const confettiContainer = document.querySelector('.confetti-container');
+        if (confettiContainer) {
+            confettiContainer.innerHTML = '';
+        }
+    }, 500);
 }
 
 // Update the handleGameOver function to include victory animation
