@@ -1,13 +1,12 @@
 from ninja_extra import NinjaExtraAPI
 from ninja_jwt.controller import NinjaJWTDefaultController
 from ninja.security import django_auth
-from rest_api import __version__
 from django.conf import settings
 from django.contrib.auth import get_user_model
 
 api = NinjaExtraAPI(
     title="API Documentation",
-    version=__version__,
+    version=settings.API_VERSION,
     docs_url="/docs/" if settings.DEBUG else None,
     openapi_url="/openapi.json" if settings.DEBUG else None,
     csrf=True,
@@ -35,8 +34,9 @@ api.add_router("/password/", password_router)
 
 @api.get("/health")
 def health_check(request):
+    """Simple health check endpoint that doesn't require authentication"""
     return {"status": "healthy"}
 
 @api.get("/version")
 def version_info(request):
-    return {"version": __version__}
+    return {"version": settings.API_VERSION}

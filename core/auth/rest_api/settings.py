@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 import environ
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -38,7 +39,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'your_project_name.urls'
+ROOT_URLCONF = 'rest_api.urls'
 
 TEMPLATES = [
     {
@@ -56,7 +57,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'your_project_name.wsgi.application'
+WSGI_APPLICATION = 'rest_api.wsgi.application'
 
 DATABASES = {
     'default': {
@@ -146,3 +147,11 @@ LOGGING = {
 }
 
 SITE_NAME = env('SITE_NAME', default='My Awesome API')
+
+# Validation Regex Patterns
+REGEX_EMAIL = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+REGEX_USERNAME = r'^[a-zA-Z0-9_-]{3,32}$'  # 3-32 chars, alphanumeric, underscore, hyphen
+REGEX_NAME = r'^[a-zA-Z\s-]{2,64}$'  # 2-64 chars, letters, spaces, hyphens
+
+# Add this setting to fix the auto-field warnings
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

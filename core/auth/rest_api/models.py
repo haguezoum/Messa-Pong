@@ -2,6 +2,8 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils.translation import gettext_lazy as _
 import uuid
+import os
+import binascii
 
 class Tuser(AbstractUser):
     username = models.CharField(_('username'), max_length=32, unique=True)
@@ -18,8 +20,8 @@ class Tuser(AbstractUser):
     fp_token = models.CharField(max_length=64, blank=True)
     reset_token = models.CharField(_('password reset token'), max_length=64, blank=True)
     
-    friends = models.ManyToManyField('self', through='Friendship', symmetrical=False)
-    blocked_users = models.ManyToManyField('self', symmetrical=False, blank=True)
+    friends = models.ManyToManyField('self', through='Friendship', symmetrical=False, related_name='user_friends')
+    blocked_users = models.ManyToManyField('self', symmetrical=False, blank=True, related_name='blocked_by_users')
     
     class Status(models.TextChoices):
         ONLINE = 'online', _('Online')
@@ -76,7 +78,7 @@ class Tournament(models.Model):
     admin = models.ForeignKey(Tuser, on_delete=models.CASCADE)
     players = models.ManyToManyField(Tuser, related_name='tournaments')
     current_round = models.ForeignKey('TournamentRound', null=True, blank=True,
-                                     on_delete=models.SET_NULL)
+                                     on_delete=models.SET_NULL, related_name='current_for_tournament')
     created_at = models.DateTimeField(auto_now_add=True)
     status = models.IntegerField(choices=Status.choices, default=Status.WAITING)
 
@@ -85,7 +87,7 @@ class Tournament(models.Model):
         return binascii.hexlify(os.urandom(6)).decode()
 
 class TournamentRound(models.Model):
-    tournament = models.ForeignKey(Tournament, on_delete=models.CASCADE)
+    tournament = models.ForeignKey(Tournament, on_delete=models.CASCADE, related_name='rounds')
     round_number = models.IntegerField()
     games = models.ManyToManyField(Game)
     completed = models.BooleanField(default=False)

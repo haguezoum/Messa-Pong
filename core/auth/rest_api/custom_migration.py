@@ -3,19 +3,15 @@ import logging
 from django.contrib.auth.hashers import make_password
 from django.db import migrations, IntegrityError
 from django.core.exceptions import ObjectDoesNotExist
-from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
 def get_admin_credentials():
     """Retrieve admin credentials with validation"""
     try:
-        username = os.getenv('API_ADMIN')
-        password = os.getenv('API_PASS')
+        username = os.getenv('API_ADMIN', 'admin')
+        password = os.getenv('API_PASS', 'admin')
         
-        if not all([username, password]):
-            raise ValueError("Admin credentials not configured")
-            
         return {
             'username': username,
             'password': password,
@@ -31,9 +27,12 @@ def create_superuser(apps, schema_editor):
     """Create initial superuser with proper error handling"""
     Tuser = apps.get_model('rest_api', 'Tuser')
     
+    # Get admin credentials
+    admin_credentials = get_admin_credentials()
+    
     try:
         # Check if user already exists
-        Tuser.objects.get(username=settings.ADMIN_CREDENTIALS['username'])
+        Tuser.objects.get(username=admin_credentials['username'])
         logger.warning("Superuser already exists, skipping creation")
         return
     except ObjectDoesNotExist:
@@ -42,15 +41,15 @@ def create_superuser(apps, schema_editor):
     try:
         # Create superuser with secure defaults
         Tuser.objects.create(
-            username=settings.ADMIN_CREDENTIALS['username'],
-            password_hash=make_password(settings.ADMIN_CREDENTIALS['password']),
-            email=settings.ADMIN_CREDENTIALS['email'],
-            fname=settings.ADMIN_CREDENTIALS['fname'],
-            lname=settings.ADMIN_CREDENTIALS['lname'],
+            username=admin_credentials['username'],
+            password=make_password(admin_credentials['password']),
+            email=admin_credentials['email'],
+            fname=admin_credentials['fname'],
+            lname=admin_credentials['lname'],
             verified=True,
             is_staff=True,
             is_superuser=True,
-            image=settings.DEFAULT_ADMIN_IMAGE
+            image='static/anon.png'  # Use the default image we download in init.sh
         )
         logger.info("Successfully created admin user")
     except IntegrityError as e:

@@ -7,7 +7,6 @@ from django.utils.crypto import get_random_string
 from requests.exceptions import RequestException
 from rest_api.models import Tuser
 from .jwt import UserJWTAuth
-from .settings import api_settings
 import requests
 import logging
 from urllib.parse import urlencode

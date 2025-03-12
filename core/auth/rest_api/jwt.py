@@ -13,6 +13,23 @@ logger = logging.getLogger(__name__)
 
 User = get_user_model()
 
+def send_otp(otp, email):
+    """Send OTP code via email"""
+    subject = "Your Verification Code"
+    message = f"Your verification code is: {otp}"
+    try:
+        send_mail(
+            subject,
+            message,
+            settings.DEFAULT_FROM_EMAIL,
+            [email],
+            fail_silently=False,
+        )
+        logger.info(f"OTP sent to {email}")
+    except Exception as e:
+        logger.error(f"Failed to send OTP: {str(e)}")
+        raise
+
 class TFARequired(AuthenticationFailed):
     pass
 
