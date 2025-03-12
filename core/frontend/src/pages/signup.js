@@ -60,7 +60,12 @@ template.innerHTML =
               </div>
 
               <div class="form-field">
-                <button class="btn_submit"  type="submit" tabindex="7">Login</button>
+                <button class="btn_submit"  type="submit" tabindex="7">Sign Up</button>
+              </div>
+              
+              <!-- API response message -->
+              <div class="form-field">
+                <p class="api-message" id="api-message" hidden></p>
               </div>
           </div>
         </div>
@@ -81,7 +86,7 @@ template.innerHTML =
                <span slot="title"> Already have an account ? Login</span>
                <span slot="icon">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 8.25H7.5a2.25 2.25 0 0 0-2.25 2.25v9a2.25 2.25 0 0 0 2.25 2.25h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25H15M9 12l3 3m0 0 3-3m-3 3V2.25" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 8.25H7.5a2.25 2.25 0 0 0-2.25 2.25v9a2.25 2.25 0 0 0 2.25-2.25h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25H15M9 12l3 3m0 0 3-3m-3 3V2.25" />
                 </svg>
                </span>
             </router-link>
@@ -101,6 +106,35 @@ class SIGNUP extends HTMLElement {
     email: "",
     password: "",
     confirm_password: "",
+  };
+  
+  // API client for signup
+  #api = {
+    BASE_URL: 'http://localhost/api',
+    
+    async registerUser(userData) {
+      try {
+        const response = await fetch(`${this.BASE_URL}/users/register`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(userData),
+          credentials: 'include', // Important for cookies if using JWT refresh tokens
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.detail || data.message || 'Registration failed');
+        }
+        
+        return data;
+      } catch (error) {
+        console.error('Registration error:', error);
+        throw error;
+      }
+    }
   };
   
   constructor() {
@@ -140,6 +174,23 @@ class SIGNUP extends HTMLElement {
   }
 
   /**
+   * Shows a message to the user
+   * @param {string} message - The message to display
+   * @param {string} type - The type of message ('success' or 'error')
+   */
+  showMessage(message, type = 'error') {
+    const messageElement = this.shadow.querySelector("#api-message");
+    messageElement.textContent = message;
+    messageElement.className = `api-message ${type}`;
+    messageElement.hidden = false;
+    
+    // Hide message after 5 seconds
+    setTimeout(() => {
+      messageElement.hidden = true;
+    }, 5000);
+  }
+
+  /**
    * Binds form validation and submission logic to the provided form element.
    * @param {HTMLFormElement} form - The form element to bind.
    */
@@ -154,7 +205,7 @@ class SIGNUP extends HTMLElement {
     };
     
     if (form) {
-      form.addEventListener("submit", (event) => {
+      form.addEventListener("submit", async (event) => {
         event.preventDefault();
         if (form.checkValidity() === false) {
           this.shadow.querySelector(".signupPage").classList.add("shake");
@@ -163,12 +214,56 @@ class SIGNUP extends HTMLElement {
           }, 155);
           return;
         }
-        //  SUBMIT FORM TO THE SERVER FROM HERE
-        for (let key in this.#newUser) {
-          this.#newUser[key] = "";
+        
+        // Prepare user data for API
+        const userData = {
+          username: this.#newUser.username,
+          fname: this.#newUser.firstname,
+          lname: this.#newUser.lastname,
+          email: this.#newUser.email,
+          password: this.#newUser.password,
+          confirm_password: this.#newUser.confirm_password
+        };
+        
+        // Show loading state
+        const submitButton = form.querySelector(".btn_submit");
+        const originalText = submitButton.textContent;
+        submitButton.textContent = "Signing up...";
+        submitButton.disabled = true;
+        
+        try {
+          // Call the API to register the user
+          const result = await this.#api.registerUser(userData);
+          
+          // Handle successful registration
+          this.showMessage("Registration successful! Redirecting to login...", "success");
+          
+          // Store token if provided
+          if (result.access_token) {
+            localStorage.setItem('access_token', result.access_token);
+          }
+          
+          // Reset form
+          for (let key in this.#newUser) {
+            this.#newUser[key] = "";
+          }
+          
+          // Redirect to login page after a delay
+          setTimeout(() => {
+            window.location.href = "/login";
+          }, 2000);
+          
+        } catch (error) {
+          // Handle registration error
+          this.showMessage(error.message || "Registration failed. Please try again.");
+          
+          // Reset button state
+          submitButton.textContent = originalText;
+          submitButton.disabled = false;
         }
       });
     }
+    
     this.#newUser = new Proxy(this.#newUser, {
       set: (target, key, value) => {
         target[key] = value;
