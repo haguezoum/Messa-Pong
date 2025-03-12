@@ -11,7 +11,7 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 # Core settings
 SECRET_KEY = env('DJANGO_SECRET_KEY', default='django-insecure-0*9y@=q#t#l@=)p5h!q%k$4i!@v^$f3j7k5i!@v^$f3j7k5i')
 DEBUG = env.bool('DEBUG', default=True)
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1', 'auth', '*'])
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -85,6 +85,7 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
@@ -155,3 +156,6 @@ REGEX_NAME = r'^[a-zA-Z\s-]{2,64}$'  # 2-64 chars, letters, spaces, hyphens
 
 # Add this setting to fix the auto-field warnings
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Configure CSRF settings for working behind a proxy
+CSRF_TRUSTED_ORIGINS = ['http://localhost', 'http://127.0.0.1']
