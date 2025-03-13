@@ -113,6 +113,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 console.log('Ball speed set to:', gameState.ballSpeedX, gameState.ballSpeedY);
                 gameStatus.textContent = 'Game Running';
+                gameStatus.classList.remove('error');
+                gameStatus.classList.add('success');
                 gameStatus.classList.add('running');
             } else {
                 // Pausing the game - store current direction
@@ -121,6 +123,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 gameState.ballSpeedX = 0;
                 gameState.ballSpeedY = 0;
                 gameStatus.textContent = 'Game Paused';
+                gameStatus.classList.remove('success');
                 gameStatus.classList.remove('running');
             }
             
@@ -157,6 +160,8 @@ document.addEventListener('DOMContentLoaded', function() {
         closeVictoryOverlay();
         gameStatus.textContent = 'Click Start to Play';
         gameStatus.classList.remove('running');
+        gameStatus.classList.remove('success');
+        gameStatus.classList.remove('error');
         startButton.textContent = 'Start Game';
         startButton.classList.remove('active');
     }
@@ -314,6 +319,8 @@ document.addEventListener('DOMContentLoaded', function() {
         gameState.currentSpeedMultiplier = 1;
         gameState.isPaused = true;
         gameStatus.textContent = 'Click Start to Continue';
+        gameStatus.classList.remove('running');
+        gameStatus.classList.remove('success');
         startButton.textContent = 'Start Game';
         startButton.classList.remove('active');
     }

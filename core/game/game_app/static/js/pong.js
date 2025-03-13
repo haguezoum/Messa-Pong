@@ -234,28 +234,110 @@ function drawGame(currentTime) {
     // Reset shadow for ball
     ctx.shadowBlur = 0;
     
-    // Optimize ball trail effect
-    const currentSpeed = Math.sqrt(gameState.ball_dx * gameState.ball_dx + gameState.ball_dy * gameState.ball_dy);
-    if (currentSpeed > 3) {
-        const trailLength = Math.min(currentSpeed * 1.2, 3);
-        ctx.globalAlpha = 0.15;
-        ctx.fillStyle = "#4B7BFF";
-        ctx.beginPath();
-        ctx.arc(ballX - (gameState.ball_dx * trailLength), ballY - (gameState.ball_dy * trailLength), ballSize * 0.8, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.globalAlpha = 1.0;
-    }
+    // Draw energy ball
+    ctx.save();
     
-    // Draw main ball with glow
-    ctx.shadowBlur = 15;
-    ctx.shadowColor = "#4B7BFF";
-    ctx.fillStyle = "#FFFFFF";
+    // Create time-based effects
+    const time = Date.now() / 1000;
+    const pulseIntensity = Math.sin(time * 3) * 0.15 + 0.85; // Faster, subtler pulse
+    
+    // Outer glow effect
+    ctx.shadowColor = '#ffffff';
+    ctx.shadowBlur = 20 + Math.sin(time * 4) * 5; // Dynamic glow intensity
+    
+    // Main orb gradient
+    const orbGradient = ctx.createRadialGradient(
+        ballX, ballY, 0,
+        ballX, ballY, ballSize * 1.2
+    );
+    orbGradient.addColorStop(0, '#ffffff');
+    orbGradient.addColorStop(0.4, 'rgba(255, 255, 255, 0.9)');
+    orbGradient.addColorStop(0.7, 'rgba(255, 255, 255, 0.3)');
+    orbGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    
+    // Draw main orb
+    ctx.globalAlpha = pulseIntensity;
+    ctx.fillStyle = orbGradient;
     ctx.beginPath();
     ctx.arc(ballX, ballY, ballSize, 0, Math.PI * 2);
     ctx.fill();
+
+    // Add energy rings
+    const ringCount = 3;
+    for (let i = 0; i < ringCount; i++) {
+        const ringPhase = time * (1 + i * 0.5) + (Math.PI * 2 * i) / ringCount;
+        const ringSize = ballSize * (0.6 + Math.sin(ringPhase) * 0.4);
+        
+        ctx.beginPath();
+        ctx.arc(ballX, ballY, ringSize, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(255, 255, 255, ${0.15 * pulseIntensity})`;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    }
+
+    // Add particle effects
+    const particleCount = 8;
+    for (let i = 0; i < particleCount; i++) {
+        const particleAngle = time * 2 + (Math.PI * 2 * i) / particleCount;
+        const particleDistance = ballSize * (0.4 + Math.sin(time * 3 + i) * 0.2);
+        
+        // Particle position with spiral motion
+        const x = ballX + Math.cos(particleAngle) * particleDistance;
+        const y = ballY + Math.sin(particleAngle) * particleDistance;
+        
+        // Draw particle with dynamic size
+        const particleSize = (ballSize / 4) * (0.8 + Math.sin(time * 4 + i) * 0.2);
+        ctx.globalAlpha = 0.6 * pulseIntensity;
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(x, y, particleSize, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // Add energy streams
+    ctx.globalAlpha = 0.4 * pulseIntensity;
+    for (let i = 0; i < 12; i++) {
+        const streamAngle = (Math.PI * 2 * i) / 12 + time;
+        const innerRadius = ballSize / 2;
+        const outerRadius = ballSize;
+        
+        // Create wavy effect
+        const waveOffset = Math.sin(time * 4 + i) * 0.2;
+        
+        ctx.beginPath();
+        ctx.moveTo(
+            ballX + Math.cos(streamAngle) * innerRadius,
+            ballY + Math.sin(streamAngle) * innerRadius
+        );
+        ctx.lineTo(
+            ballX + Math.cos(streamAngle + waveOffset) * outerRadius,
+            ballY + Math.sin(streamAngle + waveOffset) * outerRadius
+        );
+        ctx.strokeStyle = `rgba(255, 255, 255, ${0.5 * pulseIntensity})`;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+    }
+
+    // Inner core highlight
+    const coreGradient = ctx.createRadialGradient(
+        ballX - ballSize * 0.2,
+        ballY - ballSize * 0.2,
+        0,
+        ballX,
+        ballY,
+        ballSize * 0.5
+    );
+    coreGradient.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+    coreGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
     
-    // Reset shadow
-    ctx.shadowBlur = 0;
+    ctx.globalAlpha = pulseIntensity;
+    ctx.fillStyle = coreGradient;
+    ctx.beginPath();
+    ctx.arc(ballX, ballY, ballSize * 0.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Reset context
+    ctx.restore();
     
     // Draw center line with glow
     ctx.shadowBlur = 5;
@@ -267,9 +349,6 @@ function drawGame(currentTime) {
     ctx.strokeStyle = "rgba(12, 53, 158, 0.5)";
     ctx.stroke();
     ctx.setLineDash([]);
-    
-    // Reset shadow
-    ctx.shadowBlur = 0;
     
     // Request next animation frame, but only if the game isn't paused
     if (!isPaused && isGameStarted) {
