@@ -7,6 +7,14 @@
     user-zoom: none;
       -webkit-user-drag: none;
   user-select: none;
+  /* opacity: 0; */
+  /* animation: FadeIn 0.5s 0.7s ease-in-out forwards; */
+  }
+  
+  @keyframes FadeIn {
+      to {
+          opacity: 1;
+      }
   }
   
   .chat-page {
@@ -312,8 +320,15 @@
       }
   }
   
-  li.active{
-      background-color: rgb(255, 0, 0);
+  
+  
+  .selected{
+      background-color: rgb(76, 0, 255) !important;
+      border: 1px dashed var(--white);
+  }
+  .selectedChat{
+      background-image: linear-gradient(90deg, transparent, var(--secondary-blue-off), transparent);
+      /* border: 1px dashed var(--dead-blue); */
   }
   .chat-page .container .chat-page__container__body section.chat-page__container__body__chat_friend_list .chat_friend_list_body .chat_friend_list_item li.chat_friend_list_body__friend .firend-info{
       display: flex;
@@ -407,7 +422,6 @@
   .chat-page .container .chat-page__container__body section.chat-page__container__body__chat .chat-page__container__body__chat__header .chat-header-avatar{
       display: flex;
       flex-direction: row;
-      justify-content: space-between;
       align-items: center;
       gap: 20px;
       position: relative;
@@ -482,11 +496,9 @@
   }
   .chat-container {
       width: 80%;
-      /* max-width: 500px; */
       margin-inline:auto;
       height: 70vh;
       background-color: rgba(255, 255, 255, 0);
-      border-radius: 12px;
       display: flex;
       flex-direction: column;
       overflow: hidden;
