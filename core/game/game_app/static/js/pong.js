@@ -392,15 +392,19 @@ function updateGameState(state) {
     }
     
     // Update status
+    const statusElement = document.getElementById("game-status");
     if (!state.is_full) {
-        document.getElementById("game-status").innerText = "Waiting for opponent...";
+        statusElement.innerText = "Waiting for opponent...";
+        statusElement.classList.remove('error', 'success');
         pauseButton.disabled = true;
     } else if (state.winner_id) {
         // This will be handled by the game_over event
         pauseButton.disabled = true;
     } else {
         if (!isPaused) {
-            document.getElementById("game-status").innerText = "Game in progress";
+            statusElement.innerText = "Game in progress";
+            statusElement.classList.remove('error');
+            statusElement.classList.add('success');
         }
         pauseButton.disabled = false;
     }
@@ -495,7 +499,10 @@ socket.onclose = function(event) {
     
     // Only show connection lost if we were actually connected before
     if (clientId) {
-        document.getElementById("game-status").innerText = "Connection lost. Please refresh.";
+        const statusElement = document.getElementById("game-status");
+        statusElement.innerText = "Connection lost. Please refresh.";
+        statusElement.classList.remove('success');
+        statusElement.classList.add('error');
         
         // Cleanup any running animations or timers
         if (animationFrameId) {
@@ -514,7 +521,10 @@ socket.onerror = function(error) {
         return;
     }
     
-    document.getElementById("game-status").innerText = "Connection error. Please refresh.";
+    const statusElement = document.getElementById("game-status");
+    statusElement.innerText = "Connection error. Please refresh.";
+    statusElement.classList.remove('success');
+    statusElement.classList.add('error');
 };
 
 // Add focus event for the canvas to make sure keyboard events work
@@ -780,21 +790,26 @@ function closeVictoryOverlay() {
 function handleGameOver(data) {
     const winnerId = data.winner_id;
     let message = "";
+    let statusClass = "";
     
     // Check if we're the winner
     if (isPlayer1 && winnerId === gameState.player1_id || 
         isPlayer2 && winnerId === gameState.player2_id) {
         message = "You win!";
+        statusClass = "success";
     } else {
         message = "You lose!";
+        statusClass = "error";
     }
     
     // For spectators or if winner logic fails
     if (!isPlayer1 && !isPlayer2) {
         if (winnerId === gameState.player1_id) {
             message = "Player 1 wins!";
+            statusClass = "success";
         } else {
             message = "Player 2 wins!";
+            statusClass = "success";
         }
     }
     
@@ -804,8 +819,11 @@ function handleGameOver(data) {
     // Show victory animation
     showVictoryAnimation(message, finalScore);
     
-    // Update game status
-    document.getElementById("game-status").innerText = message;
+    // Update game status with appropriate color
+    const statusElement = document.getElementById("game-status");
+    statusElement.innerText = message;
+    statusElement.classList.remove('error', 'success');
+    statusElement.classList.add(statusClass);
     
     // Add chat message as a system message with special styling
     const chatBox = document.getElementById("chat-box");

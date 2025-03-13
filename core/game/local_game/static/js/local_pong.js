@@ -220,13 +220,16 @@ document.addEventListener('DOMContentLoaded', function() {
     function moveBall() {
         if (gameState.isPaused || gameState.isGameOver) return;
 
-        gameState.ballX += gameState.ballSpeedX;
-        gameState.ballY += gameState.ballSpeedY;
+        const nextX = gameState.ballX + gameState.ballSpeedX;
+        const nextY = gameState.ballY + gameState.ballSpeedY;
 
-        // Ball collision with top and bottom walls
-        if (gameState.ballY <= 0 || gameState.ballY >= CANVAS_HEIGHT - BALL_SIZE) {
+        // Predictive collision detection
+        if (nextY <= 0 || nextY >= CANVAS_HEIGHT - BALL_SIZE) {
             gameState.ballSpeedY = -gameState.ballSpeedY;
         }
+
+        gameState.ballX = nextX;
+        gameState.ballY = nextY;
 
         // Ball collision with paddles
         if (gameState.ballX <= PADDLE_WIDTH && 
@@ -611,16 +614,32 @@ document.addEventListener('DOMContentLoaded', function() {
         ctx.restore();
     }
 
-    function gameLoop() {
-        // Always draw, even when paused
-        draw();
-        
-        if (!gameState.isPaused && !gameState.isGameOver) {
-            movePaddles();
-            moveBall();
+    // Performance optimization
+    const FRAME_RATE = 60;
+    const FRAME_INTERVAL = 1000 / FRAME_RATE;
+    let lastFrameTime = 0;
+
+    function update(currentTime) {
+        if (!lastFrameTime) {
+            lastFrameTime = currentTime;
         }
         
-        requestAnimationFrame(gameLoop);
+        const deltaTime = currentTime - lastFrameTime;
+        
+        if (deltaTime >= FRAME_INTERVAL) {
+            // Update game state
+            if (!gameState.isPaused && !gameState.isGameOver) {
+                movePaddles();
+                moveBall();
+            }
+            
+            // Render
+            draw();
+            
+            lastFrameTime = currentTime;
+        }
+        
+        requestAnimationFrame(update);
     }
 
     // Initialize game
@@ -709,6 +728,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Make sure the game loop starts
-    gameLoop();
+    // Start the game loop
+    update();
 }); 

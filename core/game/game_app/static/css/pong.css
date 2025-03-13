@@ -69,17 +69,109 @@ body {
 }
 
 .game-title {
-    font-size: 36px;
-    font-weight: 700;
+    font-size: 42px;
+    font-weight: 900;
     color: var(--accent-color-bright);
-    text-shadow: var(--text-shadow);
+    text-transform: uppercase;
+    letter-spacing: 4px;
     margin: 0;
-    animation: titlePulse 2s ease-in-out infinite alternate;
+    position: relative;
+    text-shadow: 0 0 10px rgba(135, 205, 234, 0.8),
+                 0 0 20px rgba(135, 205, 234, 0.6),
+                 0 0 30px rgba(135, 205, 234, 0.4),
+                 0 0 40px rgba(135, 205, 234, 0.2);
+    animation: titleGlow 3s ease-in-out infinite;
 }
 
-@keyframes titlePulse {
-    from { text-shadow: var(--text-shadow); }
-    to { text-shadow: 0 0 15px rgba(135, 205, 234, 0.9); }
+.game-title::before {
+    content: 'Messa Pong';
+    position: absolute;
+    left: -2px;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    color: transparent;
+    text-shadow: 2px 0 var(--accent-color);
+    background: transparent;
+    clip-path: rect(44px, 450px, 56px, 0);
+    animation: glitch 3s infinite linear alternate-reverse;
+}
+
+.game-title::after {
+    content: 'Messa Pong';
+    position: absolute;
+    left: 2px;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    color: transparent;
+    text-shadow: -2px 0 var(--accent-color-bright);
+    background: transparent;
+    clip-path: rect(44px, 450px, 56px, 0);
+    animation: glitch2 3s infinite linear alternate-reverse;
+}
+
+@keyframes titleGlow {
+    0%, 100% {
+        text-shadow: 0 0 10px rgba(135, 205, 234, 0.8),
+                     0 0 20px rgba(135, 205, 234, 0.6),
+                     0 0 30px rgba(135, 205, 234, 0.4),
+                     0 0 40px rgba(135, 205, 234, 0.2);
+    }
+    50% {
+        text-shadow: 0 0 20px rgba(135, 205, 234, 0.9),
+                     0 0 30px rgba(135, 205, 234, 0.7),
+                     0 0 40px rgba(135, 205, 234, 0.5),
+                     0 0 50px rgba(135, 205, 234, 0.3);
+    }
+}
+
+@keyframes glitch {
+    0% {
+        clip-path: rect(44px, 450px, 56px, 0);
+    }
+    20% {
+        clip-path: rect(12px, 450px, 78px, 0);
+    }
+    40% {
+        clip-path: rect(62px, 450px, 82px, 0);
+    }
+    60% {
+        clip-path: rect(4px, 450px, 98px, 0);
+    }
+    80% {
+        clip-path: rect(30px, 450px, 56px, 0);
+    }
+    100% {
+        clip-path: rect(58px, 450px, 75px, 0);
+    }
+}
+
+@keyframes glitch2 {
+    0% {
+        clip-path: rect(44px, 450px, 56px, 0);
+    }
+    20% {
+        clip-path: rect(28px, 450px, 94px, 0);
+    }
+    40% {
+        clip-path: rect(36px, 450px, 54px, 0);
+    }
+    60% {
+        clip-path: rect(8px, 450px, 86px, 0);
+    }
+    80% {
+        clip-path: rect(46px, 450px, 72px, 0);
+    }
+    100% {
+        clip-path: rect(20px, 450px, 89px, 0);
+    }
+}
+
+@media (max-width: 768px) {
+    .game-title {
+        font-size: 32px;
+    }
 }
 
 /* Game canvas with neon border */
@@ -266,11 +358,6 @@ canvas:focus {
 
 /* Status indicator */
 .status {
-    background-color: rgba(135, 205, 234, 0.2);
-    padding: 8px 15px;
-    border-radius: 20px;
-    font-size: 14px;
-    color: var(--accent-color-bright);
     display: inline-block;
     min-width: 150px;
     text-align: center;
