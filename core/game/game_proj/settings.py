@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     
     'game_app',
+    'local_game',
 ]
 
 ASGI_APPLICATION = 'game_proj.asgi.application'
