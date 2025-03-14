@@ -40,6 +40,13 @@ const routes = [
       view: async () => {
       await import('../pages/entrypoint.js');
       return '<entrypoint-page></entrypoint-page>';
+    }
+     },
+    {
+      path: '/selectgamemode',
+      view: async () => {
+      await import('../pages/selectgamemode.js');
+      return '<selectgamemode-page></selectgamemode-page>';
     },
      }
   ]
