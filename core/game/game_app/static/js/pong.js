@@ -168,9 +168,9 @@ function drawGame(currentTime) {
     // Draw left paddle (Player 1) with rounded corners
     ctx.shadowColor = "#0C359E";
     ctx.fillStyle = p1Gradient;
-    ctx.beginPath();
+        ctx.beginPath();
     ctx.roundRect(0, p1Y - paddleHeight/2, paddleWidth, paddleHeight, [0, 4, 4, 0]);
-    ctx.fill();
+        ctx.fill();
 
     // Add inner highlight to left paddle
     ctx.fillStyle = "rgba(75, 123, 255, 0.3)";
@@ -261,7 +261,7 @@ function drawGame(currentTime) {
     ctx.beginPath();
     ctx.arc(ballX, ballY, ballSize, 0, Math.PI * 2);
     ctx.fill();
-
+    
     // Add energy rings
     const ringCount = 3;
     for (let i = 0; i < ringCount; i++) {

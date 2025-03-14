@@ -46,7 +46,7 @@
             <div class="chat-container">
                 <div class="chat-header">
                     <h3><i class="fas fa-comments"></i> Live Chat</h3>
-                    <button class="chat-toggle" title="Toggle Chat"><i class="fas fa-chevron-up"></i></button>
+                    <button class="chat-toggle" title="Close Chat"><i class="fas fa-chevron-up"></i></button>
                 </div>
                 <div class="chat-messages" id="chat-box">
                     <div class="chat-message system">
@@ -65,17 +65,30 @@
     <script src="{% static 'js/pong.js' %}"></script>
     
     <script>
-        // Add toggle functionality for chat in mobile view
+        // Add toggle functionality for chat
         document.querySelector('.chat-toggle').addEventListener('click', function() {
+            // Add flashing class for animation
+            this.classList.add('flashing');
+            
+            // Toggle minimized state
             document.querySelector('.chat-container').classList.toggle('minimized');
+            
+            // Switch icon
             const icon = this.querySelector('i');
             if (icon.classList.contains('fa-chevron-up')) {
                 icon.classList.remove('fa-chevron-up');
                 icon.classList.add('fa-chevron-down');
+                this.setAttribute('title', 'Open Chat');
             } else {
                 icon.classList.remove('fa-chevron-down');
                 icon.classList.add('fa-chevron-up');
+                this.setAttribute('title', 'Close Chat');
             }
+            
+            // Remove flashing class after animation completes
+            setTimeout(() => {
+                this.classList.remove('flashing');
+            }, 400);
         });
         
         // Add keyboard shortcut for chat
