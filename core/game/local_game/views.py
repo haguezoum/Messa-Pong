@@ -1,4 +1,10 @@
 from django.shortcuts import render
 
-def local_game(request):
-    return render(request, 'local_game.html') 
+def mode_selection(request):
+    return render(request, 'modes/mode_selection.html')
+
+def friend_mode(request):
+    return render(request, 'local_game.html')
+
+def ai_mode(request):
+    return render(request, 'local_game.html', {'ai_mode': True}) 

@@ -1,0 +1,219 @@
+/* Game Mode Selection Screen Styles */
+.mode-selection-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 80vh;
+}
+
+.mode-selection {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    margin: 40px 0;
+    width: 100%;
+    flex-wrap: wrap;
+}
+
+.mode-card {
+    background: rgba(40, 105, 161, 0.1);
+    border: 2px solid rgba(135, 205, 234, 0.5);
+    border-radius: 15px;
+    padding: 25px;
+    width: 300px;
+    max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--box-shadow), inset 0 0 30px rgba(135, 205, 234, 0.1);
+}
+
+.mode-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--accent-color);
+    box-shadow: 0 10px 25px rgba(14, 12, 40, 0.6), inset 0 0 40px rgba(135, 205, 234, 0.2);
+}
+
+.mode-card:before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+        to bottom right,
+        rgba(135, 205, 234, 0) 0%,
+        rgba(135, 205, 234, 0.1) 50%,
+        rgba(135, 205, 234, 0) 100%
+    );
+    transform: rotate(45deg);
+    z-index: -1;
+    transition: all 0.6s ease;
+    animation: glowSweep 3s infinite;
+}
+
+.mode-card:hover:before {
+    animation: glowSweep 1.5s infinite;
+}
+
+@keyframes glowSweep {
+    0% {
+        transform: rotate(45deg) translateX(-100%) translateY(-100%);
+    }
+    100% {
+        transform: rotate(45deg) translateX(100%) translateY(100%);
+    }
+}
+
+.mode-icon {
+    font-size: 48px;
+    margin-bottom: 15px;
+    text-shadow: 0 0 15px rgba(135, 205, 234, 0.8);
+}
+
+.mode-card h2 {
+    color: var(--accent-color);
+    margin: 0 0 15px;
+    font-weight: 700;
+    text-shadow: var(--text-shadow);
+}
+
+.mode-card p {
+    color: var(--text-color);
+    margin-bottom: 20px;
+    font-size: 0.9em;
+    opacity: 0.9;
+}
+
+.mode-features {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 25px;
+    width: 100%;
+}
+
+.mode-features span {
+    background: rgba(135, 205, 234, 0.1);
+    border: 1px solid rgba(135, 205, 234, 0.3);
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 0.8em;
+    color: var(--accent-color);
+}
+
+.mode-button {
+    background: linear-gradient(135deg, rgba(40, 105, 161, 0.8) 0%, rgba(135, 205, 234, 0.8) 100%);
+    color: var(--text-color);
+    border: none;
+    border-radius: 30px;
+    padding: 12px 30px;
+    font-weight: 600;
+    font-size: 1em;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 15px rgba(14, 12, 40, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.mode-button:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 6px 20px rgba(14, 12, 40, 0.4), 0 0 15px rgba(135, 205, 234, 0.5);
+}
+
+.mode-button:active {
+    transform: translateY(1px) scale(0.98);
+}
+
+.mode-button:before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+        to bottom right,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.3) 50%,
+        rgba(255, 255, 255, 0) 100%
+    );
+    transform: rotate(45deg);
+    z-index: 1;
+    transition: all 0.6s ease;
+    opacity: 0;
+}
+
+.mode-button:hover:before {
+    animation: buttonGlow 1s;
+}
+
+@keyframes buttonGlow {
+    0% {
+        opacity: 0;
+        transform: rotate(45deg) translateX(-100%) translateY(-100%);
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+        transform: rotate(45deg) translateX(100%) translateY(100%);
+    }
+}
+
+.back-button-container {
+    margin-top: 20px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+#back-button {
+    background: rgba(40, 105, 161, 0.2);
+    color: var(--accent-color);
+    border: 1px solid rgba(135, 205, 234, 0.3);
+    border-radius: 30px;
+    padding: 10px 25px;
+    font-weight: 500;
+    font-size: 0.9em;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+#back-button:hover {
+    background: rgba(40, 105, 161, 0.3);
+    border-color: rgba(135, 205, 234, 0.5);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(14, 12, 40, 0.3);
+}
+
+#back-button:active {
+    transform: translateY(1px);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .mode-selection {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .mode-card {
+        width: 90%;
+        max-width: 350px;
+        margin-bottom: 20px;
+    }
+} 
