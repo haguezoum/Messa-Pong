@@ -3,13 +3,13 @@ const CANVAS_WIDTH = 800;
 const CANVAS_HEIGHT = 500;
 const PADDLE_WIDTH = 10;
 const PADDLE_HEIGHT = 80;
-const BALL_SIZE = 20;
+const BALL_SIZE = 18;
 const PADDLE_SPEED = 10;
 const BALL_SPEED = 5;
-const SPEED_INCREASE = 1.2; // Speed multiplier when ball hits paddle
-const MAX_BALL_SPEED = 15; // Maximum ball speed
+const SPEED_INCREASE = 1.05; // Reduced speed multiplier when ball hits paddle
+const MAX_BALL_SPEED = 12; // Reduced maximum ball speed for better control
 const WINNING_SCORE = 5;
-const TRAIL_LENGTH = 5;  // Number of trail positions to remember
+const TRAIL_LENGTH = 3;  // Reduced trail length for better performance
 const HIT_EFFECT_DURATION = 200; // Duration of hit effect in milliseconds
 
 // Wait for DOM to be fully loaded
@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
     
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { alpha: false }); // Optimization: disable alpha for better performance
     const startButton = document.getElementById('startButton');
     const resetButton = document.getElementById('resetButton');
     const gameStatus = document.getElementById('game-status');
@@ -58,10 +58,7 @@ document.addEventListener('DOMContentLoaded', function() {
         lastBallSpeedY: 0, // Store last ball speed for pause/resume
         currentSpeedMultiplier: 1,
         isPaused: true,
-        isGameOver: false,
-        ballHitEffect: 0, // Track when ball hit effect should show
-        ballHitX: 0,     // Store X position of hit
-        ballHitY: 0      // Store Y position of hit
+        isGameOver: false
     };
 
     // Key states
@@ -151,10 +148,7 @@ document.addEventListener('DOMContentLoaded', function() {
             lastBallSpeedY: 0,
             currentSpeedMultiplier: 1,
             isPaused: true,
-            isGameOver: false,
-            ballHitEffect: 0,
-            ballHitX: 0,
-            ballHitY: 0
+            isGameOver: false
         };
         updateScore(0); // Pass 0 to indicate no scoring player (reset)
         closeVictoryOverlay();
@@ -223,90 +217,89 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function moveBall() {
-        if (gameState.isPaused || gameState.isGameOver) return;
-
-        const nextX = gameState.ballX + gameState.ballSpeedX;
-        const nextY = gameState.ballY + gameState.ballSpeedY;
-
-        // Predictive collision detection
-        if (nextY <= 0 || nextY >= CANVAS_HEIGHT - BALL_SIZE) {
+        // Update ball position
+        gameState.ballX += gameState.ballSpeedX;
+        gameState.ballY += gameState.ballSpeedY;
+        
+        // Ball collision with top and bottom walls
+        if (gameState.ballY <= BALL_SIZE / 2 || gameState.ballY >= CANVAS_HEIGHT - BALL_SIZE / 2) {
             gameState.ballSpeedY = -gameState.ballSpeedY;
+            
+            // Ensure ball doesn't get stuck in the wall
+            if (gameState.ballY <= BALL_SIZE / 2) {
+                gameState.ballY = BALL_SIZE / 2;
+            } else {
+                gameState.ballY = CANVAS_HEIGHT - BALL_SIZE / 2;
+            }
         }
-
-        gameState.ballX = nextX;
-        gameState.ballY = nextY;
-
+        
         // Ball collision with paddles
-        if (gameState.ballX <= PADDLE_WIDTH && 
-            gameState.ballY + BALL_SIZE >= gameState.player1Y && 
-            gameState.ballY <= gameState.player1Y + PADDLE_HEIGHT) {
-            // Trigger hit effect for player 1
-            gameState.player1HitEffect = Date.now();
-            // Add ball hit effect
-            gameState.ballHitEffect = Date.now();
-            gameState.ballHitX = gameState.ballX;
-            gameState.ballHitY = gameState.ballY;
-            
-            // Calculate angle based on where the ball hits the paddle
-            const relativeIntersectY = (gameState.player1Y + (PADDLE_HEIGHT / 2)) - gameState.ballY;
-            const normalizedIntersectY = relativeIntersectY / (PADDLE_HEIGHT / 2);
-            const bounceAngle = normalizedIntersectY * Math.PI / 4;
-            
-            // Increase speed but cap it at maximum
-            gameState.currentSpeedMultiplier = Math.min(gameState.currentSpeedMultiplier * SPEED_INCREASE, MAX_BALL_SPEED / BALL_SPEED);
-            const currentSpeed = BALL_SPEED * gameState.currentSpeedMultiplier;
-            
-            gameState.ballSpeedX = currentSpeed * Math.cos(bounceAngle);
-            gameState.ballSpeedY = -currentSpeed * Math.sin(bounceAngle);
-            
-            // Ensure ball moves right
-            if (gameState.ballSpeedX < 0) {
-                gameState.ballSpeedX = -gameState.ballSpeedX;
-            }
+        if (checkPaddleCollision()) {
+            // Ball direction has been changed in the collision function
         }
-
-        if (gameState.ballX >= CANVAS_WIDTH - PADDLE_WIDTH - BALL_SIZE && 
-            gameState.ballY + BALL_SIZE >= gameState.player2Y && 
-            gameState.ballY <= gameState.player2Y + PADDLE_HEIGHT) {
-            // Trigger hit effect for player 2
-            gameState.player2HitEffect = Date.now();
-            // Add ball hit effect
-            gameState.ballHitEffect = Date.now();
-            gameState.ballHitX = gameState.ballX;
-            gameState.ballHitY = gameState.ballY;
-            
-            // Calculate angle based on where the ball hits the paddle
-            const relativeIntersectY = (gameState.player2Y + (PADDLE_HEIGHT / 2)) - gameState.ballY;
-            const normalizedIntersectY = relativeIntersectY / (PADDLE_HEIGHT / 2);
-            const bounceAngle = normalizedIntersectY * Math.PI / 4;
-            
-            // Increase speed but cap it at maximum
-            gameState.currentSpeedMultiplier = Math.min(gameState.currentSpeedMultiplier * SPEED_INCREASE, MAX_BALL_SPEED / BALL_SPEED);
-            const currentSpeed = BALL_SPEED * gameState.currentSpeedMultiplier;
-            
-            gameState.ballSpeedX = currentSpeed * Math.cos(bounceAngle);
-            gameState.ballSpeedY = -currentSpeed * Math.sin(bounceAngle);
-            
-            // Ensure ball moves left
-            if (gameState.ballSpeedX > 0) {
-                gameState.ballSpeedX = -gameState.ballSpeedX;
-            }
-        }
-
+        
         // Ball out of bounds
         if (gameState.ballX < 0) {
             // Player 2 scores
-            gameState.player2Score++;
             updateScore(2);
             resetBall();
-            checkWinner();
         } else if (gameState.ballX > CANVAS_WIDTH) {
             // Player 1 scores
-            gameState.player1Score++;
             updateScore(1);
             resetBall();
-            checkWinner();
         }
+    }
+
+    function checkPaddleCollision() {
+        // Left paddle collision
+        if (gameState.ballX - BALL_SIZE / 2 <= PADDLE_WIDTH && 
+            gameState.ballY >= gameState.player1Y && 
+            gameState.ballY <= gameState.player1Y + PADDLE_HEIGHT) {
+            
+            // Calculate normalized hit position (-0.5 to 0.5)
+            const hitPosition = (gameState.ballY - (gameState.player1Y + PADDLE_HEIGHT / 2)) / PADDLE_HEIGHT;
+            
+            // Reverse X direction and add some Y based on where the paddle was hit
+            gameState.ballSpeedX = Math.abs(gameState.ballSpeedX) * gameState.currentSpeedMultiplier;
+            gameState.ballSpeedY += hitPosition * 5; // Add Y velocity based on hit position
+            
+            // Increase speed but cap it
+            gameState.currentSpeedMultiplier = Math.min(gameState.currentSpeedMultiplier * SPEED_INCREASE, MAX_BALL_SPEED / BALL_SPEED);
+            
+            // Ensure ball is not stuck inside paddle
+            gameState.ballX = PADDLE_WIDTH + BALL_SIZE / 2;
+            
+            // Add hit effect to paddle
+            gameState.player1HitEffect = Date.now();
+            
+            return true;
+        }
+        
+        // Right paddle collision
+        if (gameState.ballX + BALL_SIZE / 2 >= CANVAS_WIDTH - PADDLE_WIDTH && 
+            gameState.ballY >= gameState.player2Y && 
+            gameState.ballY <= gameState.player2Y + PADDLE_HEIGHT) {
+            
+            // Calculate normalized hit position (-0.5 to 0.5)
+            const hitPosition = (gameState.ballY - (gameState.player2Y + PADDLE_HEIGHT / 2)) / PADDLE_HEIGHT;
+            
+            // Reverse X direction and add some Y based on where the paddle was hit
+            gameState.ballSpeedX = -Math.abs(gameState.ballSpeedX) * gameState.currentSpeedMultiplier;
+            gameState.ballSpeedY += hitPosition * 5; // Add Y velocity based on hit position
+            
+            // Increase speed but cap it
+            gameState.currentSpeedMultiplier = Math.min(gameState.currentSpeedMultiplier * SPEED_INCREASE, MAX_BALL_SPEED / BALL_SPEED);
+            
+            // Ensure ball is not stuck inside paddle
+            gameState.ballX = CANVAS_WIDTH - PADDLE_WIDTH - BALL_SIZE / 2;
+            
+            // Add hit effect to paddle
+            gameState.player2HitEffect = Date.now();
+            
+            return true;
+        }
+        
+        return false;
     }
 
     function resetBall() {
@@ -314,11 +307,8 @@ document.addEventListener('DOMContentLoaded', function() {
         gameState.ballY = CANVAS_HEIGHT / 2;
         gameState.ballSpeedX = 0;
         gameState.ballSpeedY = 0;
-        gameState.lastBallSpeedX = 0;
-        gameState.lastBallSpeedY = 0;
         gameState.currentSpeedMultiplier = 1;
-        gameState.isPaused = true;
-        gameStatus.textContent = 'Click Start to Continue';
+        gameStatus.textContent = 'Press Start to Play';
         gameStatus.classList.remove('running');
         gameStatus.classList.remove('success');
         startButton.textContent = 'Start Game';
@@ -373,65 +363,26 @@ document.addEventListener('DOMContentLoaded', function() {
         ctx.stroke();
         ctx.setLineDash([]);
 
-        // Function to draw rounded rectangle with front-side only rounding
-        function drawPaddle(x, y, width, height, isRightPaddle) {
-            ctx.beginPath();
-            if (isRightPaddle) {
-                // Right paddle - round left corners (mirrored from left paddle)
-                ctx.moveTo(x + width, y);
-                ctx.lineTo(x, y + height/4);
-                ctx.quadraticCurveTo(x + width/2, y + height/8, x, y);
-                ctx.lineTo(x, y + height);
-                ctx.quadraticCurveTo(x + width/2, y + height - height/8, x, y + height - height/4);
-                ctx.lineTo(x + width, y + height);
-                ctx.lineTo(x + width, y);
-            } else {
-                // Left paddle - round right corners
-                ctx.moveTo(x, y);
-                ctx.lineTo(x + width, y + height/4);
-                ctx.quadraticCurveTo(x + width/2, y + height/8, x + width, y);
-                ctx.lineTo(x + width, y + height);
-                ctx.quadraticCurveTo(x + width/2, y + height - height/8, x + width, y + height - height/4);
-                ctx.lineTo(x, y + height);
-                ctx.lineTo(x, y);
-            }
-            ctx.closePath();
-        }
-
-        // Draw paddle trails
-        function drawPaddleTrail(trail, x, baseColor, isRight = false) {
-            trail.forEach((y, index) => {
-                const alpha = (TRAIL_LENGTH - index) / (TRAIL_LENGTH * 2);
-                ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.2})`;
-                drawPaddle(x, y, PADDLE_WIDTH, PADDLE_HEIGHT, isRight);
-                ctx.fill();
-            });
-        }
-
-        // Draw trails
+        // Draw paddles and their trails
         drawPaddleTrail(gameState.player1Trail, 0, '#00ffff', false);
         drawPaddleTrail(gameState.player2Trail, CANVAS_WIDTH - PADDLE_WIDTH, '#ff00ff', true);
-
-        // Calculate hit effect intensity
-        const player1HitIntensity = Math.max(0, 1 - (Date.now() - gameState.player1HitEffect) / HIT_EFFECT_DURATION);
-        const player2HitIntensity = Math.max(0, 1 - (Date.now() - gameState.player2HitEffect) / HIT_EFFECT_DURATION);
-
+        
         // Draw left paddle with enhanced effects
         ctx.save();
         const leftPaddleGradient = ctx.createLinearGradient(0, gameState.player1Y, PADDLE_WIDTH * 2, gameState.player1Y + PADDLE_HEIGHT);
-        leftPaddleGradient.addColorStop(0, `rgba(0, 255, 255, ${0.8 + player1HitIntensity * 0.2})`);
-        leftPaddleGradient.addColorStop(0.5, `rgba(0, 200, 255, ${0.9 + player1HitIntensity * 0.1})`);
-        leftPaddleGradient.addColorStop(1, `rgba(0, 150, 255, ${0.8 + player1HitIntensity * 0.2})`);
+        leftPaddleGradient.addColorStop(0, 'rgba(0, 255, 255, 0.8)');
+        leftPaddleGradient.addColorStop(0.5, 'rgba(0, 200, 255, 0.9)');
+        leftPaddleGradient.addColorStop(1, 'rgba(0, 150, 255, 0.8)');
 
         // Main paddle
         ctx.shadowColor = '#00ffff';
-        ctx.shadowBlur = 15 + player1HitIntensity * 15;
+        ctx.shadowBlur = 15;
         ctx.fillStyle = leftPaddleGradient;
         drawPaddle(0, gameState.player1Y, PADDLE_WIDTH, PADDLE_HEIGHT, false);
         ctx.fill();
-
+        
         // Edge highlight
-        ctx.strokeStyle = `rgba(255, 255, 255, ${0.8 + player1HitIntensity * 0.2})`;
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
         ctx.lineWidth = 2;
         ctx.stroke();
         ctx.restore();
@@ -439,185 +390,187 @@ document.addEventListener('DOMContentLoaded', function() {
         // Draw right paddle with enhanced effects
         ctx.save();
         const rightPaddleGradient = ctx.createLinearGradient(CANVAS_WIDTH - PADDLE_WIDTH * 2, gameState.player2Y, CANVAS_WIDTH, gameState.player2Y + PADDLE_HEIGHT);
-        rightPaddleGradient.addColorStop(0, `rgba(255, 0, 255, ${0.8 + player2HitIntensity * 0.2})`);
-        rightPaddleGradient.addColorStop(0.5, `rgba(255, 0, 200, ${0.9 + player2HitIntensity * 0.1})`);
-        rightPaddleGradient.addColorStop(1, `rgba(255, 0, 150, ${0.8 + player2HitIntensity * 0.2})`);
+        rightPaddleGradient.addColorStop(0, 'rgba(255, 0, 255, 0.8)');
+        rightPaddleGradient.addColorStop(0.5, 'rgba(255, 0, 200, 0.9)');
+        rightPaddleGradient.addColorStop(1, 'rgba(255, 0, 150, 0.8)');
 
         // Main paddle
         ctx.shadowColor = '#ff00ff';
-        ctx.shadowBlur = 15 + player2HitIntensity * 15;
+        ctx.shadowBlur = 15;
         ctx.fillStyle = rightPaddleGradient;
         drawPaddle(CANVAS_WIDTH - PADDLE_WIDTH, gameState.player2Y, PADDLE_WIDTH, PADDLE_HEIGHT, true);
         ctx.fill();
-
+        
         // Edge highlight
-        ctx.strokeStyle = `rgba(255, 255, 255, ${0.8 + player2HitIntensity * 0.2})`;
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
         ctx.lineWidth = 2;
         ctx.stroke();
         ctx.restore();
+        
+        // Draw paddle hit effects
+        drawPaddleHitEffect(1);
+        drawPaddleHitEffect(2);
+        
+        // Draw ball
+        drawBall();
+    }
 
-        // Draw energy ball
+    function drawBall() {
         ctx.save();
         
         // Create time-based effects
         const time = Date.now() / 1000;
-        const pulseIntensity = Math.sin(time * 3) * 0.15 + 0.85; // Faster, subtler pulse
+        const pulseIntensity = Math.sin(time * 2) * 0.1 + 0.9; // Subtle pulse
         
-        // Outer glow effect
-        ctx.shadowColor = '#ffffff';
-        ctx.shadowBlur = 20 + Math.sin(time * 4) * 5; // Dynamic glow intensity
+        // Outer glow effect - light blue for snow
+        ctx.shadowColor = 'rgba(200, 230, 255, 0.8)';
+        ctx.shadowBlur = 15 + Math.sin(time * 3) * 3; // Dynamic glow intensity
         
-        // Main orb gradient
-        const orbGradient = ctx.createRadialGradient(
+        // Main snowball gradient
+        const snowGradient = ctx.createRadialGradient(
             gameState.ballX,
             gameState.ballY,
             0,
             gameState.ballX,
             gameState.ballY,
-            BALL_SIZE / 1.5
+            BALL_SIZE / 1.8
         );
-        orbGradient.addColorStop(0, '#ffffff');
-        orbGradient.addColorStop(0.4, 'rgba(255, 255, 255, 0.9)');
-        orbGradient.addColorStop(0.7, 'rgba(255, 255, 255, 0.3)');
-        orbGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        snowGradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+        snowGradient.addColorStop(0.7, 'rgba(230, 240, 255, 0.9)');
+        snowGradient.addColorStop(1, 'rgba(200, 230, 255, 0.7)');
         
-        // Draw main orb
-        ctx.globalAlpha = pulseIntensity;
-        ctx.fillStyle = orbGradient;
+        // Draw main snowball
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = snowGradient;
         ctx.beginPath();
         ctx.arc(gameState.ballX, gameState.ballY, BALL_SIZE / 2, 0, Math.PI * 2);
         ctx.fill();
 
-        // Add energy rings
-        const ringCount = 3;
-        for (let i = 0; i < ringCount; i++) {
-            const ringPhase = time * (1 + i * 0.5) + (Math.PI * 2 * i) / ringCount;
-            const ringSize = (BALL_SIZE / 2) * (0.6 + Math.sin(ringPhase) * 0.4);
+        // Add snow texture/highlights
+        const highlightCount = 8;
+        for (let i = 0; i < highlightCount; i++) {
+            const angle = (Math.PI * 2 * i) / highlightCount + time * 0.2;
+            const distance = BALL_SIZE / 4 * (0.3 + Math.sin(time * 2 + i) * 0.1);
             
+            // Highlight position with subtle movement
+            const x = gameState.ballX + Math.cos(angle) * distance;
+            const y = gameState.ballY + Math.sin(angle) * distance;
+            
+            // Draw snow highlight
+            const highlightSize = (BALL_SIZE / 10) * (0.8 + Math.sin(time * 3 + i) * 0.2);
+            ctx.globalAlpha = 0.7 * pulseIntensity;
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
             ctx.beginPath();
-            ctx.arc(gameState.ballX, gameState.ballY, ringSize, 0, Math.PI * 2);
-            ctx.strokeStyle = `rgba(255, 255, 255, ${0.15 * pulseIntensity})`;
-            ctx.lineWidth = 2;
-            ctx.stroke();
-        }
-
-        // Add particle effects
-        const particleCount = 8;
-        for (let i = 0; i < particleCount; i++) {
-            const particleAngle = time * 2 + (Math.PI * 2 * i) / particleCount;
-            const particleDistance = BALL_SIZE / 2 * (0.4 + Math.sin(time * 3 + i) * 0.2);
-            
-            // Particle position with spiral motion
-            const x = gameState.ballX + Math.cos(particleAngle) * particleDistance;
-            const y = gameState.ballY + Math.sin(particleAngle) * particleDistance;
-            
-            // Draw particle with dynamic size
-            const particleSize = (BALL_SIZE / 8) * (0.8 + Math.sin(time * 4 + i) * 0.2);
-            ctx.globalAlpha = 0.6 * pulseIntensity;
-            ctx.fillStyle = '#ffffff';
-            ctx.beginPath();
-            ctx.arc(x, y, particleSize, 0, Math.PI * 2);
+            ctx.arc(x, y, highlightSize, 0, Math.PI * 2);
             ctx.fill();
         }
 
-        // Add energy streams
-        ctx.globalAlpha = 0.4 * pulseIntensity;
-        for (let i = 0; i < 12; i++) {
-            const streamAngle = (Math.PI * 2 * i) / 12 + time;
-            const innerRadius = BALL_SIZE / 4;
-            const outerRadius = BALL_SIZE / 2;
+        // Add frost sparkle effect
+        const sparkleCount = 4;
+        for (let i = 0; i < sparkleCount; i++) {
+            const sparkleAngle = time * 3 + (Math.PI * 2 * i) / sparkleCount;
+            const sparkleDistance = BALL_SIZE / 3 * (0.5 + Math.sin(time * 4 + i) * 0.2);
             
-            // Create wavy effect
-            const waveOffset = Math.sin(time * 4 + i) * 0.2;
+            const sx = gameState.ballX + Math.cos(sparkleAngle) * sparkleDistance;
+            const sy = gameState.ballY + Math.sin(sparkleAngle) * sparkleDistance;
             
+            // Draw sparkle
+            ctx.globalAlpha = 0.6 * pulseIntensity;
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+            
+            // Star shape for sparkle
             ctx.beginPath();
-            ctx.moveTo(
-                gameState.ballX + Math.cos(streamAngle) * innerRadius,
-                gameState.ballY + Math.sin(streamAngle) * innerRadius
-            );
-            ctx.lineTo(
-                gameState.ballX + Math.cos(streamAngle + waveOffset) * outerRadius,
-                gameState.ballY + Math.sin(streamAngle + waveOffset) * outerRadius
-            );
-            ctx.strokeStyle = `rgba(255, 255, 255, ${0.5 * pulseIntensity})`;
-            ctx.lineWidth = 1;
-            ctx.stroke();
+            const sparkleSize = BALL_SIZE / 12;
+            for (let j = 0; j < 5; j++) {
+                const starAngle = (Math.PI * 2 * j) / 5 - Math.PI / 2;
+                const x1 = sx + Math.cos(starAngle) * sparkleSize;
+                const y1 = sy + Math.sin(starAngle) * sparkleSize;
+                const x2 = sx + Math.cos(starAngle + Math.PI/5) * (sparkleSize/2);
+                const y2 = sy + Math.sin(starAngle + Math.PI/5) * (sparkleSize/2);
+                
+                if (j === 0) {
+                    ctx.moveTo(x1, y1);
+                } else {
+                    ctx.lineTo(x1, y1);
+                }
+                ctx.lineTo(x2, y2);
+            }
+            ctx.closePath();
+            ctx.fill();
         }
 
-        // Inner core highlight
-        const coreGradient = ctx.createRadialGradient(
-            gameState.ballX - BALL_SIZE / 6,
-            gameState.ballY - BALL_SIZE / 6,
-            0,
+        // Add subtle blue tint to edges for ice effect
+        const iceGradient = ctx.createRadialGradient(
             gameState.ballX,
             gameState.ballY,
-            BALL_SIZE / 3
+            BALL_SIZE / 3,
+            gameState.ballX,
+            gameState.ballY,
+            BALL_SIZE / 2
         );
-        coreGradient.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
-        coreGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        iceGradient.addColorStop(0, 'rgba(200, 230, 255, 0)');
+        iceGradient.addColorStop(1, 'rgba(180, 220, 255, 0.3)');
         
-        ctx.globalAlpha = pulseIntensity;
-        ctx.fillStyle = coreGradient;
+        ctx.globalAlpha = 0.5;
+        ctx.fillStyle = iceGradient;
         ctx.beginPath();
-        ctx.arc(gameState.ballX, gameState.ballY, BALL_SIZE / 3, 0, Math.PI * 2);
+        ctx.arc(gameState.ballX, gameState.ballY, BALL_SIZE / 2, 0, Math.PI * 2);
         ctx.fill();
 
-        // Draw ball hit effect
-        const hitEffectAge = Date.now() - gameState.ballHitEffect;
-        if (hitEffectAge < HIT_EFFECT_DURATION) {
-            const hitIntensity = 1 - (hitEffectAge / HIT_EFFECT_DURATION);
-            
-            // Expanding rings
-            const ringCount = 3;
-            for (let i = 0; i < ringCount; i++) {
-                const ringProgress = (hitEffectAge / HIT_EFFECT_DURATION) + (i / ringCount);
-                const ringSize = BALL_SIZE * (1 + ringProgress * 2);
-                const ringOpacity = Math.max(0, hitIntensity - (i / ringCount) * 0.5);
-                
-                ctx.beginPath();
-                ctx.arc(gameState.ballHitX, gameState.ballHitY, ringSize, 0, Math.PI * 2);
-                ctx.strokeStyle = `rgba(255, 255, 255, ${ringOpacity * 0.5})`;
-                ctx.lineWidth = 2 * (1 - ringProgress);
-                ctx.stroke();
-            }
-            
-            // Energy particles
-            const particleCount = 12;
-            for (let i = 0; i < particleCount; i++) {
-                const angle = (Math.PI * 2 * i) / particleCount;
-                const distance = BALL_SIZE * (1 + hitEffectAge / HIT_EFFECT_DURATION * 2);
-                const x = gameState.ballHitX + Math.cos(angle) * distance;
-                const y = gameState.ballHitY + Math.sin(angle) * distance;
-                
-                const particleSize = BALL_SIZE / 6 * (1 - hitEffectAge / HIT_EFFECT_DURATION);
-                ctx.globalAlpha = hitIntensity * 0.7;
-                ctx.fillStyle = '#ffffff';
-                ctx.beginPath();
-                ctx.arc(x, y, particleSize, 0, Math.PI * 2);
-                ctx.fill();
-            }
-            
-            // Shockwave effect
-            const shockwaveSize = BALL_SIZE * (1 + hitEffectAge / HIT_EFFECT_DURATION * 3);
-            const shockwaveGradient = ctx.createRadialGradient(
-                gameState.ballHitX,
-                gameState.ballHitY,
-                0,
-                gameState.ballHitX,
-                gameState.ballHitY,
-                shockwaveSize
-            );
-            shockwaveGradient.addColorStop(0, 'rgba(255, 255, 255, 0)');
-            shockwaveGradient.addColorStop(0.7, `rgba(255, 255, 255, ${hitIntensity * 0.2})`);
-            shockwaveGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-            
-            ctx.globalAlpha = hitIntensity * 0.5;
-            ctx.fillStyle = shockwaveGradient;
-            ctx.beginPath();
-            ctx.arc(gameState.ballHitX, gameState.ballHitY, shockwaveSize, 0, Math.PI * 2);
-            ctx.fill();
-        }
+        ctx.restore();
+    }
 
+    function drawPaddle(x, y, width, height, isRightPaddle) {
+        ctx.beginPath();
+        if (isRightPaddle) {
+            // Right paddle - round left corners (mirrored from left paddle)
+            ctx.moveTo(x + width, y);
+            ctx.lineTo(x, y + height/4);
+            ctx.quadraticCurveTo(x + width/2, y + height/8, x, y);
+            ctx.lineTo(x, y + height);
+            ctx.quadraticCurveTo(x + width/2, y + height - height/8, x, y + height - height/4);
+            ctx.lineTo(x + width, y + height);
+            ctx.lineTo(x + width, y);
+        } else {
+            // Left paddle - round right corners
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + width, y + height/4);
+            ctx.quadraticCurveTo(x + width/2, y + height/8, x + width, y);
+            ctx.lineTo(x + width, y + height);
+            ctx.quadraticCurveTo(x + width/2, y + height - height/8, x + width, y + height - height/4);
+            ctx.lineTo(x, y + height);
+            ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+    }
+
+    function drawPaddleTrail(trail, x, baseColor, isRight = false) {
+        trail.forEach((y, index) => {
+            const alpha = (TRAIL_LENGTH - index) / (TRAIL_LENGTH * 2);
+            ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.2})`;
+            drawPaddle(x, y, PADDLE_WIDTH, PADDLE_HEIGHT, isRight);
+            ctx.fill();
+        });
+    }
+
+    function drawPaddleHitEffect(player) {
+        const hitEffect = player === 1 ? gameState.player1HitEffect : gameState.player2HitEffect;
+        const hitIntensity = Math.max(0, 1 - (Date.now() - hitEffect) / 200);
+        
+        if (hitIntensity <= 0) return;
+        
+        const paddleX = player === 1 ? 0 : CANVAS_WIDTH - PADDLE_WIDTH;
+        const paddleY = player === 1 ? gameState.player1Y : gameState.player2Y;
+        const paddleColor = player === 1 ? '#00ffff' : '#ff00ff';
+        
+        // Draw glow effect
+        ctx.save();
+        ctx.globalAlpha = hitIntensity * 0.5;
+        ctx.shadowColor = paddleColor;
+        ctx.shadowBlur = 15 * hitIntensity;
+        ctx.fillStyle = `rgba(${player === 1 ? '0, 255, 255' : '255, 0, 255'}, 0.3)`;
+        drawPaddle(paddleX, paddleY, PADDLE_WIDTH, PADDLE_HEIGHT, player === 2);
+        ctx.fill();
         ctx.restore();
     }
 
@@ -625,28 +578,48 @@ document.addEventListener('DOMContentLoaded', function() {
     const FRAME_RATE = 60;
     const FRAME_INTERVAL = 1000 / FRAME_RATE;
     let lastFrameTime = 0;
+    let frameCount = 0;
+    let lastFpsUpdateTime = 0;
+    let animationFrameId = null;
 
     function update(currentTime) {
+        // Request next frame immediately for smoother animation
+        animationFrameId = requestAnimationFrame(update);
+        
         if (!lastFrameTime) {
             lastFrameTime = currentTime;
+            lastFpsUpdateTime = currentTime;
+            return;
         }
         
         const deltaTime = currentTime - lastFrameTime;
         
-        if (deltaTime >= FRAME_INTERVAL) {
-            // Update game state
-            if (!gameState.isPaused && !gameState.isGameOver) {
-                movePaddles();
-                moveBall();
-            }
-            
-            // Render
-            draw();
-            
-            lastFrameTime = currentTime;
+        // Skip frames if we're running too fast
+        if (deltaTime < FRAME_INTERVAL) {
+            return;
         }
         
-        requestAnimationFrame(update);
+        // Update game state
+        if (!gameState.isPaused && !gameState.isGameOver) {
+            movePaddles();
+            moveBall();
+        }
+        
+        // Render
+        draw();
+        
+        // FPS calculation (for debugging)
+        frameCount++;
+        if (currentTime - lastFpsUpdateTime >= 1000) {
+            // console.log(`FPS: ${frameCount}`);
+            frameCount = 0;
+            lastFpsUpdateTime = currentTime;
+        }
+        
+        // Calculate how much time has passed
+        const elapsed = currentTime - lastFrameTime;
+        // Update last frame time, accounting for any extra time
+        lastFrameTime = currentTime - (elapsed % FRAME_INTERVAL);
     }
 
     // Initialize game
