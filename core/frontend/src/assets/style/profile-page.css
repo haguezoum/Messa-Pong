@@ -1,4 +1,34 @@
-/****** PROFILE.css ******/
+:root{
+    --primary-blue: rgb(14, 12, 40);
+    --secondary-blue: rgb(40, 105, 161);
+    --secondary-blue-on: rgba(40, 104, 161, 0.57);
+    --secondary-blue-off: rgba(56, 128, 255, 0.278);
+    --primary-success: rgb(34, 189, 79);
+    --socondry-success:rgba(103, 201, 131, 0.963);
+    --primary-danger: rgb(220, 53, 69);
+    --primary-warning:rgb(220, 181, 53);
+    --socondry-warning: rgba(220, 181, 53, 0.372);
+    --primary-black: rgba(0, 0, 0, 0.8);
+    --socondry-black: rgb(138, 146, 160);
+    --dead-blue: rgb(35, 52, 84);
+    --font-color-primary: rgb(255, 255, 255);
+    --font-color-secondry: rgb(138, 146, 160);
+    --font-color-third: rgb(5, 0, 38);
+    --alive-blue:rgb(135, 205, 234);
+    --white: rgb(255, 255, 255);
+    --black: rgb(0, 0, 0);
+    --gray: rgb(138, 146, 160);
+    --secondry-gray : rgba(217, 217, 217, 0.264);
+    --primary-font: "Righteous", sans-serif;
+    --socondry-font: "ABeeZee", sans-serif;
+    --primapry-purpule: rgb(156, 71, 255);
+    --background-yallow: rgb(255, 255, 0);
+    /* --primary-green: rgb(1, 50, 12); */
+}
+
+body{
+    background: linear-gradient(210deg , rgb(204, 232, 243), #18A5E0);
+}
 
 
 .profile-page * {
@@ -272,18 +302,26 @@ img {
 
 .container .profile-content .profile-content-infos .profile-content-infos-details .profilePictureChanger .userFullNmae {
     flex: 1;
-    background-color: rgba(255, 25, 0, 0.336);
+    font-size: 30px;
+    font-weight: bold;
+    padding-bottom: 10px;
+    color: #3A93B7;
 }
 
 .container .profile-content .profile-content-infos .profile-content-infos-details .profilePictureChanger .userPhoneNumber {
     flex: 1;
-    background-color: rgba(255, 0, 234, 0.336);
-
+    font-size: 20px;
+    padding-inline: 3.5rem;
+    color: rgba(58, 148, 183, 0.5);
 }
 
 .container .profile-content .profile-content-infos .profile-content-infos-details .profileGeneralInfo {
     grid-column: 4/11;
     grid-row: 1/6;
+    padding-inline: 3rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
     /* background-color: rgb(255, 225, 0); */
 }
 
@@ -292,3 +330,276 @@ img {
     grid-row: 6/11;
     /* background-color: rgb(255, 0, 217); */
 }
+.title-box{
+    font-size: 30px;
+    color: #3A93B7;
+    font-family: var(--socondry-font);
+}
+.info-input{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
+}
+.update-text{
+    align-items: center;
+    justify-content: center;
+}
+.up{
+    display: flex;
+    justify-content: start;
+}
+.update-text{
+    border-radius: 30px;
+    background-color: #E2E6E9;
+    height: 80px;
+    width: 250px;
+    font-family: var(--socondry-font);
+    font-size: 30px;
+}
+
+/* input field  */
+.profileGeneralInfo .field-container{
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.profileGeneralInfo .field-container .form-field {
+    display: flex;
+    justify-content: start;
+    align-items: start;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px;
+    position: relative;
+    flex: 1;
+}
+
+.profileGeneralInfo .field-container .form-field p.error {
+    font-family: var(--socondry-font);
+    color: var(--primary-danger);
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 1.2px;
+    position: absolute;
+    top: 100%;
+    left: 28px;
+}
+
+.profileGeneralInfo .field-container .form-field p.error svg {
+    width: 12px;
+    height: 12px;
+}
+
+.profileGeneralInfo .field-container .form-field>input {
+    min-width: 100%;
+    height: 40px;
+    padding: 8px 20px;
+    border-radius: 21px;
+    border: none;
+    background-color: rgb(204, 232, 243);
+    font-family: var(--socondry-font);
+    font-size: 20px;
+    font-weight: 400;
+    color: var(--primary-black);
+    outline: none;
+    border: 1px solid var(--black);
+}
+
+.profileGeneralInfo .field-container .form-field>input::placeholder {
+    visibility: hidden;
+}
+
+.profileGeneralInfo .field-container .form-field>label {
+    font-family: var(--socondry-font);
+    color: var(--gray);
+    font-size: 19px;
+    font-weight: 400;
+    letter-spacing: 2px;
+}
+
+/* save button */
+
+
+.profileGeneralInfo .update-row button{
+    width: 100%;
+    height: 40px;
+    padding: 10px;
+    border-radius: 21px;
+    border: none;
+    background: radial-gradient(circle, var(--primary-black) 100%, var(--alive-blue) 0%);
+    font-family: var(--socondry-font);
+    font-size: 20px;
+    font-weight: 400;
+    color: var(--white);
+    outline: none;
+    cursor: pointer;
+    margin: auto;
+    transition: all 0.2s ease;
+}
+/* save button */
+
+.profileSecurity{
+    display: flex;
+    flex-direction: column;
+    padding-inline: 3rem;
+    justify-content: space-evenly;
+}
+.profileSecurity .security-title-box{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    font-size: 30px;
+    color: #3A93B7;
+    font-family: var(--socondry-font);
+}
+
+.profileSecurity .field-container{
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.profileSecurity .field-container .form-field{
+    display: flex;
+    justify-content: start;
+    align-items: start;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px;
+    position: relative;
+    flex: 1;
+}
+.profileSecurity .field-container .form-field p.error {
+    font-family: var(--socondry-font);
+    color: var(--primary-danger);
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 1.2px;
+    position: absolute;
+    top: 100%;
+    left: 28px;
+}
+
+.profileSecurity .field-container .form-field p.error svg {
+    width: 12px;
+    height: 12px;
+}
+.profileSecurity .field-container .form-field>input {
+    min-width: 100%;
+    height: 40px;
+    padding: 8px 20px;
+    border-radius: 21px;
+    border: none;
+    background-color: rgb(204, 232, 243);
+    font-family: var(--socondry-font);
+    font-size: 20px;
+    font-weight: 400;
+    color: var(--primary-black);
+    outline: none;
+    border: 1px solid var(--black);
+}
+
+.profileSecurity .field-container .form-field>input::placeholder {
+    visibility: hidden;
+}
+
+.profileSecurity .field-container .form-field>label {
+    font-family: var(--socondry-font);
+    color: var(--gray);
+    font-size: 19px;
+    font-weight: 400;
+    letter-spacing: 2px;
+}
+
+.profileSecurity .update-row button{
+    width: 100%;
+    padding: 10px;
+    border-radius: 21px;
+    border: none;
+    background: radial-gradient(circle, var(--primary-black) 100%, var(--alive-blue) 0%);
+    font-family: var(--socondry-font);
+    font-size: 20px;
+    font-weight: 400;
+    color: var(--white);
+    outline: none;
+    cursor: pointer;
+    margin: auto;
+    transition: all 0.2s ease;
+}
+
+.switch {
+    color: hsl(0, 0%, 30%);
+    font-weight: 700;
+    font-size: 3rem;
+    display: flex;
+  }
+  
+.switch label{
+    font-size: 2.5rem;
+    color: #3A93B7;
+    font-family: var(--primary-font);
+}
+  .checkbox-con {
+    margin: 10px;
+    display: flex;
+    align-items: center;
+    color: white;
+   }
+   
+   .checkbox-con input[type="checkbox"] {
+    appearance: none;
+    width: 48px;
+    height: 27px;
+    border: 2px solid #ff0000;
+    border-radius: 20px;
+    background: #f1e1e1;
+    position: relative;
+    box-sizing: border-box;
+   }
+   
+   .checkbox-con input[type="checkbox"]::before {
+    content: "";
+    width: 14px;
+    height: 14px;
+    background: rgba(234, 7, 7, 0.5);
+    border: 2px solid #ea0707;
+    border-radius: 50%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform: translate(13%, 15%);
+    transition: all 0.3s ease-in-out;
+   }
+   
+   .checkbox-con input[type="checkbox"]::after {
+    content: url("data:image/svg+xml,%3Csvg xmlns='://www.w3.org/2000/svg' width='23' height='23' viewBox='0 0 23 23' fill='none'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M6.55021 5.84315L17.1568 16.4498L16.4497 17.1569L5.84311 6.55026L6.55021 5.84315Z' fill='%23EA0707' fill-opacity='0.89'/%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M17.1567 6.55021L6.55012 17.1568L5.84302 16.4497L16.4496 5.84311L17.1567 6.55021Z' fill='%23EA0707' fill-opacity='0.89'/%3E%3C/svg%3E");
+    position: absolute;
+    top: 0;
+    left: 20px;
+   }
+   
+   .checkbox-con input[type="checkbox"]:checked {
+    border: 2px solid #02c202;
+    background: #e2f1e1;
+   }
+   
+   .checkbox-con input[type="checkbox"]:checked::before {
+    background: rgba(2, 194, 2, 0.5);
+    border: 2px solid #02c202;
+    transform: translate(133%, 13%);
+    transition: all 0.3s ease-in-out;
+   }
+   
+   .checkbox-con input[type="checkbox"]:checked::after {
+    content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='13' viewBox='0 0 15 13' fill='none'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M14.8185 0.114533C15.0314 0.290403 15.0614 0.605559 14.8855 0.818454L5.00187 12.5L0.113036 6.81663C-0.0618274 6.60291 -0.0303263 6.2879 0.183396 6.11304C0.397119 5.93817 0.71213 5.96967 0.886994 6.18339L5.00187 11L14.1145 0.181573C14.2904 -0.0313222 14.6056 -0.0613371 14.8185 0.114533Z' fill='%2302C202' fill-opacity='0.9'/%3E%3C/svg%3E");
+    position: absolute;
+    top: 5px;
+    left: 5px;
+   }
+   
+   .checkbox-con label {
+    margin-left: 10px;
+    cursor: pointer;
+    user-select: none;
+   }
