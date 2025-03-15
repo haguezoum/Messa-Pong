@@ -38,7 +38,7 @@ services:
                 aliases:
                     - frontend
         depends_on:
-            auth:
+            rest_api:
                 condition: service_healthy
         deploy:
             resources:
@@ -145,20 +145,19 @@ services:
     #         start_period: 30s
     #     restart: always
 
-    auth:
-        image: auth:server
-        container_name: auth
+    rest_api:
+        image: restapi:server
+        container_name: rest_api
         build:
-            context: ./auth
-        volumes:
-            - auth_storage:/storage
+            context: ./rest_api
         networks:
             42network:
               aliases:
-                  - authentication
+                  - oauth
                   - api_gateway
-        env_file:
-            - ../secrets/api-credentials.env
+        secrets:
+            - api-credentials
+            - database-credentials
         depends_on:
             database:
                 condition: service_healthy
@@ -180,8 +179,6 @@ volumes:
         name: database-data
     frontend-files:
         name: frontend-files
-    auth_storage:
-        name: auth_storage
 
 
 networks:
