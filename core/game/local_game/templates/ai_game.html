@@ -1,0 +1,67 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Pong Game</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;900&display=swap">
+    <link rel="stylesheet" href="{% static 'css/local_pong.css' %}">
+    <link rel="stylesheet" href="{% static 'css/error.css' %}">
+    <link rel="stylesheet" href="{% static 'css/ai_game.css' %}">
+    <style>
+        #gameCanvas {
+            display: block;
+            margin: 0 auto;
+            background-color: #1a1b26;
+            border: 4px solid #30365f;
+        }
+        .game-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <h1 class="game-title" data-text="Messa Pong">Messa Pong</h1>
+            <div id="game-status">Press Start to Play</div>
+        </div>
+
+        <div class="score-board">
+            <div class="score">
+                <div class="player-label">You</div>
+                <div id="player1-score">0</div>
+            </div>
+            <div class="vs-badge">VS</div>
+            <div class="score">
+                <div class="player-label">AI</div>
+                <div id="player2-score">0</div>
+            </div>
+        </div>
+
+        <canvas id="gameCanvas" width="800" height="500"></canvas>
+
+        <div class="game-controls">
+            <button id="startButton" class="primary-button">Start Game</button>
+            <button id="resetButton">Reset Game</button>
+            <button id="backButton" onclick="window.location.href='/local/'">Go Back</button>
+        </div>
+    </div>
+
+    <!-- Victory Overlay -->
+    <div id="victory-overlay">
+        <div class="confetti-container"></div>
+        <div class="victory-content">
+            <h2 class="victory-title">Victory!</h2>
+            <p class="victory-message">Congratulations!</p>
+            <div id="final-score" class="victory-score">0 - 0</div>
+            <button class="victory-button" onclick="closeVictoryOverlay()">Play Again</button>
+        </div>
+    </div>
+
+    <script src="{% static 'js/local_pong.js' %}"></script>
+</body>
+</html> 

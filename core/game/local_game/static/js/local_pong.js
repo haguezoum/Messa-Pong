@@ -12,6 +12,28 @@ const WINNING_SCORE = 5;
 const TRAIL_LENGTH = 3;  // Reduced trail length for better performance
 const HIT_EFFECT_DURATION = 200; // Duration of hit effect in milliseconds
 
+// AI difficulty settings
+const AI_DIFFICULTIES = {
+    easy: {
+        reactionTime: 32,
+        predictionError: 40,
+        label: 'Easy'
+    },
+    medium: {
+        reactionTime: 16,
+        predictionError: 20,
+        label: 'Medium'
+    },
+    hard: {
+        reactionTime: 8,
+        predictionError: 10,
+        label: 'Hard'
+    }
+};
+
+let currentAIDifficulty = 'medium';
+const IS_AI_MODE = window.location.pathname.includes('/local/ai');
+
 // Wait for DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, initializing game...');
@@ -58,15 +80,16 @@ document.addEventListener('DOMContentLoaded', function() {
         lastBallSpeedY: 0, // Store last ball speed for pause/resume
         currentSpeedMultiplier: 1,
         isPaused: true,
-        isGameOver: false
+        isGameOver: false,
+        lastAIUpdate: 0
     };
 
     // Key states
     const keys = {
         w: false,
         s: false,
-        ArrowUp: false,
-        ArrowDown: false
+        ArrowUp: !IS_AI_MODE,
+        ArrowDown: !IS_AI_MODE
     };
 
     // Set canvas size
@@ -75,7 +98,7 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('Canvas size set to:', canvas.width, canvas.height);
 
     function handleKeyDown(e) {
-        if (e.key in keys) {
+        if (e.key in keys && keys[e.key] !== undefined) {
             keys[e.key] = true;
             e.preventDefault();
         }
@@ -86,7 +109,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function handleKeyUp(e) {
-        if (e.key in keys) {
+        if (e.key in keys && keys[e.key] !== undefined) {
             keys[e.key] = false;
         }
     }
@@ -148,7 +171,8 @@ document.addEventListener('DOMContentLoaded', function() {
             lastBallSpeedY: 0,
             currentSpeedMultiplier: 1,
             isPaused: true,
-            isGameOver: false
+            isGameOver: false,
+            lastAIUpdate: 0
         };
         updateScore(0); // Pass 0 to indicate no scoring player (reset)
         closeVictoryOverlay();
@@ -186,6 +210,50 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    function predictBallY() {
+        const aiSettings = AI_DIFFICULTIES[currentAIDifficulty];
+        
+        if (gameState.ballSpeedX <= 0) {
+            return gameState.player2Y + PADDLE_HEIGHT / 2;
+        }
+
+        const distanceToRightPaddle = CANVAS_WIDTH - PADDLE_WIDTH - gameState.ballX;
+        const timeToReachPaddle = distanceToRightPaddle / Math.abs(gameState.ballSpeedX);
+        
+        let predictedY = gameState.ballY + (gameState.ballSpeedY * timeToReachPaddle);
+        
+        while (predictedY < 0 || predictedY > CANVAS_HEIGHT) {
+            if (predictedY < 0) {
+                predictedY = -predictedY;
+            } else if (predictedY > CANVAS_HEIGHT) {
+                predictedY = 2 * CANVAS_HEIGHT - predictedY;
+            }
+        }
+        
+        predictedY += (Math.random() - 0.5) * aiSettings.predictionError;
+        
+        return predictedY;
+    }
+
+    function updateAIPaddle() {
+        const currentTime = Date.now();
+        const aiSettings = AI_DIFFICULTIES[currentAIDifficulty];
+        
+        if (currentTime - gameState.lastAIUpdate < aiSettings.reactionTime) {
+            return;
+        }
+        gameState.lastAIUpdate = currentTime;
+
+        const predictedBallY = predictBallY();
+        const paddleCenter = gameState.player2Y + PADDLE_HEIGHT / 2;
+        
+        if (paddleCenter < predictedBallY - 5) {
+            gameState.player2Y = Math.min(gameState.player2Y + PADDLE_SPEED, CANVAS_HEIGHT - PADDLE_HEIGHT);
+        } else if (paddleCenter > predictedBallY + 5) {
+            gameState.player2Y = Math.max(gameState.player2Y - PADDLE_SPEED, 0);
+        }
+    }
+
     function movePaddles() {
         // Store previous position for trail effect
         gameState.player1Trail.unshift(gameState.player1Y);
@@ -207,12 +275,18 @@ document.addEventListener('DOMContentLoaded', function() {
             gameState.player1Y += PADDLE_SPEED;
         }
 
-        // Player 2 (Arrow Up/Down)
-        if (keys.ArrowUp && gameState.player2Y > 0) {
-            gameState.player2Y -= PADDLE_SPEED;
-        }
-        if (keys.ArrowDown && gameState.player2Y < CANVAS_HEIGHT - PADDLE_HEIGHT) {
-            gameState.player2Y += PADDLE_SPEED;
+        // Player 2 (AI or Arrow Keys)
+        if (IS_AI_MODE) {
+            if (!gameState.isPaused && !gameState.isGameOver) {
+                updateAIPaddle();
+            }
+        } else {
+            if (keys.ArrowUp && gameState.player2Y > 0) {
+                gameState.player2Y -= PADDLE_SPEED;
+            }
+            if (keys.ArrowDown && gameState.player2Y < CANVAS_HEIGHT - PADDLE_HEIGHT) {
+                gameState.player2Y += PADDLE_SPEED;
+            }
         }
     }
 
@@ -241,12 +315,16 @@ document.addEventListener('DOMContentLoaded', function() {
         // Ball out of bounds
         if (gameState.ballX < 0) {
             // Player 2 scores
+            gameState.player2Score++;
             updateScore(2);
             resetBall();
+            checkWinner();
         } else if (gameState.ballX > CANVAS_WIDTH) {
             // Player 1 scores
+            gameState.player1Score++;
             updateScore(1);
             resetBall();
+            checkWinner();
         }
     }
 
@@ -328,12 +406,18 @@ document.addEventListener('DOMContentLoaded', function() {
         const message = overlay.querySelector('.victory-message');
         const score = overlay.querySelector('#final-score');
         
-        const winner = gameState.player1Score > gameState.player2Score ? 'Player 1' : 'Player 2';
-        title.textContent = `${winner} Wins!`;
+        let winner;
+        if (IS_AI_MODE) {
+            winner = gameState.player1Score > gameState.player2Score ? 'You' : 'AI';
+        } else {
+            winner = gameState.player1Score > gameState.player2Score ? 'Player 1' : 'Player 2';
+        }
+        
+        title.textContent = `${winner} Win!`;
         message.textContent = `Congratulations ${winner}!`;
         score.textContent = `${gameState.player1Score} - ${gameState.player2Score}`;
         
-        overlay.classList.add('active');
+        overlay.style.display = 'flex';
     }
 
     function closeVictoryOverlay() {
@@ -644,7 +728,7 @@ document.addEventListener('DOMContentLoaded', function() {
     player1Controls.className = 'control-group';
     player1Controls.innerHTML = `
         <div class="player-controls">
-            <div class="player-label">Player 1</div>
+            <div class="player-label">Player Controls</div>
             <div class="key-group">
                 <kbd>W</kbd>
                 <span class="key-separator">/</span>
@@ -653,16 +737,30 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
     `;
     
-    // Player 2 controls
-    const player2Controls = document.createElement('div');
-    player2Controls.className = 'control-group';
-    player2Controls.innerHTML = `
+    // AI Difficulty controls
+    const aiControls = document.createElement('div');
+    aiControls.className = 'control-group';
+    aiControls.innerHTML = `
         <div class="player-controls">
-            <div class="player-label">Player 2</div>
-            <div class="key-group">
-                <kbd>↑</kbd>
-                <span class="key-separator">/</span>
-                <kbd>↓</kbd>
+            <div class="player-label">AI Difficulty</div>
+            <div class="difficulty-controls">
+                <div class="difficulty-list">
+                    <label class="difficulty-option">
+                        <input type="radio" name="difficulty" value="easy" />
+                        <span class="difficulty-label">Easy</span>
+                        <span class="difficulty-description">Slower reactions, less accurate</span>
+                    </label>
+                    <label class="difficulty-option">
+                        <input type="radio" name="difficulty" value="medium" checked />
+                        <span class="difficulty-label">Medium</span>
+                        <span class="difficulty-description">Balanced speed and accuracy</span>
+                    </label>
+                    <label class="difficulty-option">
+                        <input type="radio" name="difficulty" value="hard" />
+                        <span class="difficulty-label">Hard</span>
+                        <span class="difficulty-description">Fast reactions, high accuracy</span>
+                    </label>
+                </div>
             </div>
         </div>
     `;
@@ -672,16 +770,19 @@ document.addEventListener('DOMContentLoaded', function() {
     gameControls.className = 'control-group';
     gameControls.innerHTML = `
         <div class="player-controls">
-            <div class="player-label">Pause/Start</div>
+            <div class="player-label">Game Controls</div>
             <div class="key-group">
                 <kbd>Space</kbd>
+                <span class="key-label">Start/Pause</span>
             </div>
         </div>
     `;
     
     // Add all controls to the container
     controlsContainer.appendChild(player1Controls);
-    controlsContainer.appendChild(player2Controls);
+    if (IS_AI_MODE) {
+        controlsContainer.appendChild(aiControls);
+    }
     controlsContainer.appendChild(gameControls);
     
     // Add container to the help section
@@ -690,7 +791,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add the controls help section to the game container
     document.querySelector('.game-container').appendChild(controlsHelp);
 
-    // Event listeners
+    // Add event listeners
     document.addEventListener('keydown', handleKeyDown);
     document.addEventListener('keyup', handleKeyUp);
     
@@ -707,6 +808,20 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
         }
     });
+
+    // Add event listeners for difficulty buttons
+    if (IS_AI_MODE) {
+        const difficultyInputs = document.querySelectorAll('input[name="difficulty"]');
+        difficultyInputs.forEach(input => {
+            input.addEventListener('change', function() {
+                const difficulty = this.value;
+                currentAIDifficulty = difficulty;
+                
+                // Reset the game when changing difficulty
+                resetGame();
+            });
+        });
+    }
 
     // Start the game loop
     update();
