@@ -1,18 +1,16 @@
-# **************************************************************************** #
-#                                                                              #
-#                                                         :::      ::::::::    #
-#    Dockerfile                                         :+:      :+:    :+:    #
-#                                                     +:+ +:+         +:+      #
-#    By: elakhfif <marvin@42.fr>                    +#+  +:+       +#+         #
-#                                                 +#+#+#+#+#+   +#+            #
-#    Created: 2024/11/26 07:56:09 by elakhfif          #+#    #+#              #
-#    Updated: 2025/02/21 17:12:35 by elakhfif         ###   ########.fr        #
-#                                                                              #
-# **************************************************************************** #
+FROM python:3.11-slim
 
-FROM		python:3.11-slim
+WORKDIR /api
 
-EXPOSE		8000/tcp
+RUN apt-get update && apt-get install -y \
+    wget openssl \
+    && rm -rf /var/lib/apt/lists/* 
 
-ENTRYPOINT	["bash", "./init.sh"]
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
+COPY . .
+
+EXPOSE 8000
+
+CMD ["bash", "./run.sh"] 
