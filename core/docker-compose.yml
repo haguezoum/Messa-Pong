@@ -1,54 +1,54 @@
 name: 42_transcendence
 
 services:
-    nginx:
-        image: nginx:reverse-proxy
-        container_name: nginx
-        build:
-            context: ./infrastructure/nginx
-        ports:
-            - 80:80/tcp
-            - 443:443/tcp
-        volumes:
-          - frontend-files:/www:ro
-        networks:
-            42network:
-                aliases:
-                    - nginx
-        depends_on:
-            redis:
-                condition: service_healthy
-        security_opt:
-            - no-new-privileges:true
-        cap_drop:
-            - ALL
-        cap_add:
-            - NET_BIND_SERVICE
-        restart: always
-
-    frontend:
-        image: frontend:builder
-        container_name: frontend
-        build:
-            context: ./frontend
-        volumes:
-            - frontend-files:/www:cached
-        networks:
-            42network:
-                aliases:
-                    - frontend
-        depends_on:
-            rest_api:
-                condition: service_healthy
-        deploy:
-            resources:
-                limits:
-                    cpus: '0.50'
-                    memory: 256M
-                reservations:
-                    cpus: '0.25'
-                    memory: 128M
-        restart: always
+    # nginx:
+    #     image: nginx:reverse-proxy
+    #     container_name: nginx
+    #     build:
+    #         context: ./infrastructure/nginx
+    #     ports:
+    #         - 80:80/tcp
+    #         - 443:443/tcp
+    #     volumes:
+    #       - frontend-files:/www:ro
+    #     networks:
+    #         42network:
+    #             aliases:
+    #                 - nginx
+    #     depends_on:
+    #         redis:
+    #             condition: service_healthy
+    #     security_opt:
+    #         - no-new-privileges:true
+    #     cap_drop:
+    #         - ALL
+    #     cap_add:
+    #         - NET_BIND_SERVICE
+    #     restart: always
+    #
+    # frontend:
+    #     image: frontend:builder
+    #     container_name: frontend
+    #     build:
+    #         context: ./frontend
+    #     volumes:
+    #         - frontend-files:/www:cached
+    #     networks:
+    #         42network:
+    #             aliases:
+    #                 - frontend
+    #     depends_on:
+    #         rest_api:
+    #             condition: service_healthy
+    #     deploy:
+    #         resources:
+    #             limits:
+    #                 cpus: '0.50'
+    #                 memory: 256M
+    #             reservations:
+    #                 cpus: '0.25'
+    #                 memory: 128M
+    #     restart: always
 
     database:
         image: postgresql:database
@@ -77,25 +77,25 @@ services:
                 max-file: "3"
         restart: always
 
-    redis:
-        image: redis:cache
-        container_name: redis
-        build:
-            context: ./infrastructure/redis
-        networks:
-            42network:
-                aliases:
-                    - redis
-        healthcheck:
-            test: ["CMD", "redis-cli", "ping"]
-            interval: 10s
-            timeout: 5s
-            retries: 3
-            start_period: 30s
-        depends_on:
-            database:
-                condition: service_healthy
-        restart: always
+    # redis:
+    #     image: redis:cache
+    #     container_name: redis
+    #     build:
+    #         context: ./infrastructure/redis
+    #     networks:
+    #         42network:
+    #             aliases:
+    #                 - redis
+    #     healthcheck:
+    #         test: ["CMD", "redis-cli", "ping"]
+    #         interval: 10s
+    #         timeout: 5s
+    #         retries: 3
+    #         start_period: 30s
+    #     depends_on:
+    #         database:
+    #             condition: service_healthy
+    #     restart: always
 
     # game:
     #     image: game:server

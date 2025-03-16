@@ -52,7 +52,7 @@ class UserViewSet(viewsets.ModelViewSet):
             
             user.email = data['email']
             user.verified = False
-            user.tmp_otp = int.from_bytes(os.urandom(2))
+            user.tmp_otp = int.from_bytes(os.urandom(2), byteorder='big')
             self._send_verification_email(user)
 
         for field in ['username', 'fname', 'lname', 'bio']:

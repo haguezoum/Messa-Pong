@@ -59,7 +59,7 @@ def send_2fa_code(request):
             'error': 'Two-factor authentication is not enabled'
         }, status=status.HTTP_400_BAD_REQUEST)
 
-    user.tfa_otp = int.from_bytes(os.urandom(2))
+    user.tfa_otp = int.from_bytes(os.urandom(2), byteorder='big')
     user.save()
     
     send_otp_email(

@@ -13,21 +13,16 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 from pathlib import Path
 from datetime import timedelta
 import os
-from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
 
 # Build paths inside the project
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
-# Required in .env:
-# DJANGO_SECRET_KEY=your-secret-key-here
+# Required in secrets:
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
 
 # Debug settings
-# Optional in .env:
 # API_DEBUG=True/False (default: False)
 DEBUG = os.environ.get('API_DEBUG', 'False') == 'True'
 
@@ -35,7 +30,6 @@ ALLOWED_HOSTS = ['*']
 
 # Application definition
 INSTALLED_APPS = [
-    'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -47,6 +41,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'django_extensions',
     'api',
+    'django.contrib.admin',
 ]
 
 MIDDLEWARE = [
@@ -87,11 +82,11 @@ WSGI_APPLICATION = 'api.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('POSTGRES_DB'),
-        'USER': os.environ.get('POSTGRES_USER'),
-        'PASSWORD': os.environ.get('POSTGRES_PASSWORD'),
-        'HOST': os.environ.get('POSTGRES_HOST', 'postgres'),
-        'PORT': os.environ.get('POSTGRES_PORT', '5432'),
+        'NAME': os.environ.get('PG_NAME'),
+        'USER': os.environ.get('PG_USER'),
+        'PASSWORD': os.environ.get('PG_PASSWD'),
+        'HOST': os.environ.get('PG_HOST'),
+        'PORT': os.environ.get('PG_PORT'),
     }
 }
 
@@ -153,9 +148,6 @@ REST_FRAMEWORK = {
 }
 
 # JWT settings
-# Optional in .env:
-# JWT_ACCESS_TOKEN_LIFETIME_MINUTES=20
-# JWT_REFRESH_TOKEN_LIFETIME_DAYS=1
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=int(os.environ.get('JWT_ACCESS_TOKEN_LIFETIME_MINUTES', 20))),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=int(os.environ.get('JWT_REFRESH_TOKEN_LIFETIME_DAYS', 1))),
@@ -188,12 +180,6 @@ CORS_ALLOW_HEADERS = [
 ]
 
 # Email settings
-# Required in .env:
-# EMAIL_HOST_USER=your_email
-# EMAIL_HOST_PASSWORD=your_email_password
-# Optional in .env:
-# EMAIL_HOST=smtp.gmail.com
-# EMAIL_PORT=587
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
 EMAIL_USE_TLS = True
@@ -202,18 +188,14 @@ EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
 
 # Custom user model
-AUTH_USER_MODEL = 'api.Tuser'
+#AUTH_USER_MODEL = 'api.Tuser'
 
 # Custom settings
 DEFAULT_IMG = "anon.png"
+FRONT_URL = os.environ.get('API_42_CLIENT_ID')
 MAX_TOURNAMENT_PLAYERS = 64
 
 # 42 OAuth settings
-# Required in .env:
-# API_42_CLIENT_ID=your_42_client_id
-# API_42_CLIENT_SECRET=your_42_client_secret
-# Optional in .env:
-# API_42_REDIRECT_URI=https://localhost/callback
 API_42_CLIENT_ID = os.environ.get('API_42_CLIENT_ID')
 API_42_CLIENT_SECRET = os.environ.get('API_42_CLIENT_SECRET')
 API_42_REDIRECT_URI = os.environ.get('API_42_REDIRECT_URI', 'https://localhost/callback')

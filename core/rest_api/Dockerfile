@@ -1,16 +1,21 @@
-FROM python:3.11-slim
+FROM		python:3.11-slim
 
-WORKDIR /api
+WORKDIR		/api
 
-RUN apt-get update && apt-get install -y \
-    wget openssl \
-    && rm -rf /var/lib/apt/lists/* 
+RUN		apt-get update && apt-get install -y \
+		wget openssl gcc libpq-dev netcat-openbsd && \
+		rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN		python -m venv /venv
 
-COPY . .
+ENV		PATH="/venv/bin:$PATH"
 
-EXPOSE 8000
+COPY		requirements.txt .
 
-CMD ["bash", "./run.sh"] 
+RUN		pip install --no-cache-dir -r requirements.txt
+
+COPY		. .
+
+EXPOSE		8000/tcp
+
+ENTRYPOINT	["bash", "run.sh"]

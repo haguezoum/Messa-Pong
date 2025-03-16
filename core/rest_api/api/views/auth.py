@@ -17,7 +17,7 @@ class AuthViewSet(viewsets.ViewSet):
         serializer = UserSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            user.tmp_otp = int.from_bytes(os.urandom(2))
+            user.tmp_otp = int.from_bytes(os.urandom(2), byteorder='big')
             user.save()
             
             if not user.email.endswith('@lmongol.lol'):
@@ -59,7 +59,7 @@ class AuthViewSet(viewsets.ViewSet):
         }
 
         if user.tfa_enabled:
-            user.tfa_otp = int.from_bytes(os.urandom(2))
+            user.tfa_otp = int.from_bytes(os.urandom(2), byteorder='big')
             user.save()
             self._send_otp(user.tfa_otp, user.email)
 
