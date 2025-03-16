@@ -51,4 +51,5 @@ urlpatterns = [
     path('messages/', ChatViewSet.as_view({'get': 'messages'}), name='get-messages'),
     path('register_message/', ChatViewSet.as_view({'post': 'register_message'}), name='register-message'),
     path('block/', ChatViewSet.as_view({'post': 'block_user'}), name='block-user'),
+
 ]

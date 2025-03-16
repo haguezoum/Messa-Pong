@@ -33,6 +33,21 @@ class Tuser(AbstractUser):
     online_status = models.IntegerField(choices=OnlineStatus.choices, default=OnlineStatus.OFFLINE)
     game_status = models.IntegerField(choices=GameStatus.choices, default=GameStatus.AFK)
 
+    groups = models.ManyToManyField(
+        'auth.Group',
+        related_name='tuser_set',
+        blank=True,
+        help_text=_('The groups this user belongs to. A user will get all permissions granted to each of their groups.'),
+        verbose_name=_('groups'),
+    )
+    user_permissions = models.ManyToManyField(
+        'auth.Permission',
+        related_name='tuser_set',
+        blank=True,
+        help_text=_('Specific permissions for this user.'),
+        verbose_name=_('user permissions'),
+    )
+
     class Meta:
         ordering = ['-score']
 
