@@ -18,10 +18,12 @@ from django.contrib import admin
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
+from .views import tfa, password, friendship, auth, chat, game, tournament, user
 from .views.auth import AuthViewSet
 from .views.user import UserViewSet
-from .views import tfa, password, friendship
+from .views.tournament import TournamentViewSet
 from .views.chat import ChatViewSet
+from .views.game import GameViewSet
 
 router = DefaultRouter()
 router.register(r'auth', AuthViewSet, basename='auth')
