@@ -6,8 +6,10 @@ const PADDLE_HEIGHT = 80;
 const BALL_SIZE = 18;
 const PADDLE_SPEED = 10;
 const BALL_SPEED = 5;
-const SPEED_INCREASE = 1.05; // Reduced speed multiplier when ball hits paddle
-const MAX_BALL_SPEED = 12; // Reduced maximum ball speed for better control
+const SPEED_INCREASE = 1.03; // Reduced speed multiplier when ball hits paddle (from 1.05)
+const MAX_BALL_SPEED = 15; // Reduced maximum ball speed for better control (from 12)
+const PADDLE_SPEED_INCREASE = 1.1; // Paddle speed increase factor when ball hits paddle
+const MAX_PADDLE_SPEED = 10; // Maximum paddle speed
 const WINNING_SCORE = 5;
 const TRAIL_LENGTH = 3;  // Reduced trail length for better performance
 const HIT_EFFECT_DURATION = 200; // Duration of hit effect in milliseconds
@@ -15,18 +17,18 @@ const HIT_EFFECT_DURATION = 200; // Duration of hit effect in milliseconds
 // AI difficulty settings
 const AI_DIFFICULTIES = {
     easy: {
-        reactionTime: 32,
-        predictionError: 40,
+        reactionTime: 80,        // Slower reaction time
+        predictionError: 70,     // Not used in new approach, kept for compatibility
         label: 'Easy'
     },
     medium: {
-        reactionTime: 16,
-        predictionError: 20,
+        reactionTime: 40,        // Medium reaction time
+        predictionError: 20,     // Not used in new approach, kept for compatibility
         label: 'Medium'
     },
     hard: {
-        reactionTime: 8,
-        predictionError: 10,
+        reactionTime: 10,        // Fast reaction time
+        predictionError: 10,     // Not used in new approach, kept for compatibility
         label: 'Hard'
     }
 };
@@ -53,13 +55,24 @@ document.addEventListener('DOMContentLoaded', function() {
     const gameStatus = document.getElementById('game-status');
     const player1ScoreElement = document.getElementById('player1-score');
     const player2ScoreElement = document.getElementById('player2-score');
+    
+    // Settings elements
+    const settingsIcon = document.getElementById('settings-icon');
+    const difficultyPanel = document.getElementById('difficulty-panel');
+    const settingsOverlay = document.getElementById('settings-overlay');
+    const closePanel = document.querySelector('.close-panel');
+    const difficultyOptions = document.querySelectorAll('.difficulty-option');
+    const currentDifficultyElement = document.getElementById('current-difficulty');
 
     console.log('Game elements loaded:', {
         startButton,
         resetButton,
         gameStatus,
         player1ScoreElement,
-        player2ScoreElement
+        player2ScoreElement,
+        settingsIcon,
+        difficultyPanel,
+        currentDifficultyElement
     });
 
     // Game state
@@ -79,6 +92,7 @@ document.addEventListener('DOMContentLoaded', function() {
         lastBallSpeedX: 0, // Store last ball speed for pause/resume
         lastBallSpeedY: 0, // Store last ball speed for pause/resume
         currentSpeedMultiplier: 1,
+        currentPaddleSpeedMultiplier: 1, // New paddle speed multiplier
         isPaused: true,
         isGameOver: false,
         lastAIUpdate: 0
@@ -88,8 +102,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const keys = {
         w: false,
         s: false,
-        ArrowUp: !IS_AI_MODE,
-        ArrowDown: !IS_AI_MODE
+        ArrowUp: false,
+        ArrowDown: false
     };
 
     // Set canvas size
@@ -147,8 +161,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 gameStatus.classList.remove('running');
             }
             
+            // Only update button if it exists
+            if (startButton) {
             startButton.textContent = gameState.isPaused ? 'Start Game' : 'Pause Game';
             startButton.classList.toggle('active', !gameState.isPaused);
+            }
         }
     }
 
@@ -170,6 +187,7 @@ document.addEventListener('DOMContentLoaded', function() {
             lastBallSpeedX: 0,
             lastBallSpeedY: 0,
             currentSpeedMultiplier: 1,
+            currentPaddleSpeedMultiplier: 1, // Reset paddle speed multiplier
             isPaused: true,
             isGameOver: false,
             lastAIUpdate: 0
@@ -180,8 +198,12 @@ document.addEventListener('DOMContentLoaded', function() {
         gameStatus.classList.remove('running');
         gameStatus.classList.remove('success');
         gameStatus.classList.remove('error');
+        
+        // Only update button if it exists
+        if (startButton) {
         startButton.textContent = 'Start Game';
         startButton.classList.remove('active');
+        }
     }
 
     function updateScore(scoringPlayer) {
@@ -244,14 +266,51 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         gameState.lastAIUpdate = currentTime;
 
-        const predictedBallY = predictBallY();
-        const paddleCenter = gameState.player2Y + PADDLE_HEIGHT / 2;
+        // Simply follow the ball's Y position directly
+        // Calculate the target Y position (center of paddle should align with ball's Y)
+        const targetY = gameState.ballY - (PADDLE_HEIGHT / 2);
         
-        if (paddleCenter < predictedBallY - 5) {
-            gameState.player2Y = Math.min(gameState.player2Y + PADDLE_SPEED, CANVAS_HEIGHT - PADDLE_HEIGHT);
-        } else if (paddleCenter > predictedBallY + 5) {
-            gameState.player2Y = Math.max(gameState.player2Y - PADDLE_SPEED, 0);
+        // Apply difficulty-based adjustments
+        let paddleSpeed = PADDLE_SPEED * gameState.currentPaddleSpeedMultiplier; // Apply the speed multiplier
+        let followAccuracy = 1.0;
+        
+        switch(currentAIDifficulty) {
+            case 'easy':
+                // Easy: Slower paddle and less accurate following
+                paddleSpeed = paddleSpeed * 0.5;
+                followAccuracy = 0.3; // Only move 30% of the way to the target
+                break;
+            case 'medium':
+                // Medium: Moderate speed and accuracy
+                paddleSpeed = paddleSpeed * 0.8;
+                followAccuracy = 0.7; // Move 70% of the way to the target
+                break;
+            case 'hard':
+                // Hard: Full speed and high accuracy
+                // paddleSpeed remains at full value
+                followAccuracy = 0.95; // Move 95% of the way to the target
+                break;
         }
+        
+        // Current paddle position (center)
+        const currentPaddleY = gameState.player2Y + (PADDLE_HEIGHT / 2);
+        
+        // Calculate the distance to move (with accuracy factor applied)
+        const distanceToMove = (targetY - gameState.player2Y) * followAccuracy;
+        
+        // Apply the movement, limited by paddle speed
+        if (Math.abs(distanceToMove) > paddleSpeed) {
+            if (distanceToMove > 0) {
+                gameState.player2Y += paddleSpeed;
+            } else {
+                gameState.player2Y -= paddleSpeed;
+            }
+        } else {
+            gameState.player2Y += distanceToMove;
+        }
+        
+        // Ensure paddle stays within canvas bounds
+        gameState.player2Y = Math.max(0, Math.min(CANVAS_HEIGHT - PADDLE_HEIGHT, gameState.player2Y));
     }
 
     function movePaddles() {
@@ -267,12 +326,15 @@ document.addEventListener('DOMContentLoaded', function() {
             gameState.player2Trail.pop();
         }
 
+        // Calculate current paddle speed with multiplier
+        const currentPaddleSpeed = PADDLE_SPEED * gameState.currentPaddleSpeedMultiplier;
+
         // Player 1 (W/S)
         if (keys.w && gameState.player1Y > 0) {
-            gameState.player1Y -= PADDLE_SPEED;
+            gameState.player1Y -= currentPaddleSpeed;
         }
         if (keys.s && gameState.player1Y < CANVAS_HEIGHT - PADDLE_HEIGHT) {
-            gameState.player1Y += PADDLE_SPEED;
+            gameState.player1Y += currentPaddleSpeed;
         }
 
         // Player 2 (AI or Arrow Keys)
@@ -282,10 +344,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } else {
             if (keys.ArrowUp && gameState.player2Y > 0) {
-                gameState.player2Y -= PADDLE_SPEED;
+                gameState.player2Y -= currentPaddleSpeed;
             }
             if (keys.ArrowDown && gameState.player2Y < CANVAS_HEIGHT - PADDLE_HEIGHT) {
-                gameState.player2Y += PADDLE_SPEED;
+                gameState.player2Y += currentPaddleSpeed;
             }
         }
     }
@@ -337,12 +399,28 @@ document.addEventListener('DOMContentLoaded', function() {
             // Calculate normalized hit position (-0.5 to 0.5)
             const hitPosition = (gameState.ballY - (gameState.player1Y + PADDLE_HEIGHT / 2)) / PADDLE_HEIGHT;
             
+            // Increase ball speed but cap it
+            gameState.currentSpeedMultiplier = Math.min(gameState.currentSpeedMultiplier * SPEED_INCREASE, MAX_BALL_SPEED / BALL_SPEED);
+            
             // Reverse X direction and add some Y based on where the paddle was hit
             gameState.ballSpeedX = Math.abs(gameState.ballSpeedX) * gameState.currentSpeedMultiplier;
             gameState.ballSpeedY += hitPosition * 5; // Add Y velocity based on hit position
             
-            // Increase speed but cap it
-            gameState.currentSpeedMultiplier = Math.min(gameState.currentSpeedMultiplier * SPEED_INCREASE, MAX_BALL_SPEED / BALL_SPEED);
+            // Calculate actual ball speed and cap it if necessary
+            const actualBallSpeed = Math.sqrt(Math.pow(gameState.ballSpeedX, 2) + Math.pow(gameState.ballSpeedY, 2));
+            if (actualBallSpeed > MAX_BALL_SPEED) {
+                // Scale both components to maintain direction but cap speed
+                const scaleFactor = MAX_BALL_SPEED / actualBallSpeed;
+                gameState.ballSpeedX *= scaleFactor;
+                gameState.ballSpeedY *= scaleFactor;
+            }
+            
+            // Increase paddle speed but cap it
+            gameState.currentPaddleSpeedMultiplier = Math.min(gameState.currentPaddleSpeedMultiplier * PADDLE_SPEED_INCREASE, MAX_PADDLE_SPEED / PADDLE_SPEED);
+            
+            // Print ball speed to console
+            const finalBallSpeed = Math.sqrt(Math.pow(gameState.ballSpeedX, 2) + Math.pow(gameState.ballSpeedY, 2));
+            console.log(`Ball hit left paddle! Speed: ${finalBallSpeed.toFixed(2)}, X: ${gameState.ballSpeedX.toFixed(2)}, Y: ${gameState.ballSpeedY.toFixed(2)}, Multiplier: ${gameState.currentSpeedMultiplier.toFixed(2)}`);
             
             // Ensure ball is not stuck inside paddle
             gameState.ballX = PADDLE_WIDTH + BALL_SIZE / 2;
@@ -361,12 +439,28 @@ document.addEventListener('DOMContentLoaded', function() {
             // Calculate normalized hit position (-0.5 to 0.5)
             const hitPosition = (gameState.ballY - (gameState.player2Y + PADDLE_HEIGHT / 2)) / PADDLE_HEIGHT;
             
+            // Increase ball speed but cap it
+            gameState.currentSpeedMultiplier = Math.min(gameState.currentSpeedMultiplier * SPEED_INCREASE, MAX_BALL_SPEED / BALL_SPEED);
+            
             // Reverse X direction and add some Y based on where the paddle was hit
             gameState.ballSpeedX = -Math.abs(gameState.ballSpeedX) * gameState.currentSpeedMultiplier;
             gameState.ballSpeedY += hitPosition * 5; // Add Y velocity based on hit position
             
-            // Increase speed but cap it
-            gameState.currentSpeedMultiplier = Math.min(gameState.currentSpeedMultiplier * SPEED_INCREASE, MAX_BALL_SPEED / BALL_SPEED);
+            // Calculate actual ball speed and cap it if necessary
+            const actualBallSpeed = Math.sqrt(Math.pow(gameState.ballSpeedX, 2) + Math.pow(gameState.ballSpeedY, 2));
+            if (actualBallSpeed > MAX_BALL_SPEED) {
+                // Scale both components to maintain direction but cap speed
+                const scaleFactor = MAX_BALL_SPEED / actualBallSpeed;
+                gameState.ballSpeedX *= scaleFactor;
+                gameState.ballSpeedY *= scaleFactor;
+            }
+            
+            // Increase paddle speed but cap it
+            gameState.currentPaddleSpeedMultiplier = Math.min(gameState.currentPaddleSpeedMultiplier * PADDLE_SPEED_INCREASE, MAX_PADDLE_SPEED / PADDLE_SPEED);
+            
+            // Print ball speed to console
+            const finalBallSpeed = Math.sqrt(Math.pow(gameState.ballSpeedX, 2) + Math.pow(gameState.ballSpeedY, 2));
+            console.log(`Ball hit right paddle! Speed: ${finalBallSpeed.toFixed(2)}, X: ${gameState.ballSpeedX.toFixed(2)}, Y: ${gameState.ballSpeedY.toFixed(2)}, Multiplier: ${gameState.currentSpeedMultiplier.toFixed(2)}`);
             
             // Ensure ball is not stuck inside paddle
             gameState.ballX = CANVAS_WIDTH - PADDLE_WIDTH - BALL_SIZE / 2;
@@ -386,11 +480,16 @@ document.addEventListener('DOMContentLoaded', function() {
         gameState.ballSpeedX = 0;
         gameState.ballSpeedY = 0;
         gameState.currentSpeedMultiplier = 1;
+        gameState.currentPaddleSpeedMultiplier = 1; // Reset paddle speed multiplier when a goal is scored
         gameStatus.textContent = 'Press Start to Play';
         gameStatus.classList.remove('running');
         gameStatus.classList.remove('success');
-        startButton.textContent = 'Start Game';
-        startButton.classList.remove('active');
+        
+        // Only update button if it exists
+        if (startButton) {
+            startButton.textContent = 'Start Game';
+            startButton.classList.remove('active');
+        }
     }
 
     function checkWinner() {
@@ -708,99 +807,217 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize game
     resetGame();
+    
+    // Initialize controls immediately - only if controls container exists
+    try {
+        const controlsContainer = document.getElementById('controls-container');
+        if (controlsContainer) {
+            console.log('Initializing controls immediately...');
+            controlsContainer.appendChild(createControlsHelp());
+        } else {
+            console.log('Controls container not found during initialization - this is expected in AI mode without controls.');
+        }
+    } catch (error) {
+        console.error('Error initializing controls:', error);
+    }
 
     // Add controls help section
-    const controlsHelp = document.createElement('div');
-    controlsHelp.className = 'controls-help';
-    
-    // Add title
-    const controlsTitle = document.createElement('div');
-    controlsTitle.className = 'controls-title';
-    controlsTitle.textContent = 'Game Controls';
-    controlsHelp.appendChild(controlsTitle);
-
-    // Create container for controls
-    const controlsContainer = document.createElement('div');
-    controlsContainer.className = 'controls-container';
-    
-    // Player 1 controls
-    const player1Controls = document.createElement('div');
-    player1Controls.className = 'control-group';
-    player1Controls.innerHTML = `
-        <div class="player-controls">
-            <div class="player-label">Player Controls</div>
-            <div class="key-group">
-                <kbd>W</kbd>
-                <span class="key-separator">/</span>
-                <kbd>S</kbd>
-            </div>
-        </div>
-    `;
-    
-    // AI Difficulty controls
-    const aiControls = document.createElement('div');
-    aiControls.className = 'control-group';
-    aiControls.innerHTML = `
-        <div class="player-controls">
-            <div class="player-label">AI Difficulty</div>
-            <div class="difficulty-controls">
-                <div class="difficulty-list">
-                    <label class="difficulty-option">
-                        <input type="radio" name="difficulty" value="easy" />
-                        <span class="difficulty-label">Easy</span>
-                        <span class="difficulty-description">Slower reactions, less accurate</span>
-                    </label>
-                    <label class="difficulty-option">
-                        <input type="radio" name="difficulty" value="medium" checked />
-                        <span class="difficulty-label">Medium</span>
-                        <span class="difficulty-description">Balanced speed and accuracy</span>
-                    </label>
-                    <label class="difficulty-option">
-                        <input type="radio" name="difficulty" value="hard" />
-                        <span class="difficulty-label">Hard</span>
-                        <span class="difficulty-description">Fast reactions, high accuracy</span>
-                    </label>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    // Game controls
-    const gameControls = document.createElement('div');
-    gameControls.className = 'control-group';
-    gameControls.innerHTML = `
-        <div class="player-controls">
-            <div class="player-label">Game Controls</div>
-            <div class="key-group">
-                <kbd>Space</kbd>
-                <span class="key-label">Start/Pause</span>
-            </div>
-        </div>
-    `;
-    
-    // Add all controls to the container
-    controlsContainer.appendChild(player1Controls);
-    if (IS_AI_MODE) {
-        controlsContainer.appendChild(aiControls);
+    function createControlsHelp() {
+        const controlsHelp = document.createElement('div');
+        controlsHelp.className = 'controls-help';
+        
+        const controlsTitle = document.createElement('div');
+        controlsTitle.className = 'controls-title';
+        controlsTitle.textContent = 'Game Controls';
+        controlsHelp.appendChild(controlsTitle);
+        
+        const controlsContainer = document.createElement('div');
+        controlsContainer.className = 'controls-container';
+        
+        if (!IS_AI_MODE) {
+            // Add friend-mode class for specific styling
+            controlsContainer.classList.add('friend-mode');
+            document.body.classList.add('friend-mode');
+            
+            // Create player 1 controls with custom styling
+            const player1Controls = createPlayerControls('Player 1', 'W', 'S', 'player1-controls');
+        
+        // Create game space controls
+        const gameSpaceControls = createGameSpaceControls();
+        
+            // Create player 2 controls with custom styling
+            const player2Controls = createPlayerControls('Player 2', '↑', '↓', 'player2-controls');
+            
+            // Friend mode: Player 1, Game Space, Player 2
+            controlsContainer.appendChild(player1Controls);
+            controlsContainer.appendChild(gameSpaceControls);
+            controlsContainer.appendChild(player2Controls);
+        } else {
+            // AI mode: Player 1, Game Space, AI
+            const player1Controls = createPlayerControls('You', 'W', 'S', 'player1-controls');
+            const gameSpaceControls = createGameSpaceControls();
+            const aiControls = createAIControls();
+            
+            controlsContainer.appendChild(player1Controls);
+            controlsContainer.appendChild(gameSpaceControls);
+            controlsContainer.appendChild(aiControls);
+        }
+        
+        controlsHelp.appendChild(controlsContainer);
+        return controlsHelp;
     }
-    controlsContainer.appendChild(gameControls);
+
+    // Helper function to create player controls
+    function createPlayerControls(playerName, upKey, downKey, customClass = '') {
+        const playerControls = document.createElement('div');
+        playerControls.className = 'control-group player-controls';
+        if (customClass) {
+            playerControls.classList.add(customClass);
+        }
+        
+        const playerTitle = document.createElement('div');
+        playerTitle.className = 'player-label';
+        playerTitle.textContent = playerName;
+        playerControls.appendChild(playerTitle);
+        
+        const controlsBox = document.createElement('div');
+        controlsBox.className = 'controls-box';
+        
+        // Create up key
+        const upKeyGroup = document.createElement('div');
+        upKeyGroup.className = 'key-group';
+        
+        const upKeyElement = document.createElement('kbd');
+        upKeyElement.textContent = upKey;
+        upKeyElement.className = 'key-up';
+        
+        const upLabel = document.createElement('span');
+        upLabel.className = 'key-label';
+        upLabel.textContent = 'Up';
+        
+        upKeyGroup.appendChild(upKeyElement);
+        upKeyGroup.appendChild(upLabel);
+        controlsBox.appendChild(upKeyGroup);
+        
+        // Create separator
+        const keySeparator = document.createElement('div');
+        keySeparator.className = 'key-separator';
+        keySeparator.innerHTML = '<span></span>';
+        controlsBox.appendChild(keySeparator);
+        
+        // Create down key
+        const downKeyGroup = document.createElement('div');
+        downKeyGroup.className = 'key-group';
+        
+        const downKeyElement = document.createElement('kbd');
+        downKeyElement.textContent = downKey;
+        downKeyElement.className = 'key-down';
+        
+        const downLabel = document.createElement('span');
+        downLabel.className = 'key-label';
+        downLabel.textContent = 'Down';
+        
+        downKeyGroup.appendChild(downKeyElement);
+        downKeyGroup.appendChild(downLabel);
+        controlsBox.appendChild(downKeyGroup);
+        
+        playerControls.appendChild(controlsBox);
+        return playerControls;
+    }
+
+    // Helper function to create game space controls
+    function createGameSpaceControls() {
+        const gameSpaceControls = document.createElement('div');
+        gameSpaceControls.className = 'control-group game-space-controls';
+        
+        const gameSpaceTitle = document.createElement('div');
+        gameSpaceTitle.className = 'player-label';
+        gameSpaceTitle.textContent = 'Game Controls';
+        gameSpaceControls.appendChild(gameSpaceTitle);
+        
+        const controlsBox = document.createElement('div');
+        controlsBox.className = 'controls-box';
+        
+        // Create space key
+        const spaceKeyGroup = document.createElement('div');
+        spaceKeyGroup.className = 'key-group';
+        
+        const spaceKeyElement = document.createElement('kbd');
+        spaceKeyElement.className = 'key-space';
+        spaceKeyElement.textContent = 'Space';
+        
+        const spaceLabel = document.createElement('span');
+        spaceLabel.className = 'key-label';
+        spaceLabel.textContent = 'Pause';
+        
+        spaceKeyGroup.appendChild(spaceKeyElement);
+        spaceKeyGroup.appendChild(spaceLabel);
+        controlsBox.appendChild(spaceKeyGroup);
+        
+        gameSpaceControls.appendChild(controlsBox);
+        return gameSpaceControls;
+    }
     
-    // Add container to the help section
-    controlsHelp.appendChild(controlsContainer);
+    // Helper function to create AI controls (for AI mode)
+    function createAIControls() {
+        const aiControls = document.createElement('div');
+        aiControls.className = 'control-group ai-controls';
+        
+        const aiTitle = document.createElement('div');
+        aiTitle.className = 'player-label';
+        aiTitle.textContent = 'AI Opponent';
+        aiControls.appendChild(aiTitle);
+        
+        const aiInfo = document.createElement('div');
+        aiInfo.className = 'ai-info';
+        aiInfo.innerHTML = `
+            <div class="ai-difficulty">
+                <span class="ai-label">Difficulty:</span>
+                <span class="ai-value">${AI_DIFFICULTIES[currentAIDifficulty].label}</span>
+            </div>
+            <div class="ai-description">Computer-controlled opponent</div>
+        `;
+        
+        aiControls.appendChild(aiInfo);
+        return aiControls;
+    }
     
-    // Add the controls help section to the game container
-    document.querySelector('.game-container').appendChild(controlsHelp);
+    // Add the controls to the page when DOM is fully loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        try {
+            console.log('DOM fully loaded, checking game controls...');
+            // The controls might have been added during initialization,
+            // but we'll check again to be sure
+            const controlsContainer = document.getElementById('controls-container');
+            if (controlsContainer && controlsContainer.children.length === 0) {
+                console.log('Controls container found and empty, adding controls...');
+                controlsContainer.appendChild(createControlsHelp());
+                console.log('Controls added successfully!');
+            } else if (!controlsContainer) {
+                console.error('Controls container not found in DOMContentLoaded!');
+            } else {
+                console.log('Controls already added, skipping...');
+            }
+        } catch (error) {
+            console.error('Error adding controls in DOMContentLoaded:', error);
+        }
+    });
 
     // Add event listeners
     document.addEventListener('keydown', handleKeyDown);
     document.addEventListener('keyup', handleKeyUp);
     
+    // Only add event listeners if buttons exist
+    if (startButton) {
     startButton.addEventListener('click', function() {
         console.log('Start button clicked');
         togglePause();
     });
+    }
 
+    if (resetButton) {
     resetButton.addEventListener('click', resetGame);
+    }
 
     // Prevent space bar from scrolling
     window.addEventListener('keydown', function(e) {
@@ -809,20 +1026,98 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Add event listeners for difficulty buttons
-    if (IS_AI_MODE) {
-        const difficultyInputs = document.querySelectorAll('input[name="difficulty"]');
-        difficultyInputs.forEach(input => {
-            input.addEventListener('change', function() {
-                const difficulty = this.value;
-                currentAIDifficulty = difficulty;
-                
-                // Reset the game when changing difficulty
-                resetGame();
-            });
-        });
-    }
-
     // Start the game loop
     update();
+    
+    // Final attempt to add controls after everything is initialized - only if controls container exists
+    setTimeout(function() {
+        try {
+            console.log('Final attempt to add controls...');
+            const controlsContainer = document.getElementById('controls-container');
+            if (controlsContainer && controlsContainer.children.length === 0) {
+                console.log('Controls container found and empty in final attempt, adding controls...');
+                controlsContainer.appendChild(createControlsHelp());
+                console.log('Controls added successfully in final attempt!');
+            }
+        } catch (error) {
+            console.error('Error in final attempt to add controls:', error);
+        }
+    }, 1000); // Wait 1 second after initialization
+
+    // Settings panel functionality
+    if (IS_AI_MODE && settingsIcon) {
+        // Initialize difficulty radio button and display
+        document.getElementById(currentAIDifficulty).checked = true;
+        if (currentDifficultyElement) {
+            currentDifficultyElement.textContent = AI_DIFFICULTIES[currentAIDifficulty].label;
+        }
+        
+        // Toggle settings panel
+        settingsIcon.addEventListener('click', function() {
+            settingsIcon.classList.add('active');
+            difficultyPanel.classList.add('active');
+            settingsOverlay.classList.add('active');
+            
+            // Remove the active class after animation completes
+            setTimeout(function() {
+                settingsIcon.classList.remove('active');
+            }, 1500);
+        });
+        
+        // Close panel when clicking the X
+        if (closePanel) {
+            closePanel.addEventListener('click', function() {
+                difficultyPanel.classList.remove('active');
+                settingsOverlay.classList.remove('active');
+            });
+        }
+        
+        // Close panel when clicking outside
+        if (settingsOverlay) {
+            settingsOverlay.addEventListener('click', function() {
+                difficultyPanel.classList.remove('active');
+                settingsOverlay.classList.remove('active');
+            });
+        }
+        
+        // Handle difficulty option selection
+        if (difficultyOptions) {
+            difficultyOptions.forEach(function(option) {
+                option.addEventListener('click', function() {
+                    const difficulty = this.getAttribute('data-difficulty');
+                    const radio = this.querySelector('input[type="radio"]');
+                    
+                    // Update radio button
+                    radio.checked = true;
+                    
+                    // Update AI difficulty
+                    currentAIDifficulty = difficulty;
+                    console.log('AI difficulty changed to:', difficulty);
+                    
+                    // Update current difficulty display
+                    if (currentDifficultyElement) {
+                        currentDifficultyElement.textContent = AI_DIFFICULTIES[difficulty].label;
+                        currentDifficultyElement.classList.add('changed');
+                        
+                        // Remove the changed class after animation completes
+                        setTimeout(function() {
+                            currentDifficultyElement.classList.remove('changed');
+                        }, 500);
+                    }
+                    
+                    // Add a visual feedback for selection
+                    option.style.transform = 'translateX(10px)';
+                    setTimeout(function() {
+                        option.style.transform = '';
+                    }, 300);
+                    
+                    // Close panel after a short delay
+                    setTimeout(function() {
+                        difficultyPanel.classList.remove('active');
+                        settingsOverlay.classList.remove('active');
+                    }, 500);
+                });
+            });
+        }
+    }
 }); 

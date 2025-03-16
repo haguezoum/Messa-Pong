@@ -6,7 +6,7 @@
     <title>Local Pong Game</title>
     {% load static %}
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;900&display=swap">
-    <link rel="stylesheet" href="{% static 'css/local_pong.css' %}">
+    <link rel="stylesheet" href="{% static 'css/local_pong.css' %}?v=1.3">
     <link rel="stylesheet" href="{% static 'css/error.css' %}">
 </head>
 <body>
@@ -35,6 +35,9 @@
             <button id="resetButton">Reset Game</button>
             <button id="backButton" onclick="window.location.href='/local/'">Go Back</button>
         </div>
+        
+        <!-- Game Controls Help Section will be dynamically added here by JavaScript -->
+        <div id="controls-container" class="game-controls-container"></div>
     </div>
 
     <!-- Victory Overlay -->
@@ -48,6 +51,6 @@
         </div>
     </div>
 
-    <script src="{% static 'js/local_pong.js' %}"></script>
+    <script src="{% static 'js/local_pong.js' %}?v=1.2"></script>
 </body>
 </html> 

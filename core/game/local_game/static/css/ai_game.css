@@ -1,27 +1,175 @@
-.difficulty-list {
+/* AI Game specific styles that don't override the main canvas styling */
+
+/* Remove any canvas-specific styles that might be overriding the main CSS */
+/* Ensure we're using the same canvas styling as the friend mode */
+#gameCanvas {
+    width: 100%;
+    max-width: 800px;
+    height: 500px;
+    margin: 0 auto;
+    display: block;
+    background-color: rgba(14, 12, 40, 0.95);
+    border-radius: 12px;
+    box-shadow: var(--box-shadow), var(--neon-glow);
+    border: 3px solid var(--accent-color);
+    outline: none;
+    transition: all var(--transition-speed);
+}
+
+/* Status container and settings icon */
+.status-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    position: relative;
+}
+
+.settings-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.current-difficulty {
+    font-size: 0.8em;
+    color: var(--accent-color);
+    background: rgba(48, 54, 95, 0.3);
+    padding: 3px 8px;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.current-difficulty.changed {
+    animation: pulse 0.5s ease-in-out;
+    background: rgba(0, 255, 255, 0.2);
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+.settings-icon {
+    cursor: pointer;
+    font-size: 1.2em;
+    color: var(--accent-color);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: rgba(48, 54, 95, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.settings-icon:hover {
+    transform: rotate(30deg);
+    color: #fff;
+    background: rgba(48, 54, 95, 0.6);
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+}
+
+.settings-icon.active {
+    animation: spin 1.5s ease-in-out;
+    background: rgba(0, 255, 255, 0.2);
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.7);
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Difficulty panel */
+.difficulty-panel {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.9);
+    background: rgba(26, 27, 38, 0.95);
+    border: 2px solid var(--accent-color);
+    border-radius: 12px;
+    padding: 20px;
+    width: 350px;
+    max-width: 90%;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+}
+
+.difficulty-panel.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.difficulty-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.difficulty-header h3 {
+    color: var(--accent-color);
+    margin: 0;
+    font-size: 1.2em;
+    text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+}
+
+.close-panel {
+    cursor: pointer;
+    font-size: 1.5em;
+    color: #8a8fa3;
+    transition: all 0.2s ease;
+}
+
+.close-panel:hover {
+    color: #fff;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+}
+
+.difficulty-options {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    margin-top: 10px;
-    padding: 10px;
-    background: rgba(48, 54, 95, 0.3);
-    border-radius: 8px;
 }
 
 .difficulty-option {
     display: flex;
-    flex-direction: column;
-    gap: 4px;
-    padding: 10px;
-    border-radius: 6px;
+    align-items: center;
+    padding: 10px 15px;
+    background: rgba(48, 54, 95, 0.3);
+    border-radius: 8px;
     cursor: pointer;
-    transition: background-color 0.2s, transform 0.1s;
-    background: rgba(48, 54, 95, 0.4);
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
 }
 
 .difficulty-option:hover {
-    background: rgba(48, 54, 95, 0.6);
+    background: rgba(48, 54, 95, 0.5);
     transform: translateX(5px);
+}
+
+.difficulty-option:before {
+    content: '';
+    position: absolute;
+    left: -5px;
+    top: 0;
+    height: 100%;
+    width: 3px;
+    background: transparent;
+    transition: all 0.2s ease;
 }
 
 .difficulty-option input[type="radio"] {
@@ -29,28 +177,51 @@
 }
 
 .difficulty-option input[type="radio"]:checked + .difficulty-label {
-    color: #00ffff;
-    text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+    color: var(--accent-color);
+    text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
 }
 
 .difficulty-option input[type="radio"]:checked ~ .difficulty-description {
     color: #fff;
 }
 
+.difficulty-option input[type="radio"]:checked ~ .difficulty-option:before {
+    background: var(--accent-color);
+    left: 0;
+}
+
 .difficulty-label {
-    font-size: 1.1em;
     font-weight: 600;
     color: #fff;
-    transition: color 0.2s, text-shadow 0.2s;
+    margin-right: 10px;
+    transition: all 0.2s ease;
+    flex: 0 0 70px;
 }
 
 .difficulty-description {
-    font-size: 0.9em;
+    font-size: 0.85em;
     color: #8a8fa3;
-    transition: color 0.2s;
+    transition: all 0.2s ease;
 }
 
-/* Add some visual feedback when clicking */
-.difficulty-option:active {
-    transform: translateX(8px);
-} 
+/* Settings overlay */
+.settings-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(3px);
+    z-index: 999;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.settings-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Removed all control-related styles as they are no longer needed */ 
