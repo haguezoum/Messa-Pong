@@ -15,6 +15,7 @@ until nc -z $PG_HOST $PG_PORT; do
 done
 
 echo "[_] - making migrations"
+python manage.py collectstatic --noinput --clear
 python manage.py makemigrations api
 python manage.py migrate api
 python manage.py migrate

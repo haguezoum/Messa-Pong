@@ -3,7 +3,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.contrib.auth.hashers import make_password
 from ..models import Tuser
-import ..settings 
+import settings
 from ..utils.jwt_utils import send_otp_email
 from zxcvbn import zxcvbn
 import binascii
