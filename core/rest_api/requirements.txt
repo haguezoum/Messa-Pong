@@ -11,3 +11,5 @@ Werkzeug==3.1.2
 channels[daphne]
 twisted[http2,tls]
 python-dotenv==1.0.0
+pytest
+pytest-django
