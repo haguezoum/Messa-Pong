@@ -14,6 +14,15 @@ const WINNING_SCORE = 5;
 const TRAIL_LENGTH = 3;  // Reduced trail length for better performance
 const HIT_EFFECT_DURATION = 200; // Duration of hit effect in milliseconds
 
+// Track which player should receive the ball next (1 = player1, 2 = player2)
+let nextBallDirection = 1;
+
+// Flag to track if the ball was just auto-restarted
+let justAutoRestarted = false;
+
+// Flag to track if we're in the initial state before the first ball movement
+let initialGameState = true;
+
 // AI difficulty settings
 const AI_DIFFICULTIES = {
     easy: {
@@ -135,27 +144,76 @@ document.addEventListener('DOMContentLoaded', function() {
             const isInitialState = gameState.isPaused && gameState.ballSpeedX === 0 && gameState.ballSpeedY === 0 && 
                                   gameState.lastBallSpeedX === 0 && gameState.lastBallSpeedY === 0;
             
+            // Store current ball direction before toggling pause
+            const currentBallSpeedX = gameState.ballSpeedX;
+            const currentBallSpeedY = gameState.ballSpeedY;
+            
+            // Log the current state for debugging
+            console.log('Before toggle - Current speeds:', currentBallSpeedX, currentBallSpeedY, 
+                       'Stored speeds:', gameState.lastBallSpeedX, gameState.lastBallSpeedY,
+                       'isPaused:', gameState.isPaused,
+                       'justAutoRestarted:', justAutoRestarted,
+                       'initialGameState:', initialGameState);
+            
             // Toggle pause state
             gameState.isPaused = !gameState.isPaused;
             console.log('Game paused state:', gameState.isPaused);
             
             if (!gameState.isPaused) {
-                // Resuming the game
-                if (gameState.lastBallSpeedX === 0 && gameState.lastBallSpeedY === 0) {
-                    // Starting a new round
-                    gameState.ballSpeedX = BALL_SPEED * (Math.random() < 0.5 ? 1 : -1);
-                    gameState.ballSpeedY = BALL_SPEED * (Math.random() * 2 - 1) * 0.5;
-                } else {
-                    // Resuming from pause - restore previous direction
+                // RESUMING THE GAME
+                
+                // If we have no current speed but have stored speeds, use the stored speeds
+                // This handles the case of resuming after a pause
+                if ((currentBallSpeedX === 0 && currentBallSpeedY === 0) && 
+                    (gameState.lastBallSpeedX !== 0 || gameState.lastBallSpeedY !== 0)) {
+                    
+                    // CRITICAL FIX: Use the EXACT stored direction WITHOUT any modification
+                    // This ensures we don't reverse direction when pausing/unpausing
                     gameState.ballSpeedX = gameState.lastBallSpeedX;
                     gameState.ballSpeedY = gameState.lastBallSpeedY;
+                    
+                    // Log the exact values to verify they match
+                    console.log('Resuming from pause with EXACT stored direction:', 
+                              'X:', gameState.ballSpeedX, 'stored X:', gameState.lastBallSpeedX,
+                              'Y:', gameState.ballSpeedY, 'stored Y:', gameState.lastBallSpeedY);
+                } 
+                // Only generate a new direction if we're truly starting from scratch
+                else if ((gameState.lastBallSpeedX === 0 && gameState.lastBallSpeedY === 0 && 
+                        currentBallSpeedX === 0 && currentBallSpeedY === 0) && initialGameState) {
+                    
+                    // Set ball direction based on whose turn it is, but with randomness
+                    if (nextBallDirection === 1) {
+                        // Ball goes toward player 1 (left) side, but with random angle
+                        gameState.ballSpeedX = -BALL_SPEED * (0.7 + Math.random() * 0.3); // Random speed between 70-100% of max
+                        console.log('Ball starting toward Player 1 side');
+                    } else {
+                        // Ball goes toward player 2 (right) side, but with random angle
+                        gameState.ballSpeedX = BALL_SPEED * (0.7 + Math.random() * 0.3); // Random speed between 70-100% of max
+                        console.log('Ball starting toward Player 2 side');
+                    }
+                    
+                    // Add a more significant random Y component for variety
+                    gameState.ballSpeedY = BALL_SPEED * (Math.random() * 1.4 - 0.7); // Random Y velocity, more variation
+                    
+                    // Toggle the next ball direction for next goal
+                    nextBallDirection = nextBallDirection === 1 ? 2 : 1;
+                    
+                    // Also store these speeds for future pauses
+                    gameState.lastBallSpeedX = gameState.ballSpeedX;
+                    gameState.lastBallSpeedY = gameState.ballSpeedY;
+                    
+                    // We're no longer in the initial game state
+                    initialGameState = false;
                 }
+                
                 console.log('Ball speed set to:', gameState.ballSpeedX, gameState.ballSpeedY);
                 gameStatus.textContent = 'Game Running';
                 gameStatus.classList.remove('error');
                 gameStatus.classList.add('success');
                 gameStatus.classList.add('running');
             } else {
+                // PAUSING THE GAME
+                
                 // If we were in the initial state and trying to start the game,
                 // immediately unpause to start the game
                 if (isInitialState) {
@@ -164,9 +222,27 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
                 
-                // Normal pause behavior
-                gameState.lastBallSpeedX = gameState.ballSpeedX;
-                gameState.lastBallSpeedY = gameState.ballSpeedY;
+                // Special handling for when the ball was just auto-restarted
+                if (justAutoRestarted) {
+                    console.log('SPECIAL CASE: Ball was just auto-restarted, preserving exact direction');
+                    // We need to make sure we preserve the exact direction that was set during auto-restart
+                    gameState.lastBallSpeedX = currentBallSpeedX;
+                    gameState.lastBallSpeedY = currentBallSpeedY;
+                    
+                    // Clear the flag since we've handled this special case
+                    justAutoRestarted = false;
+                }
+                // Normal pause behavior - store current direction for resuming later
+                else if (currentBallSpeedX !== 0 || currentBallSpeedY !== 0) {
+                    // CRITICAL FIX: Store the EXACT current direction
+                    gameState.lastBallSpeedX = currentBallSpeedX;
+                    gameState.lastBallSpeedY = currentBallSpeedY;
+                    console.log('Storing EXACT ball direction for resume:', 
+                              'X:', gameState.lastBallSpeedX, 'original X:', currentBallSpeedX,
+                              'Y:', gameState.lastBallSpeedY, 'original Y:', currentBallSpeedY);
+                }
+                
+                // Stop the ball while paused
                 gameState.ballSpeedX = 0;
                 gameState.ballSpeedY = 0;
                 gameStatus.textContent = 'Game Paused';
@@ -176,9 +252,16 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Only update button if it exists
             if (startButton) {
-            startButton.textContent = gameState.isPaused ? 'Start Game' : 'Pause Game';
-            startButton.classList.toggle('active', !gameState.isPaused);
+                startButton.textContent = gameState.isPaused ? 'Start Game' : 'Pause Game';
+                startButton.classList.toggle('active', !gameState.isPaused);
             }
+            
+            // Log the final state for debugging
+            console.log('After toggle - Current speeds:', gameState.ballSpeedX, gameState.ballSpeedY, 
+                       'Stored speeds:', gameState.lastBallSpeedX, gameState.lastBallSpeedY,
+                       'isPaused:', gameState.isPaused,
+                       'justAutoRestarted:', justAutoRestarted,
+                       'initialGameState:', initialGameState);
         }
     }
 
@@ -211,6 +294,9 @@ document.addEventListener('DOMContentLoaded', function() {
         gameStatus.classList.remove('running');
         gameStatus.classList.remove('success');
         gameStatus.classList.remove('error');
+        
+        // Reset the initialGameState flag
+        initialGameState = true;
         
         // Only update button if it exists
         if (startButton) {
@@ -488,13 +574,26 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function resetBall() {
+        // Reset ball position
         gameState.ballX = CANVAS_WIDTH / 2;
         gameState.ballY = CANVAS_HEIGHT / 2;
         gameState.ballSpeedX = 0;
         gameState.ballSpeedY = 0;
+        gameState.lastBallSpeedX = 0; // Reset stored speeds
+        gameState.lastBallSpeedY = 0; // Reset stored speeds
         gameState.currentSpeedMultiplier = 1;
         gameState.currentPaddleSpeedMultiplier = 1; // Reset paddle speed multiplier when a goal is scored
-        gameStatus.textContent = 'Press Start to Play';
+        
+        // Reset paddles to middle position
+        gameState.player1Y = CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2;
+        gameState.player2Y = CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2;
+        
+        // Clear paddle trails
+        gameState.player1Trail = [];
+        gameState.player2Trail = [];
+        
+        // Update game status
+        gameStatus.textContent = 'Goal Scored! Restarting...';
         gameStatus.classList.remove('running');
         gameStatus.classList.remove('success');
         
@@ -503,6 +602,71 @@ document.addEventListener('DOMContentLoaded', function() {
             startButton.textContent = 'Start Game';
             startButton.classList.remove('active');
         }
+        
+        // Temporarily pause the game
+        gameState.isPaused = true;
+        
+        // Reset the auto-restart flag
+        justAutoRestarted = false;
+        
+        // We're no longer in the initial game state after a goal
+        initialGameState = false;
+        
+        // Automatically restart the game after a short delay
+        setTimeout(function() {
+            if (!gameState.isGameOver) {
+                // Only auto-restart if the game isn't over
+                
+                // Determine new ball direction before unpausing
+                let newBallSpeedX, newBallSpeedY;
+                
+                // Set ball direction based on whose turn it is, but with randomness
+                if (nextBallDirection === 1) {
+                    // Ball goes toward player 1 (left) side, but with random angle
+                    newBallSpeedX = -BALL_SPEED * (0.7 + Math.random() * 0.3); // Random speed between 70-100% of max
+                    console.log('Ball starting toward Player 1 side');
+                } else {
+                    // Ball goes toward player 2 (right) side, but with random angle
+                    newBallSpeedX = BALL_SPEED * (0.7 + Math.random() * 0.3); // Random speed between 70-100% of max
+                    console.log('Ball starting toward Player 2 side');
+                }
+                
+                // Add a more significant random Y component for variety
+                newBallSpeedY = BALL_SPEED * (Math.random() * 1.4 - 0.7); // Random Y velocity, more variation
+                
+                // Store the new direction in lastBallSpeed variables BEFORE unpausing
+                // This ensures that if the player presses space right after auto-restart,
+                // the ball will continue in the same direction
+                gameState.lastBallSpeedX = newBallSpeedX;
+                gameState.lastBallSpeedY = newBallSpeedY;
+                
+                // Now unpause and set the ball speed
+                gameState.isPaused = false;
+                gameState.ballSpeedX = newBallSpeedX;
+                gameState.ballSpeedY = newBallSpeedY;
+                
+                // Set the auto-restart flag to true
+                justAutoRestarted = true;
+                console.log('Setting justAutoRestarted flag to true');
+                
+                // Toggle the next ball direction for next goal
+                nextBallDirection = nextBallDirection === 1 ? 2 : 1;
+                
+                gameStatus.textContent = 'Game Running';
+                gameStatus.classList.add('success');
+                gameStatus.classList.add('running');
+                
+                // Update button if it exists
+                if (startButton) {
+                    startButton.textContent = 'Pause Game';
+                    startButton.classList.add('active');
+                }
+                
+                console.log('Auto-restart complete. Ball direction:', gameState.ballSpeedX, gameState.ballSpeedY, 
+                          'Stored direction:', gameState.lastBallSpeedX, gameState.lastBallSpeedY,
+                          'justAutoRestarted:', justAutoRestarted);
+            }
+        }, 1500); // 1.5 second delay before restarting
     }
 
     function checkWinner() {
@@ -519,24 +683,163 @@ document.addEventListener('DOMContentLoaded', function() {
         const score = overlay.querySelector('#final-score');
         
         let winner;
+        let customMessage;
+        
         if (IS_AI_MODE) {
             winner = gameState.player1Score > gameState.player2Score ? 'You' : 'AI';
+            customMessage = gameState.player1Score > gameState.player2Score ? 
+                'Amazing performance!' : 
+                'Better luck next time!';
         } else {
             winner = gameState.player1Score > gameState.player2Score ? 'Player 1' : 'Player 2';
+            customMessage = `${winner} takes the crown!`;
         }
         
-        title.textContent = `${winner} Win!`;
-        message.textContent = `Congratulations ${winner}!`;
+        title.textContent = `${winner} Wins!`;
+        message.textContent = customMessage;
         score.textContent = `${gameState.player1Score} - ${gameState.player2Score}`;
         
+        // Create confetti
+        createConfetti();
+        
+        // Make sure the overlay is visible
         overlay.style.display = 'flex';
+        
+        // Add the active class for animation
+        setTimeout(() => {
+            overlay.classList.add('active');
+        }, 50);
+    }
+
+    // Function to create confetti particles
+    function createConfetti() {
+        const confettiContainer = document.querySelector('.confetti-container');
+        confettiContainer.innerHTML = ''; // Clear any existing confetti
+        
+        const colors = ['#00ffff', '#ff00ff', '#ffff00', '#00ff00', '#ff0000', '#0000ff', '#ffffff', '#ff9900', '#9900ff'];
+        const confettiCount = 200; // Increased count
+        const shapes = ['confetti-circle', 'confetti-star', 'confetti-rect', 'confetti-triangle'];
+        
+        for (let i = 0; i < confettiCount; i++) {
+            const confetti = document.createElement('div');
+            confetti.className = 'confetti';
+            
+            // Add random shape class
+            if (Math.random() > 0.3) { // 70% chance to have a special shape
+                confetti.classList.add(shapes[Math.floor(Math.random() * shapes.length)]);
+            }
+            
+            // Random properties for each confetti piece
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            const size = Math.random() * 12 + 5; // 5-17px
+            const positionLeft = Math.random() * 100; // 0-100%
+            const delay = Math.random() * 5; // 0-5s delay
+            const duration = Math.random() * 4 + 2; // 2-6s duration
+            const rotation = Math.random() * 360; // 0-360deg
+            const rotationEnd = Math.random() * 720 - 360; // -360 to 360deg
+            const translateX = Math.random() * 200 - 100; // -100px to 100px
+            
+            // Apply styles
+            confetti.style.cssText = `
+                position: absolute;
+                width: ${size}px;
+                height: ${size}px;
+                background-color: ${color};
+                top: -5%;
+                left: ${positionLeft}%;
+                opacity: 0;
+                transform: rotate(${rotation}deg);
+                animation: confetti-fall ${duration}s ease-in ${delay}s forwards;
+                --tx: ${translateX}px;
+                --tr: ${rotationEnd}deg;
+                z-index: ${Math.floor(Math.random() * 10)};
+            `;
+            
+            confettiContainer.appendChild(confetti);
+        }
+        
+        // Add some special larger, slower-falling confetti
+        for (let i = 0; i < 20; i++) {
+            const specialConfetti = document.createElement('div');
+            specialConfetti.className = 'confetti confetti-star';
+            
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            const size = Math.random() * 20 + 15; // 15-35px (larger)
+            const positionLeft = Math.random() * 100;
+            const delay = Math.random() * 2; // 0-2s delay (start sooner)
+            const duration = Math.random() * 5 + 5; // 5-10s duration (slower fall)
+            const rotation = Math.random() * 360;
+            const rotationEnd = Math.random() * 1080 - 540; // -540 to 540deg (more rotation)
+            const translateX = Math.random() * 300 - 150; // -150px to 150px (more drift)
+            
+            specialConfetti.style.cssText = `
+                position: absolute;
+                width: ${size}px;
+                height: ${size}px;
+                background-color: ${color};
+                top: -5%;
+                left: ${positionLeft}%;
+                opacity: 0;
+                transform: rotate(${rotation}deg);
+                animation: confetti-fall ${duration}s ease-in-out ${delay}s forwards;
+                --tx: ${translateX}px;
+                --tr: ${rotationEnd}deg;
+                z-index: ${Math.floor(Math.random() * 5)};
+                filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.7));
+            `;
+            
+            confettiContainer.appendChild(specialConfetti);
+        }
+    }
+
+    // Add the confetti animation to the document
+    function addConfettiAnimation() {
+        // Create a style element
+        const styleElement = document.createElement('style');
+        
+        // Define the animation
+        styleElement.textContent = `
+            @keyframes confetti-fall {
+                0% {
+                    opacity: 1;
+                    top: -5%;
+                    transform: translateX(0) rotate(0deg);
+                }
+                100% {
+                    opacity: 0;
+                    top: 100%;
+                    transform: translateX(${Math.random() > 0.5 ? '+' : '-'}${Math.random() * 100}px) rotate(${Math.random() * 720}deg);
+                }
+            }
+        `;
+        
+        // Add the style to the document head
+        document.head.appendChild(styleElement);
     }
 
     function closeVictoryOverlay() {
         const overlay = document.getElementById('victory-overlay');
         if (overlay) {
             overlay.classList.remove('active');
+            
+            // Hide the overlay after the animation completes
+            setTimeout(() => {
+                overlay.style.display = 'none';
+            }, 300);
         }
+    }
+
+    // Make closeVictoryOverlay globally accessible
+    window.closeVictoryOverlay = closeVictoryOverlay;
+
+    function handleRematch() {
+        closeVictoryOverlay();
+        resetGame();
+    }
+
+    function goBackHome() {
+        // Redirect to the mode selection page
+        window.location.href = '/local/';
     }
 
     function draw() {
@@ -1133,4 +1436,19 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     }
+
+    // Add event listeners for the victory buttons
+    const rematchButton = document.getElementById('rematch-button');
+    const backHomeButton = document.getElementById('back-home-button');
+    
+    if (rematchButton) {
+        rematchButton.addEventListener('click', handleRematch);
+    }
+    
+    if (backHomeButton) {
+        backHomeButton.addEventListener('click', goBackHome);
+    }
+
+    // Add confetti animation to the document
+    addConfettiAnimation();
 }); 
