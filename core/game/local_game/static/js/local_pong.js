@@ -131,6 +131,11 @@ document.addEventListener('DOMContentLoaded', function() {
     function togglePause() {
         console.log('Toggle pause called, isGameOver:', gameState.isGameOver);
         if (!gameState.isGameOver) {
+            // Check if we're in the initial state (game hasn't started yet)
+            const isInitialState = gameState.isPaused && gameState.ballSpeedX === 0 && gameState.ballSpeedY === 0 && 
+                                  gameState.lastBallSpeedX === 0 && gameState.lastBallSpeedY === 0;
+            
+            // Toggle pause state
             gameState.isPaused = !gameState.isPaused;
             console.log('Game paused state:', gameState.isPaused);
             
@@ -151,7 +156,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 gameStatus.classList.add('success');
                 gameStatus.classList.add('running');
             } else {
-                // Pausing the game - store current direction
+                // If we were in the initial state and trying to start the game,
+                // immediately unpause to start the game
+                if (isInitialState) {
+                    console.log('Initial state detected, starting game immediately');
+                    togglePause(); // Call togglePause again to start the game
+                    return;
+                }
+                
+                // Normal pause behavior
                 gameState.lastBallSpeedX = gameState.ballSpeedX;
                 gameState.lastBallSpeedY = gameState.ballSpeedY;
                 gameState.ballSpeedX = 0;
