@@ -3,7 +3,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from ..models import Game, Tuser
-from django.db import models, Q
+from django.db import models
+from django.db.models import Q
 from ..serializers import GameSerializer, UserSerializer
 from ..permissions import IsVerifiedUser, IsAdmin
 import binascii
