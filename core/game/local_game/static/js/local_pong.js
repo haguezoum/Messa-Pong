@@ -26,8 +26,8 @@ let initialGameState = true;
 // AI difficulty settings
 const AI_DIFFICULTIES = {
     easy: {
-        reactionTime: 80,        // Slower reaction time
-        predictionError: 70,     // Not used in new approach, kept for compatibility
+        reactionTime: 60,        // Faster reaction time (from 80)
+        predictionError: 50,     // Less prediction error (from 70)
         label: 'Easy'
     },
     medium: {
@@ -375,9 +375,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         switch(currentAIDifficulty) {
             case 'easy':
-                // Easy: Slower paddle and less accurate following
-                paddleSpeed = paddleSpeed * 0.5;
-                followAccuracy = 0.3; // Only move 30% of the way to the target
+                // Easy: Moderate paddle speed and better accuracy
+                paddleSpeed = paddleSpeed * 0.7;  // Increased from 0.5
+                followAccuracy = 0.5;  // Increased from 0.3
                 break;
             case 'medium':
                 // Medium: Moderate speed and accuracy
