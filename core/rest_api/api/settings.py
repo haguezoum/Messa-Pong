@@ -25,6 +25,8 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
 # API_DEBUG=True/False (default: False)
 DEBUG = os.environ.get('API_DEBUG', 'False') == 'True'
 
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
 ALLOWED_HOSTS = ['*']
 
 # Application definition
@@ -159,8 +161,12 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_ORIGIN_ALLOW_ALL = True
 CORS_ORIGIN_WHITELIST = [
     'http://localhost:3000',
+    'http://localhost:8080',
+    'http://localhost:8000',
     'http://localhost:80',
     'http://127.0.0.1:3000',
+    'http://127.0.0.1:8000',
+    'http://127.0.0.1:8080',
     'http://127.0.0.1:80',
     'http://backend:3000',
     'http://nginx:80'

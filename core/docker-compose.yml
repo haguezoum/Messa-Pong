@@ -155,8 +155,8 @@ services:
               aliases:
                   - oauth
                   - api_gateway
-        ports:
-            - 8000:8000/tcp
+        # ports:
+        #     - 8000:8000/tcp
         environment:
             - DJANGO_SETTINGS_MODULE=api.settings
         volumes:
