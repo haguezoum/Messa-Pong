@@ -114,25 +114,26 @@ class SIGNUP extends HTMLElement {
     
     async registerUser(userData) {
       try {
-        const response = await fetch(`${this.BASE_URL}/users/register`, {
+        const response = await fetch('http://localhost:8000/auth/register/', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(userData),
-          credentials: 'include', // Important for cookies if using JWT refresh tokens
         });
         
-        const data = await response.json();
-        
         if (!response.ok) {
-          throw new Error(data.detail || data.message || 'Registration failed');
+          throw new Error('Failed to register user');
         }
         
-        return data;
+        const data = await response.json();
+        console.log('User registered successfully:', data);
+        
+        // Handle successful registration (e.g., redirect to login page)
+        this.showMessage('Registration successful!', 'success');
       } catch (error) {
-        console.error('Registration error:', error);
-        throw error;
+        console.error('Error during registration:', error);
+        this.showMessage('Registration failed. Please try again.', 'error');
       }
     }
   };
@@ -233,15 +234,7 @@ class SIGNUP extends HTMLElement {
         
         try {
           // Call the API to register the user
-          const result = await this.#api.registerUser(userData);
-          
-          // Handle successful registration
-          this.showMessage("Registration successful! Redirecting to login...", "success");
-          
-          // Store token if provided
-          if (result.access_token) {
-            localStorage.setItem('access_token', result.access_token);
-          }
+          await this.#api.registerUser(userData);
           
           // Reset form
           for (let key in this.#newUser) {
