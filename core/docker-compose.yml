@@ -155,6 +155,12 @@ services:
               aliases:
                   - oauth
                   - api_gateway
+        ports:
+            - 8000:8000/tcp
+        environment:
+            - DJANGO_SETTINGS_MODULE=api.settings
+        volumes:
+            - restapi_files:/api
         secrets:
             - api-credentials
             - database-credentials
@@ -179,6 +185,8 @@ volumes:
         name: database-data
     frontend-files:
         name: frontend-files
+    restapi_files:
+        name: restapi_files
 
 
 networks:

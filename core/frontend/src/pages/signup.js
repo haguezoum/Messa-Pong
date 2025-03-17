@@ -110,11 +110,11 @@ class SIGNUP extends HTMLElement {
   
   // API client for signup
   #api = {
-    BASE_URL: 'http://localhost/api',
+    BASE_URL: 'http://localhost:8000/api',
     
     async registerUser(userData) {
       try {
-        const response = await fetch('http://localhost:8000/auth/register/', {
+        const response = await fetch(`${this.BASE_URL}/auth/register/`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
