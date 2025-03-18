@@ -46,7 +46,7 @@ template.innerHTML = /*html*/
               </div>
             </div>
             <div class="extra_info_button">
-            <ion-icon name="information-circle-outline" size="large"></ion-icon>
+              <ion-icon name="information-circle-outline" size="large"></ion-icon>
             </div>
         </div>
         <div class="chat-page__container__body__chat__messages">
@@ -107,10 +107,18 @@ class CHAT extends HTMLElement {
 
   connectedCallback() {
     console.log("CHAT is Connected");
+    this.chatAvatarImage = this.shadow.querySelector('.chatAvatarImage');
+    this.chatHeaderName = this.shadow.querySelector('.chat-header-name');
+    this.chatHeaderStatus = this.shadow.querySelector('.chat-header-status');
+    this.chatMessages = this.shadow.querySelector('.chat-messages');
+    this.chatFriendListParent  =  this.shadow.querySelector('.chat_friend_list_item');
+    this.infoButton = this.shadow.querySelector('.extra_info_button');
+    // --------------------------------
     this.observeActionButtons();
     this.conversationList();
     this.selectConversation();
     this.getConversationObjectOfCurrentUser();
+    this.getExtraInfo();
   }
   
   disconnectedCallback() {
@@ -240,75 +248,76 @@ class CHAT extends HTMLElement {
 
 // ------ Select the conversation from the list ------
 
+/**
+ * 
+ * @param {*} friendElemnt 
+ * @param {*} clearInput 
+ * @sumery select the friend from the list of friends and display the conversation
+ * @return {void} - no return value
+ */
+async selectFriend(friendElemnt, clearInput = false){
+  const friendId = friendElemnt.dataset.id;
+  if(clearInput) this.clearInput();
+  friendElemnt.parentNode.querySelectorAll('.chat_friend_list_body__friend').forEach((friend) => {
+    friend.classList.remove('selected');
+  });
+  friendElemnt.classList.add('selected');
+  try{
+    const friendInfo = await this.getFriendInfo(friendId);
+    this.updateChatInterface(friendInfo);
+  }catch(err){
+    console.log(err);
+    this.chatMessages = "Error";
+  }
+}
+
   /**
    * @summary select the conversation from the list of friends and use this.addMessage() to display the conversation
    * @param {void} - no parameters
    * @returns {void} - no return value
    */
-  selectConversation(){
-    console.log("Select Conversation");
-    const chatFriendListParent  =  this.shadow.querySelector('.chat_friend_list_item');
-    
+  selectConversation(){    
     const observer  =  new MutationObserver((mutations) => {
       // observe the chatFriendListParent for any changes(added by js to the DOM)
-      if(chatFriendListParent.children.length > 0){
-        const chatFriendListChild = chatFriendListParent.children;
+      if(this.chatFriendListParent.children.length > 0){
+        const chatFriendListChild = this.chatFriendListParent.children;
         // add the first conversation to the chat body by default
         const firstFriend = chatFriendListChild[0];
-        const friendId = firstFriend.dataset.id;
-        firstFriend.classList.add('selected');
-        this.getFriendInfo(friendId).then((friendInfo) => {
-          this.shadow.querySelector('.chatAvatarImage').src = friendInfo.profile_picture_url;
-          this.shadow.querySelector('.chat-header-name').textContent = `${friendInfo.firstName} ${friendInfo.lastName}`;
-          this.shadow.querySelector('.chat-header-status').textContent = friendInfo.status? "Active now" : "Offline";
-          this.shadow.querySelector('.chat-messages').innerHTML = "Loading...";
-          this.shadow.querySelector('.chat-messages').innerHTML = "";
-          friendInfo.discussion.forEach((discussion) => {
-            const messageInfo = {
-              message: discussion.message,
-              time: discussion.timestamp.substring(11, 16),
-              type: discussion.message_type,
-              imoji: discussion.is_imoji
-            }
-            this.addMessage(messageInfo);
-          });
-        });
+        this.selectFriend(firstFriend);
           // --------------------------------------
-          // this.shadowRoot.querySelector("#chat-page > div > div.chat-page__container__body > section.chat-page__container__body__chat_friend_list > div.chat_friend_list_body > ul > li")
-        for (const friend of chatFriendListChild) {
-          friend.addEventListener('click', async (e) => {
-            this.clearInput();
-            for (const friend of chatFriendListChild) {
-              friend.classList.remove('selected');
-            }
-            friend.classList.add('selected');
-            const friendId = e.currentTarget.dataset.id;
-            try{
-                const friendInfo = await this.getFriendInfo(friendId);
-                this.shadow.querySelector('.chatAvatarImage').src = friendInfo.profile_picture_url;
-                this.shadow.querySelector('.chat-header-name').textContent = `${friendInfo.firstName} ${friendInfo.lastName}`;
-                this.shadow.querySelector('.chat-header-status').textContent = friendInfo.status? "Active now" : "Offline";
-                this.shadow.querySelector('.chat-messages').innerHTML = "Loading...";
-                this.shadow.querySelector('.chat-messages').innerHTML = "";
-                friendInfo.discussion.forEach((discussion) => {
-                  const messageInfo = {
-                    message: discussion.message,
-                    time: discussion.timestamp.substring(11, 16),
-                    type: discussion.message_type,
-                    imoji: discussion.is_imoji
-                  }
-                  this.addMessage(messageInfo);
-                });
-            }catch(err){
-              console.log(err);
-            }
+          Array.from(chatFriendListChild).forEach((friend) => {
+            friend.addEventListener('click', async (e) => {this.selectFriend(friend, true);});
           });
-        }
         observer.disconnect();
       }
     });
-    observer.observe(chatFriendListParent, {childList: true});
+    observer.observe(this.chatFriendListParent, {childList: true});
 }
+
+/**
+ * @summary update the chat interface with the new friend info
+ * @param {*} friendInfo 
+ * 
+ */
+updateChatInterface(friendInfo){
+  this.chatAvatarImage.src = friendInfo.profile_picture_url;
+  this.chatHeaderName.textContent = `${friendInfo.firstName} ${friendInfo.lastName}`;
+  this.chatHeaderStatus.textContent = friendInfo.status? "Active now" : "Offline";
+  this.chatMessages.innerHTML = "";
+  friendInfo.discussion.forEach((discussion) => {
+    const messageInfo = {
+      message: discussion.message,
+      time: discussion.timestamp.substring(11, 16),
+      type: discussion.message_type,
+      imoji: discussion.is_imoji
+    }
+    this.addMessage(messageInfo);
+  });
+
+}
+
+
+
 
   /**
    * 
@@ -393,6 +402,24 @@ class CHAT extends HTMLElement {
     return ;
   }
 
+
+
+  // ****************************************************************************************************************************************************************
+
+
+  /**
+   * 
+   * @summary get extra information about the riend
+   * @param {void} - no parameters
+  * @returns {void} - no return value
+   */
+  getExtraInfo(){
+    this.shadow.querySelector('.extra_info_button').addEventListener('click', (e) => {
+      const id = e.currentTarget.parentNode.dataset.id;
+      alert("Extra Info "+ id);
+      console.log("Extra Info");
+    });
+  }
 }
 customElements.define('chat-page', CHAT);
 
