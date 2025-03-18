@@ -60,6 +60,37 @@ template.innerHTML = /*html*/ `
   `;
 
 class LOGIN extends HTMLElement {
+  #api = {
+    BASE_URL: "https://localhost/api",
+    async loginUser(userData) {
+      try {
+        const response = await fetch(`${this.BASE_URL}/auth/login/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            username: userData.email,  // Assuming login with email
+            password: userData.password
+          })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error('Login error:', errorData);
+          throw new Error(errorData.detail || 'Login failed');
+        }
+
+        return await response.json();
+      } catch (error) {
+        console.error('Error during login:', error);
+        throw error;
+      }
+    }
+  };
+
   constructor() {
     super();
     this.shadow = this.attachShadow({ mode: "open" });
@@ -68,7 +99,29 @@ class LOGIN extends HTMLElement {
     linkElem.setAttribute("rel", "stylesheet");
     linkElem.setAttribute("href", "src/assets/style/login-page.css");
     this.shadow.appendChild(linkElem);
-    // this.shadow.childeNodes.forEach((e) => e.remove());
+
+    this.setFormBinding(this.shadow.querySelector("form"));
+  }
+
+  setFormBinding(form) {
+    if (form) {
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        const userData = {
+          email: form.querySelector("#email").value,
+          password: form.querySelector("#password").value,
+        };
+
+        try {
+          await this.#api.loginUser(userData);
+          window.location.href = "/dashboard";  // Redirect on successful login
+        } catch (error) {
+          console.error('Login failed:', error);
+          // Show error message to user
+        }
+      });
+    }
   }
 
   connectedCallback() {

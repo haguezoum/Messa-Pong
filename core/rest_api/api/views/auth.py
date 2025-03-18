@@ -1,5 +1,5 @@
 from rest_framework import status, viewsets
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -11,6 +11,9 @@ from ..permissions import IsVerifiedUser
 import os
 import binascii
 import logging
+import requests
+from django.shortcuts import redirect
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +21,6 @@ class AuthViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['post'], permission_classes=[AllowAny])
     def register(self, request):
         try:
-            # Log the received data for debugging
             logger.info(f"Received registration data: {request.data}")
             
             serializer = UserCreateSerializer(data=request.data)
@@ -127,3 +129,43 @@ class AuthViewSet(viewsets.ViewSet):
             [email],
             fail_silently=False,
         ) 
+
+@api_view(['GET'])
+def auth_42(request):
+    # Redirect to 42's OAuth authorization page
+    return redirect(f"{settings.API_42_AUTHORIZE_URL}?client_id={settings.API_42_CLIENT_ID}&redirect_uri={settings.API_42_REDIRECT_URI}&response_type=code")
+
+@api_view(['GET'])
+def auth_42_callback(request):
+    code = request.GET.get('code')
+    if not code:
+        return Response({'error': 'No code provided'}, status=400)
+
+    # Exchange code for access token
+    token_response = requests.post(settings.API_42_TOKEN_URL, data={
+        'grant_type': 'authorization_code',
+        'client_id': settings.API_42_CLIENT_ID,
+        'client_secret': settings.API_42_CLIENT_SECRET,
+        'code': code,
+        'redirect_uri': settings.API_42_REDIRECT_URI,
+    })
+
+    if token_response.status_code != 200:
+        return Response({'error': 'Failed to obtain access token'}, status=400)
+
+    access_token = token_response.json().get('access_token')
+
+    # Fetch user info
+    user_info_response = requests.get(settings.API_42_USER_INFO_URL, headers={
+        'Authorization': f'Bearer {access_token}'
+    })
+
+    if user_info_response.status_code != 200:
+        return Response({'error': 'Failed to fetch user info'}, status=400)
+
+    user_info = user_info_response.json()
+
+    # Handle user info (e.g., create or update user in your database)
+    # ...
+
+    return Response({'success': 'Authenticated with 42', 'user_info': user_info}) 

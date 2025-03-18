@@ -19,7 +19,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
 from .views import tfa, password, friendship, game, tournament
-from .views.auth import AuthViewSet
+from .views.auth import AuthViewSet, auth_42, auth_42_callback
 from .views.user import UserViewSet
 from .views.chat import ChatViewSet
 
@@ -110,4 +110,7 @@ urlpatterns = [
     # POST /block/ - Block a user from chatting
     # fetch('/block/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: 'userId' }) })
     path('block/', ChatViewSet.as_view({'post': 'block_user'}), name='block-user'),
+
+    path('auth/42/', auth_42, name='auth-42'),
+    path('auth/42/callback/', auth_42_callback, name='auth-42-callback'),
 ]

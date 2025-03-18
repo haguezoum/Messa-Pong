@@ -303,8 +303,8 @@ class SIGNUP extends HTMLElement {
         
         const userData = {
           username: this.#newUser.username,
-          fname: this.#newUser.firstname,
-          lname: this.#newUser.lastname,
+          firstname: this.#newUser.firstname,
+          lastname: this.#newUser.lastname,
           email: this.#newUser.email,
           password: this.#newUser.password,
           confirm_password: this.#newUser.confirm_password,
