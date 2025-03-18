@@ -11,7 +11,9 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.shortcuts import redirect
 import json
 import urllib.parse
+import logging
 
+logger = logging.getLogger(__name__)
 User = get_user_model()
 
 class FortyTwoLoginView(APIView):
@@ -26,6 +28,7 @@ class FortyTwoLoginView(APIView):
             f"&response_type=code"
             f"&scope=public"
         )
+        logger.info(f"Redirecting to 42 OAuth URL: {auth_url}")
         return HttpResponseRedirect(auth_url)
 
 class FortyTwoCallbackView(APIView):
@@ -33,7 +36,10 @@ class FortyTwoCallbackView(APIView):
     
     def get(self, request):
         code = request.GET.get('code')
+        logger.info(f"Received OAuth callback with code: {code}")
+        
         if not code:
+            logger.error("No authorization code provided")
             return Response(
                 {'error': 'Authorization code not provided'},
                 status=status.HTTP_400_BAD_REQUEST
@@ -50,6 +56,7 @@ class FortyTwoCallbackView(APIView):
                 'redirect_uri': settings.FORTYTWO_REDIRECT_URI,
             }
             
+            logger.info("Exchanging code for access token")
             token_response = requests.post(token_url, data=token_data)
             token_response.raise_for_status()
             access_token = token_response.json()['access_token']
@@ -94,18 +101,19 @@ class FortyTwoCallbackView(APIView):
                 'tokens': tokens
             }))
             
-            # Redirect to frontend with data
-            frontend_url = f"{settings.FRONTEND_URL}/login?data={encoded_data}"
+            # Redirect to home page with data
+            frontend_url = f"{settings.FRONTEND_URL}/home?data={encoded_data}"
+            logger.info(f"Redirecting to frontend URL: {frontend_url}")
             return HttpResponseRedirect(frontend_url)
             
         except requests.exceptions.RequestException as e:
-            print(f"Token exchange error: {str(e)}")  # Add logging
+            logger.error(f"Token exchange error: {str(e)}")
             return Response(
                 {'error': f'Failed to authenticate with 42: {str(e)}'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         except Exception as e:
-            print(f"General error: {str(e)}")  # Add logging
+            logger.error(f"General error: {str(e)}")
             return Response(
                 {'error': f'An error occurred: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
