@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from datetime import timedelta
+from django.urls import path, include
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -28,6 +29,7 @@ INSTALLED_APPS = [
     # Local apps
     'users',
     'twofa',
+    'oauth',
 ]
 
 MIDDLEWARE = [
@@ -200,4 +202,16 @@ ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 # Ensure CSRF settings are properly configured
 CSRF_COOKIE_SECURE = True
-SESSION_COOKIE_SECURE = True 
+SESSION_COOKIE_SECURE = True
+
+# 42 OAuth Settings
+FORTYTWO_CLIENT_ID = 'u-s4t2ud-d2d05095432f4033304e0af6aad9951383677c9b089b4b0ea9e08c0a35467c52'
+FORTYTWO_CLIENT_SECRET = os.getenv('FORTYTWO_CLIENT_SECRET', '')
+FORTYTWO_REDIRECT_URI = 'https://localhost/auth/callback'
+FRONTEND_URL = 'https://localhost'
+
+# Add OAuth URLs to main URL patterns
+urlpatterns = [
+    # ... existing code ...
+    path('oauth/', include('oauth.urls')),
+] 

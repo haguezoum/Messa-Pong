@@ -170,6 +170,37 @@ class LOGIN extends HTMLElement {
     btnGoogle.addEventListener('click', () => {
       window.location.href = '/api/oauth/google/login/';
     });
+
+    // Handle OAuth callback
+    const urlParams = new URLSearchParams(window.location.search);
+    const tokens = urlParams.get('tokens');
+    if (tokens) {
+      try {
+        const tokenData = JSON.parse(decodeURIComponent(tokens));
+        localStorage.setItem('accessToken', tokenData.access);
+        localStorage.setItem('refreshToken', tokenData.refresh);
+        
+        this.toastNotification.show({
+          title: 'Welcome Back!',
+          message: 'Login successful! Redirecting...',
+          type: 'success',
+          duration: 2000
+        });
+
+        // Redirect to dashboard after success message
+        setTimeout(() => {
+          window.location.href = '/dashboard';
+        }, 2500);
+      } catch (error) {
+        console.error('Error parsing tokens:', error);
+        this.toastNotification.show({
+          title: 'Error',
+          message: 'Failed to process login response',
+          type: 'error',
+          duration: 4000
+        });
+      }
+    }
   }
 
   disconnectedCallback() {
