@@ -6,4 +6,4 @@ urlpatterns = [
     path('api/', include('users.urls')),
     path('api/', include('twofa.urls')),
     path('api/oauth/', include('oauth.urls')),
-] 
+]

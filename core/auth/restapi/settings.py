@@ -210,8 +210,5 @@ FORTYTWO_CLIENT_SECRET = os.getenv('FORTYTWO_CLIENT_SECRET', '')
 FORTYTWO_REDIRECT_URI = 'https://localhost/auth/callback'
 FRONTEND_URL = 'https://localhost'
 
-# Add OAuth URLs to main URL patterns
-urlpatterns = [
-    # ... existing code ...
-    path('oauth/', include('oauth.urls')),
-] 
+# Remove the duplicate urlpatterns from settings.py
+# The URL patterns should only be in urls.py 
