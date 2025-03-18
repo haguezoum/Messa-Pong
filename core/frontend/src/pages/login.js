@@ -183,16 +183,18 @@ class LOGIN extends HTMLElement {
 
     // Handle OAuth callback
     const urlParams = new URLSearchParams(window.location.search);
-    const tokens = urlParams.get('tokens');
-    if (tokens) {
+    const data = urlParams.get('data');
+    if (data) {
       try {
-        const tokenData = JSON.parse(decodeURIComponent(tokens));
-        if (!tokenData.access || !tokenData.refresh) {
-          throw new Error('Invalid token data');
+        const decodedData = JSON.parse(decodeURIComponent(data));
+        if (!decodedData.tokens || !decodedData.user) {
+          throw new Error('Invalid callback data');
         }
         
-        localStorage.setItem('accessToken', tokenData.access);
-        localStorage.setItem('refreshToken', tokenData.refresh);
+        // Store tokens and user data
+        localStorage.setItem('accessToken', decodedData.tokens.access);
+        localStorage.setItem('refreshToken', decodedData.tokens.refresh);
+        localStorage.setItem('userData', JSON.stringify(decodedData.user));
         
         this.toastNotification.show({
           title: 'Welcome Back!',
@@ -206,7 +208,7 @@ class LOGIN extends HTMLElement {
           window.location.href = '/dashboard';
         }, 2500);
       } catch (error) {
-        console.error('Error parsing tokens:', error);
+        console.error('Error processing callback data:', error);
         this.toastNotification.show({
           title: 'Error',
           message: 'Failed to process login response',

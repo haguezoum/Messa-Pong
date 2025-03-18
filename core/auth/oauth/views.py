@@ -9,6 +9,8 @@ import requests
 from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.shortcuts import redirect
+import json
+import urllib.parse
 
 User = get_user_model()
 
@@ -37,17 +39,17 @@ class FortyTwoCallbackView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Exchange code for access token
-        token_url = 'https://api.intra.42.fr/oauth/token'
-        token_data = {
-            'grant_type': 'authorization_code',
-            'client_id': settings.FORTYTWO_CLIENT_ID,
-            'client_secret': settings.FORTYTWO_CLIENT_SECRET,
-            'code': code,
-            'redirect_uri': settings.FORTYTWO_REDIRECT_URI,
-        }
-        
         try:
+            # Exchange code for access token
+            token_url = 'https://api.intra.42.fr/oauth/token'
+            token_data = {
+                'grant_type': 'authorization_code',
+                'client_id': settings.FORTYTWO_CLIENT_ID,
+                'client_secret': settings.FORTYTWO_CLIENT_SECRET,
+                'code': code,
+                'redirect_uri': settings.FORTYTWO_REDIRECT_URI,
+            }
+            
             token_response = requests.post(token_url, data=token_data)
             token_response.raise_for_status()
             access_token = token_response.json()['access_token']
@@ -77,21 +79,24 @@ class FortyTwoCallbackView(APIView):
                 'refresh': str(refresh),
             }
             
-            # Return user data and tokens
-            response_data = {
-                'user': {
-                    'id': user.id,
-                    'username': user.username,
-                    'email': user.email,
-                    'first_name': user.first_name,
-                    'last_name': user.last_name,
-                },
-                'tokens': tokens
+            # Prepare user data
+            user_data = {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
             }
             
-            # Redirect to frontend with tokens
-            frontend_url = f"{settings.FRONTEND_URL}/auth/callback?tokens={tokens}"
-            return redirect(frontend_url)
+            # Encode the data for URL
+            encoded_data = urllib.parse.quote(json.dumps({
+                'user': user_data,
+                'tokens': tokens
+            }))
+            
+            # Redirect to frontend with data
+            frontend_url = f"{settings.FRONTEND_URL}/login?data={encoded_data}"
+            return HttpResponseRedirect(frontend_url)
             
         except requests.exceptions.RequestException as e:
             return Response(
