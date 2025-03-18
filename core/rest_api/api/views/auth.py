@@ -6,38 +6,46 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.hashers import check_password
 from django.core.mail import send_mail
 from ..models import Tuser
-from ..serializers import UserSerializer, RegistrationSerializer
+from ..serializers import UserSerializer, UserCreateSerializer
 from ..permissions import IsVerifiedUser
 import os
 import binascii
+import logging
+
+logger = logging.getLogger(__name__)
 
 class AuthViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['post'], permission_classes=[AllowAny])
     def register(self, request):
-        serializer = RegistrationSerializer(data=request.data)
-        if serializer.is_valid():
-            user = serializer.save()
-            user.tmp_otp = int.from_bytes(os.urandom(2), byteorder='big')
-            user.save()
+        try:
+            # Log the received data for debugging
+            logger.info(f"Received registration data: {request.data}")
             
-            if not user.email.endswith('@lmongol.lol'):
-                self._send_otp(user.tmp_otp, user.email)
-            else:
-                user.verified = True
-                user.save()
+            serializer = UserCreateSerializer(data=request.data)
+            if serializer.is_valid():
+                user = serializer.save()
+                refresh = RefreshToken.for_user(user)
+                response_data = {
+                    'status': 'success',
+                    'token': str(refresh.access_token),
+                    'user': UserSerializer(user).data
+                }
+                return Response(response_data, status=status.HTTP_201_CREATED)
+            
+            # Log validation errors
+            logger.error(f"Validation errors: {serializer.errors}")
+            return Response({
+                'status': 'error',
+                'errors': serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+            
+        except Exception as e:
+            logger.exception("Registration error")
+            return Response({
+                'status': 'error',
+                'message': str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
 
-            refresh = RefreshToken.for_user(user)
-            response = Response({
-                'token': str(refresh.access_token)
-            }, status=status.HTTP_201_CREATED)
-            response.set_cookie(
-                'refresh_token',
-                str(refresh),
-                httponly=True,
-                path='/'
-            )
-            return response
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, methods=['post'], permission_classes=[AllowAny])
     def login(self, request):

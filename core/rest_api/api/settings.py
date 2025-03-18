@@ -23,7 +23,7 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
 
 # Debug settings
 # API_DEBUG=True/False (default: False)
-DEBUG = os.environ.get('API_DEBUG', 'False') == 'True'
+DEBUG = True  # Temporarily set to True for debugging
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 USE_X_FORWARDED_HOST = True
@@ -201,3 +201,24 @@ API_42_REDIRECT_URI = os.environ.get('API_42_REDIRECT_URI', 'https://localhost/c
 API_42_AUTHORIZE_URL = 'https://api.intra.42.fr/oauth/authorize'
 API_42_TOKEN_URL = 'https://api.intra.42.fr/oauth/token'
 API_42_USER_INFO_URL = 'https://api.intra.42.fr/v2/me'
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
+            'propagate': False,
+        },
+    },
+}

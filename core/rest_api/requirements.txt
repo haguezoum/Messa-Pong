@@ -13,3 +13,4 @@ twisted[http2,tls]
 python-dotenv==1.0.0
 pytest
 pytest-django
+Pillow==10.2.0

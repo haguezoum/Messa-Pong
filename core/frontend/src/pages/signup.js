@@ -182,24 +182,43 @@ class SIGNUP extends HTMLElement {
     BASE_URL: "https://localhost/api",
     async registerUser(userData) {
       try {
-        const response = await fetch(`${this.BASE_URL}/auth/register/`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(userData),
+        // Log the data being sent for debugging
+        console.log('Sending registration data:', {
+          username: userData.username,
+          email: userData.email,
+          first_name: userData.firstname,  // Make sure these match
+          last_name: userData.lastname,    // the backend field names
+          password: userData.password,
+          confirm_password: userData.confirm_password
         });
-	 const responseData = await response.text();
 
-	 const parseData = responseData.length ? JSON.parse(responseData) : {};
+        const response = await fetch('/api/auth/register/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            username: userData.username,
+            email: userData.email,
+            first_name: userData.firstname,  // Match these with your backend
+            last_name: userData.lastname,    // field names
+            password: userData.password,
+            confirm_password: userData.confirm_password
+          })
+        });
+
         if (!response.ok) {
-          throw new Error(parseData.message || "unknown Error");
+          const errorData = await response.json();
+          console.error('Registration error:', errorData);  // Log error details
+          throw new Error(errorData.detail || 'Registration failed');
         }
-        console.log("User registered successfully:", parseData);
-        this.showMessage("Registration successful!", "success");
+
+        return await response.json();
       } catch (error) {
-        console.error("Error during registration:", error);
-        this.showMessage(error.message || "Registration failed. Please try again.", "error");
+        console.error('Error during registration:', error);
+        throw error;
       }
     },
   };

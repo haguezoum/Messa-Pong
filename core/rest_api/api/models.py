@@ -13,13 +13,13 @@ class Tuser(AbstractUser):
 
     username = models.CharField(max_length=32, unique=True)
     tmp_otp = models.IntegerField(default=0)
-    fname = models.CharField(max_length=64)
-    lname = models.CharField(max_length=64)
-    email = models.EmailField(max_length=64, unique=True)
-    bio = models.CharField(max_length=1024, blank=True)
+    first_name = models.CharField(max_length=30)
+    last_name = models.CharField(max_length=30)
+    email = models.EmailField(unique=True)
+    bio = models.TextField(max_length=500, blank=True)
     verified = models.BooleanField(default=False)
-    registration_date = models.DateField(auto_now_add=True)
-    image = models.FilePathField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
     score = models.FloatField(default=0.0)
     password_hash = models.CharField(max_length=256)
     friends = models.ManyToManyField("self", blank=True, symmetrical=False, related_name="friend_of")
@@ -50,6 +50,7 @@ class Tuser(AbstractUser):
 
     class Meta:
         ordering = ['-score']
+        db_table = 'api_tuser'
 
     def __str__(self):
         return self.username
