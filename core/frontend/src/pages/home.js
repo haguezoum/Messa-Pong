@@ -15,7 +15,7 @@ template.innerHTML =
                     </span>
                 </div>
             </div>
-            <div class="grid-item" id="my-store" data-target="store" onclick='app.state.currentPage="/store"'>
+            <div class="grid-item" id="my-store" data-target="store">
                 <img class="selectCardImage"  src="src/assets/images/charachters/home_main/home_characters/store.png" alt="" srcset="" loading="lazy">
                <div class="selectCardControles">
                    <h3 class="left">My Store</h3>
