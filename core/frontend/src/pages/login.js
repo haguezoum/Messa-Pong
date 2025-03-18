@@ -162,7 +162,17 @@ class LOGIN extends HTMLElement {
     // Handle 42 Network login
     const btn42Network = this.shadow.querySelector('.btn_42Network');
     btn42Network.addEventListener('click', () => {
-      window.location.href = '/api/oauth/42/login/';
+      try {
+        window.location.href = '/api/oauth/42/login/';
+      } catch (error) {
+        console.error('Failed to initiate 42 login:', error);
+        this.toastNotification.show({
+          title: 'Error',
+          message: 'Failed to initiate 42 login',
+          type: 'error',
+          duration: 4000
+        });
+      }
     });
 
     // Handle Google login
@@ -177,6 +187,10 @@ class LOGIN extends HTMLElement {
     if (tokens) {
       try {
         const tokenData = JSON.parse(decodeURIComponent(tokens));
+        if (!tokenData.access || !tokenData.refresh) {
+          throw new Error('Invalid token data');
+        }
+        
         localStorage.setItem('accessToken', tokenData.access);
         localStorage.setItem('refreshToken', tokenData.refresh);
         
