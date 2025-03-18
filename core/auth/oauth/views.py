@@ -1,5 +1,5 @@
 from django.conf import settings
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponse
 from django.urls import reverse
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -104,7 +104,21 @@ class FortyTwoCallbackView(APIView):
             # Redirect to home page with data
             frontend_url = f"{settings.FRONTEND_URL}/home?data={encoded_data}"
             logger.info(f"Redirecting to frontend URL: {frontend_url}")
-            return HttpResponseRedirect(frontend_url)
+            
+            # Use JavaScript to handle the redirection
+            html_response = f"""
+            <html>
+                <head>
+                    <script>
+                        window.location.href = "{frontend_url}";
+                    </script>
+                </head>
+                <body>
+                    <p>Redirecting to home page...</p>
+                </body>
+            </html>
+            """
+            return HttpResponse(html_response)
             
         except requests.exceptions.RequestException as e:
             logger.error(f"Token exchange error: {str(e)}")

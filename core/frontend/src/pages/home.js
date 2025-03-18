@@ -6,9 +6,47 @@ let template = document.createElement("template");
 template.innerHTML = /*html*/ `
 <div id="home-page" class="homePage">
     <div class="container">
-        <h1>Welcome to ft_transcendence</h1>
-        <div id="user-info"></div>
+        <header-bar></header-bar>
+        <main class="grid-layout">
+            <div class="grid-item" id="play-now" data-target="game">
+                <img class="selectCardImage" src="src/assets/images/pingpongPlayer.png" alt="" srcset="" loading="lazy">
+                <div class="selectCardControles">
+                    <h3 class="left">Play now</h3>
+                    <span class="play-btn action-btn">
+                        <ion-icon name="play-circle-outline"></ion-icon>
+                    </span>
+                </div>
+            </div>
+            <div class="grid-item" id="my-store" data-target="store">
+                <img class="selectCardImage" src="src/assets/images/charachters/home_main/home_characters/store.png" alt="" srcset="" loading="lazy">
+                <div class="selectCardControles">
+                    <h3 class="left">My Store</h3>
+                    <span class="store-btn action-btn">
+                        <ion-icon name="storefront-outline"></ion-icon>
+                    </span>
+                </div>
+            </div>
+            <div class="grid-item" id="dashboard" data-target="dashboard">
+                <img class="selectCardImage" src="src/assets/images/charachters/home_main/home_characters/my_dashboard.png" alt="" srcset="" loading="lazy">
+                <div class="selectCardControles">
+                    <h3 class="left">Dashboard</h3>
+                    <span class="dashboard-btn action-btn">
+                        <ion-icon name="apps-outline"></ion-icon>
+                    </span>
+                </div>
+            </div>
+            <div class="grid-item" id="chat-space" data-target="chat">
+                <img class="selectCardImage" src="src/assets/images/charachters/home_main/home_characters/chat.png" alt="" srcset="" loading="lazy">
+                <div class="selectCardControles">
+                    <h3 class="left">Chat space</h3>
+                    <span class="dashboard-btn action-btn">
+                        <ion-icon name="chatbubbles-outline"></ion-icon>
+                    </span>
+                </div>
+            </div>
+        </main>
     </div>
+    <cloud-moving cloudCount="10"></cloud-moving>
 </div>
 `;
 
@@ -23,6 +61,11 @@ class HOME extends HTMLElement {
         styleSheet.textContent = notificationStyles;
         this.shadow.appendChild(styleSheet);
         
+        const linkElem = document.createElement("link");
+        linkElem.setAttribute("rel", "stylesheet");
+        linkElem.setAttribute("href", "src/assets/style/home-page.css");
+        this.shadow.appendChild(linkElem);
+
         // Add toast notification
         this.toastNotification = document.createElement('toast-notification');
         this.shadow.appendChild(this.toastNotification);
@@ -46,14 +89,6 @@ class HOME extends HTMLElement {
                 localStorage.setItem('refreshToken', decodedData.tokens.refresh);
                 localStorage.setItem('userData', JSON.stringify(decodedData.user));
                 
-                // Display user info
-                const userInfo = this.shadow.querySelector('#user-info');
-                userInfo.innerHTML = `
-                    <h2>Welcome, ${decodedData.user.first_name} ${decodedData.user.last_name}!</h2>
-                    <p>Email: ${decodedData.user.email}</p>
-                    <p>Username: ${decodedData.user.username}</p>
-                `;
-                
                 this.toastNotification.show({
                     title: 'Welcome!',
                     message: 'Successfully logged in with 42',
@@ -75,15 +110,7 @@ class HOME extends HTMLElement {
         } else {
             // Check if user is already logged in
             const userData = localStorage.getItem('userData');
-            if (userData) {
-                const user = JSON.parse(userData);
-                const userInfo = this.shadow.querySelector('#user-info');
-                userInfo.innerHTML = `
-                    <h2>Welcome back, ${user.first_name} ${user.last_name}!</h2>
-                    <p>Email: ${user.email}</p>
-                    <p>Username: ${user.username}</p>
-                `;
-            } else {
+            if (!userData) {
                 // Redirect to login if not authenticated
                 window.location.href = '/login';
             }
