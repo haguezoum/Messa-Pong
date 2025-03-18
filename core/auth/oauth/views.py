@@ -27,14 +27,21 @@ class FortyTwoLoginView(APIView):
     permission_classes = [AllowAny]  # Allow unauthenticated access
     
     def get(self, request):
-        # Construct the 42 OAuth URL
+        # Construct the 42 OAuth URL with correct parameters
+        client_id = settings.FORTYTWO_CLIENT_ID
+        redirect_uri = settings.FORTYTWO_REDIRECT_URI
+        
+        logger.debug(f"OAuth parameters: client_id={client_id}, redirect_uri={redirect_uri}")
+        
+        # Standard OAuth 2.0 authorization code flow parameters
         auth_url = (
             f"https://api.intra.42.fr/oauth/authorize"
-            f"?client_id={settings.FORTYTWO_CLIENT_ID}"
-            f"&redirect_uri={settings.FORTYTWO_REDIRECT_URI}"
-            f"&response_type=code"
-            f"&scope=public"
+            f"?client_id={client_id}"
+            f"&redirect_uri={redirect_uri}"
+            f"&response_type=code"  # This must be 'code' for authorization code flow
+            f"&state={request.session.session_key or 'nostate'}"  # Add state parameter for security
         )
+        
         logger.info(f"Redirecting to 42 OAuth URL: {auth_url}")
         return HttpResponseRedirect(auth_url)
 
@@ -48,8 +55,12 @@ class FortyTwoCallbackView(APIView):
         
         if not code:
             logger.error("No authorization code provided")
+            error_msg = request.GET.get('error', 'Authorization code not provided')
+            error_description = request.GET.get('error_description', '')
+            logger.error(f"OAuth error: {error_msg} - {error_description}")
             return JsonResponse({
-                'error': 'Authorization code not provided'
+                'error': error_msg,
+                'error_description': error_description
             }, status=400)
 
         try:
@@ -128,8 +139,26 @@ class FortyTwoCallbackView(APIView):
             redirect_url = f"{settings.FRONTEND_URL}/home?data={encoded_data}"
             logger.debug(f"Redirecting to frontend URL: {redirect_url}")
             
-            # Use plain redirect instead of HTML with JavaScript
-            return HttpResponseRedirect(redirect_url)
+            # Create HTML response with JavaScript redirection for more reliable redirect
+            html = f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Authentication Successful</title>
+                <script>
+                    console.log("Authentication successful, redirecting to {settings.FRONTEND_URL}/home");
+                    window.location.href = "{redirect_url}";
+                </script>
+                <meta http-equiv="refresh" content="0;url={redirect_url}">
+            </head>
+            <body>
+                <h1>Authentication Successful!</h1>
+                <p>You will be redirected automatically.</p>
+                <p>If you are not redirected, <a href="{redirect_url}">click here</a>.</p>
+            </body>
+            </html>
+            """
+            return HttpResponse(html, content_type='text/html')
             
         except requests.exceptions.RequestException as e:
             logger.error(f"Request error during OAuth flow: {str(e)}")

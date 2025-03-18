@@ -10,9 +10,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-key-for-development-only')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True  # Set to True for debugging OAuth issues
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'auth']
 
 # Application definition
 INSTALLED_APPS = [
@@ -135,29 +135,51 @@ SIMPLE_JWT = {
     'TOKEN_TYPE_CLAIM': 'token_type',
 }
 
-# Logging configuration
+# Logging configuration - Enhanced for OAuth debugging
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+    },
     'handlers': {
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
         'file': {
-            'level': 'ERROR',
+            'level': 'DEBUG',
             'class': 'logging.FileHandler',
-            'filename': 'django-errors.log',
+            'filename': 'django-debug.log',
+            'formatter': 'verbose',
         },
     },
     'loggers': {
         'django': {
-            'handlers': ['file'],
-            'level': 'ERROR',
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
             'propagate': True,
         },
+        'oauth': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+    },
+    'root': {
+        'handlers': ['console', 'file'],
+        'level': 'DEBUG',
     },
 }
 
 # CORS settings
 CORS_ALLOWED_ORIGINS = [
     "https://localhost",
+    "http://localhost",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -200,18 +222,17 @@ SECURE_HSTS_PRELOAD = True
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # For development
 DEFAULT_FROM_EMAIL = 'noreply@ft-transcendence.com'
 
-# Update allowed hosts for production
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+# 42 OAuth Settings - Updated for reliability
+FORTYTWO_CLIENT_ID = os.environ.get('FORTYTWO_CLIENT_ID', 'u-s4t2ud-d2d05095432f4033304e0af6aad9951383677c9b089b4b0ea9e08c0a35467c52')
+FORTYTWO_CLIENT_SECRET = os.environ.get('FORTYTWO_CLIENT_SECRET', '')
+FORTYTWO_REDIRECT_URI = os.environ.get('FORTYTWO_REDIRECT_URI', 'https://localhost/auth/callback')
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'https://localhost')
 
-# Ensure CSRF settings are properly configured
-CSRF_COOKIE_SECURE = True
-SESSION_COOKIE_SECURE = True
-
-# 42 OAuth Settings
-FORTYTWO_CLIENT_ID = 'u-s4t2ud-d2d05095432f4033304e0af6aad9951383677c9b089b4b0ea9e08c0a35467c52'
-FORTYTWO_CLIENT_SECRET = os.getenv('FORTYTWO_CLIENT_SECRET', '')
-FORTYTWO_REDIRECT_URI = 'https://localhost/auth/callback'
-FRONTEND_URL = 'https://localhost'
+# Ensure the redirect URI doesn't have any trailing slashes
+if FORTYTWO_REDIRECT_URI.endswith('/'):
+    FORTYTWO_REDIRECT_URI = FORTYTWO_REDIRECT_URI[:-1]
+if FRONTEND_URL.endswith('/'):
+    FRONTEND_URL = FRONTEND_URL[:-1]
 
 # Remove the duplicate urlpatterns from settings.py
 # The URL patterns should only be in urls.py 
