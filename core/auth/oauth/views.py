@@ -124,41 +124,12 @@ class FortyTwoCallbackView(APIView):
             }
             encoded_data = urllib.parse.quote(json.dumps(response_data))
             
-            # Create redirect URL
-            frontend_url = f"{settings.FRONTEND_URL}/home?data={encoded_data}"
-            logger.debug(f"Redirecting to frontend URL: {frontend_url}")
+            # Create redirect URL and redirect directly
+            redirect_url = f"{settings.FRONTEND_URL}/home?data={encoded_data}"
+            logger.debug(f"Redirecting to frontend URL: {redirect_url}")
             
-            # Create HTML response with JavaScript redirection
-            html = f"""
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>Authentication Successful</title>
-                <script>
-                    console.log("Redirect script executing");
-                    console.log("Redirect URL: {frontend_url}");
-                    // Use multiple redirection methods for redundancy
-                    try {{
-                        window.location.href = "{frontend_url}";
-                        console.log("Redirect initiated via window.location.href");
-                    }} catch(e) {{
-                        console.error("Error in redirect:", e);
-                        document.write('<p>Redirect failed. <a href="{frontend_url}">Click here</a> to continue.</p>');
-                    }}
-                </script>
-                <meta http-equiv="refresh" content="0;url={frontend_url}">
-            </head>
-            <body>
-                <h1>Authentication Successful!</h1>
-                <p>You will be redirected to the application shortly...</p>
-                <p>If you are not redirected, <a href="{frontend_url}">click here</a>.</p>
-                <p>Debug info: Redirecting to {settings.FRONTEND_URL}/home</p>
-            </body>
-            </html>
-            """
-            
-            logger.debug("Returning HTML response with JavaScript redirect")
-            return HttpResponse(html, content_type='text/html')
+            # Use plain redirect instead of HTML with JavaScript
+            return HttpResponseRedirect(redirect_url)
             
         except requests.exceptions.RequestException as e:
             logger.error(f"Request error during OAuth flow: {str(e)}")

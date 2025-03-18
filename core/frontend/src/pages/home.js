@@ -73,15 +73,30 @@ class HOME extends HTMLElement {
 
     connectedCallback() {
         console.log("HOME is Connected");
+        console.log("Current URL:", window.location.href);
         
         // Handle OAuth callback data
+        this.processOAuthCallback();
+        
+        // Initialize page components
+        this.initPageComponents();
+    }
+    
+    processOAuthCallback() {
         const urlParams = new URLSearchParams(window.location.search);
         const data = urlParams.get('data');
+        
+        console.log("URL params:", Object.fromEntries(urlParams.entries()));
+        
         if (data) {
+            console.log("Found OAuth callback data");
             try {
+                // Attempt to decode and parse the data
                 const decodedData = JSON.parse(decodeURIComponent(data));
+                console.log("Decoded data:", decodedData);
+                
                 if (!decodedData.tokens || !decodedData.user) {
-                    throw new Error('Invalid callback data');
+                    throw new Error('Invalid callback data structure');
                 }
                 
                 // Store tokens and user data
@@ -91,34 +106,78 @@ class HOME extends HTMLElement {
                 
                 this.toastNotification.show({
                     title: 'Welcome!',
-                    message: 'Successfully logged in with 42',
+                    message: `Successfully logged in as ${decodedData.user.username}`,
                     type: 'success',
                     duration: 3000
                 });
 
                 // Clean up the URL
                 window.history.replaceState({}, document.title, '/home');
+                console.log("URL cleaned up");
             } catch (error) {
                 console.error('Error processing callback data:', error);
                 this.toastNotification.show({
                     title: 'Error',
-                    message: 'Failed to process login response',
+                    message: 'Failed to process login response: ' + error.message,
                     type: 'error',
                     duration: 4000
                 });
             }
         } else {
+            console.log("No callback data found, checking authentication status");
             // Check if user is already logged in
-            const userData = localStorage.getItem('userData');
-            if (!userData) {
-                // Redirect to login if not authenticated
+            this.checkAuthenticationStatus();
+        }
+    }
+    
+    checkAuthenticationStatus() {
+        const userData = localStorage.getItem('userData');
+        const accessToken = localStorage.getItem('accessToken');
+        
+        if (!userData || !accessToken) {
+            console.log("User not authenticated, redirecting to login");
+            // Redirect to login if not authenticated
+            this.toastNotification.show({
+                title: 'Authentication Required',
+                message: 'Please log in to continue',
+                type: 'warning',
+                duration: 2000
+            });
+            
+            setTimeout(() => {
                 window.location.href = '/login';
+            }, 2000);
+        } else {
+            console.log("User is authenticated");
+            // Parse user data
+            try {
+                const user = JSON.parse(userData);
+                console.log("User info:", user);
+            } catch (error) {
+                console.error("Error parsing user data:", error);
             }
         }
+    }
+    
+    initPageComponents() {
+        // Add event listeners to grid items
+        const gridItems = this.shadow.querySelectorAll('.grid-item');
+        gridItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const target = item.getAttribute('data-target');
+                console.log(`Navigating to: ${target}`);
+                window.location.href = `/${target}`;
+            });
+        });
     }
 
     disconnectedCallback() {
         console.log("HOME is Disconnected");
+        // Remove event listeners
+        const gridItems = this.shadow.querySelectorAll('.grid-item');
+        gridItems.forEach(item => {
+            item.removeEventListener('click');
+        });
     }
 }
 
