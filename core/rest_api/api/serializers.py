@@ -3,13 +3,18 @@ from .models import Tuser, Game, Tournament, Message, Conversation, Friendship
 from django.contrib.auth.hashers import make_password
 from zxcvbn import zxcvbn
 
+class   RegistrationSerializer(serializers.ModelSerializer):
+    pass
+
 class UserSerializer(serializers.ModelSerializer):
+    print("Hello World!!")
     class Meta:
         model = Tuser
         fields = ['id', 'username', 'fname', 'lname', 'email', 'bio', 
-                 'image', 'score', 'online_status', 'registration_date']
+                 'image', 'score', 'online_status', 'registration_date', 'password']
         read_only_fields = ['score', 'registration_date']
 
+    print("Hello World!!")
     def validate_password(self, value):
         if zxcvbn(value)['score'] < 3:
             raise serializers.ValidationError(

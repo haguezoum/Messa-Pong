@@ -160,19 +160,13 @@ SIMPLE_JWT = {
 CORS_ALLOW_CREDENTIALS = True
 CORS_ORIGIN_ALLOW_ALL = True
 CORS_ORIGIN_WHITELIST = [
-    'http://localhost:3000',
-    'http://localhost:8080',
-    'http://localhost:8000',
-    'http://localhost:80',
-    'http://127.0.0.1:3000',
-    'http://127.0.0.1:8000',
-    'http://127.0.0.1:8080',
-    'http://127.0.0.1:80',
-    'http://backend:3000',
-    'http://nginx:80'
+    'https://localhost:8080',
+    'https://localhost:8000',
+    'https://localhost'
 ]
 
 CORS_ALLOW_METHODS = [
+    'OPTIONS',
     'GET',
     'POST',
     'DELETE',
@@ -193,7 +187,7 @@ EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
 
 # Custom user model
-#AUTH_USER_MODEL = 'api.Tuser'
+AUTH_USER_MODEL = 'api.Tuser'
 
 # Custom settings
 DEFAULT_IMG = "anon.png"

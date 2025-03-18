@@ -6,7 +6,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.hashers import check_password
 from django.core.mail import send_mail
 from ..models import Tuser
-from ..serializers import UserSerializer
+from ..serializers import UserSerializer, RegistrationSerializer
 from ..permissions import IsVerifiedUser
 import os
 import binascii
@@ -14,7 +14,7 @@ import binascii
 class AuthViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['post'], permission_classes=[AllowAny])
     def register(self, request):
-        serializer = UserSerializer(data=request.data)
+        serializer = RegistrationSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
             user.tmp_otp = int.from_bytes(os.urandom(2), byteorder='big')

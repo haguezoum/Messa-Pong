@@ -179,7 +179,7 @@ class SIGNUP extends HTMLElement {
   };
 
   #api = {
-    BASE_URL: "http://localhost/api",
+    BASE_URL: "https://localhost/api",
     async registerUser(userData) {
       try {
         const response = await fetch(`${this.BASE_URL}/auth/register/`, {
@@ -189,12 +189,13 @@ class SIGNUP extends HTMLElement {
           },
           body: JSON.stringify(userData),
         });
+	 const responseData = await response.text();
+
+	 const parseData = responseData.length ? JSON.parse(responseData) : {};
         if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || "Failed to register user");
+          throw new Error(parseData.message || "unknown Error");
         }
-        const data = await response.json();
-        console.log("User registered successfully:", data);
+        console.log("User registered successfully:", parseData);
         this.showMessage("Registration successful!", "success");
       } catch (error) {
         console.error("Error during registration:", error);
@@ -280,7 +281,7 @@ class SIGNUP extends HTMLElement {
           }, 155);
           return;
         }
-
+        
         const userData = {
           username: this.#newUser.username,
           fname: this.#newUser.firstname,
