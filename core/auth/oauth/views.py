@@ -99,11 +99,13 @@ class FortyTwoCallbackView(APIView):
             return HttpResponseRedirect(frontend_url)
             
         except requests.exceptions.RequestException as e:
+            print(f"Token exchange error: {str(e)}")  # Add logging
             return Response(
                 {'error': f'Failed to authenticate with 42: {str(e)}'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         except Exception as e:
+            print(f"General error: {str(e)}")  # Add logging
             return Response(
                 {'error': f'An error occurred: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
