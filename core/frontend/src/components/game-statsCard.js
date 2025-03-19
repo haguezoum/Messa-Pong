@@ -37,7 +37,7 @@ class GamestatsCard extends HTMLElement {
     this.shadow.appendChild(template.content.cloneNode(true));
     const linkElem = document.createElement('link');
     linkElem.setAttribute('rel', 'stylesheet');
-    linkElem.setAttribute('href', 'src/assets/style/game-statscard.css');
+    linkElem.setAttribute('href', 'src/assets/style/game-statsCard.css');
     this.shadow.appendChild(linkElem);
   }
 

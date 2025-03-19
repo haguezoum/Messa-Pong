@@ -27,7 +27,7 @@ class Gamehistorycard extends HTMLElement {
     this.shadow = this.attachShadow({ mode: 'open' });
     const linkElem = document.createElement('link');
     linkElem.setAttribute('rel', 'stylesheet');
-    linkElem.setAttribute('href', 'src/assets/style/game-history-card.css');
+    linkElem.setAttribute('href', 'src/assets/style/game-historycard.css');
     this.shadow.appendChild(linkElem);
   }
   
