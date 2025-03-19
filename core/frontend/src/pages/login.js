@@ -15,7 +15,7 @@ template.innerHTML = /*html*/ `
           <div class="form-group">
               <div class="form-field">
                 <label for="email">Email</label>
-                <input type="email" class="email" id="email" autofocus name="email" placeholder="Username or email" autocomplete="email" pattern=".+@[a-z]+.[a-z]"
+                <input type="email" class="email" id="email" autofocus name="email" placeholder="Username or email" autocomplete="email"
                         title="Please provide only a Best Startup Ever corporate email address" required>
                 <p class="error" id="email-error" hidden>Error</p>
               </div>
@@ -60,28 +60,77 @@ template.innerHTML = /*html*/ `
   `;
 
 class LOGIN extends HTMLElement {
+  #api = {
+    BASE_URL: "https://localhost/api",
+    async loginUser(userData) {
+      try {
+        const response = await fetch(`${this.BASE_URL}/auth/login/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            username: userData.email,  // Assuming login with email
+            password: userData.password
+          })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error('Login error:', errorData);
+          throw new Error(errorData.detail || 'Login failed');
+        }
+
+        return await response.json();
+      } catch (error) {
+        console.error('Error during login:', error);
+        throw error;
+      }
+    }
+  };
+
   constructor() {
     super();
     this.shadow = this.attachShadow({ mode: "open" });
-    this.shadow.appendChild(template.content.cloneNode(true));
     const linkElem = document.createElement("link");
     linkElem.setAttribute("rel", "stylesheet");
     linkElem.setAttribute("href", "src/assets/style/login-page.css");
     this.shadow.appendChild(linkElem);
-    // this.shadow.childeNodes.forEach((e) => e.remove());
+    
+    this.setFormBinding(this.shadow.querySelector("form"));
   }
-
+  
   connectedCallback() {
-    console.log("LOGIN is Connected");
-    console.log(this.shadow);
+    this.shadow.appendChild(template.content.cloneNode(true));
     this.shadow.addEventListener("click", (e) => {
       e.preventDefault();
       console.log(e.target);
     });
   }
+  
+  setFormBinding(form) {
+    if (form) {
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
 
+        const userData = {
+          email: form.querySelector("#email").value,
+          password: form.querySelector("#password").value,
+        };
+
+        try {
+          await this.#api.loginUser(userData);
+          window.location.href = "/dashboard";  // Redirect on successful login
+        } catch (error) {
+          console.error('Login failed:', error);
+          // Show error message to user
+        }
+      });
+    }
+  }
   async disconnectedCallback() {
-    console.log("LOGIN is Disonnected");
   }
 
   static get observedAttributes() {

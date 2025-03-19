@@ -1,0 +1,16 @@
+Django==5.0.7
+djangorestframework==3.14.0
+djangorestframework-simplejwt==5.4.0 
+psycopg2==2.9.9
+requests==2.32.2
+zxcvbn==4.4.28
+psycopg==3.2.3
+django-cors-headers==4.1.0
+django-extensions==3.2.3
+Werkzeug==3.1.2
+channels[daphne]
+twisted[http2,tls]
+python-dotenv==1.0.0
+pytest
+pytest-django
+Pillow==10.2.0

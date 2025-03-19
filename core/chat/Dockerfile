@@ -10,32 +10,30 @@
 #                                                                              #
 # **************************************************************************** #
 
-FROM		python3.10-alpine AS base
+FROM		python:3.11-slim
 
-RUN		apk add --no-cache openssl curl
-
-FROM		base AS builder
-
-WORKDIR		/app
-
-COPY		pyproject.toml poetry.lock ./
-
-RUN		pip install poetry && poetry config virtualenvs.create false \
-		&& poetry install --no-dev --no-interaction --no-ansi
-
-FROM		base AS release
+ENV		PYTHONDONTWRITEBYTECODE=1 \
+		PYTHONUNBUFFERED=1 \
+		DJANGO_SETTINGS_MODULE=chat.settings
 
 WORKDIR		/app
 
-COPY		--from=dependencies /app/.venv /venv
+RUN		apt-get update && apt-get install -y --no-install-recommends \
+		build-essential libpq-dev postgresql-client curl && \
+		mkdir -p /app/static /app/staticfiles && \
+		chmod -R 755 /app/static /app/staticfiles && \
+		rm -rf /var/lib/apt/lists/* 
 
-COPY		. /app
+COPY		requirements.txt .
 
-ENV		PYTHONUNBUFFERED=1 \
-		PYTHONPATH=/app \
-		PATH="/venv/bin:$PATH" \
-		DJANGO_SETTINGS_MODULE=config.settings.production
+RUN		pip install --no-cache-dir -r requirements.txt && rm requirements.txt 
+
+COPY		src/ .
+
+COPY		./tools/entrypoint.sh .
+
+RUN		chmod +x entrypoint.sh
 
 EXPOSE		8002/tcp
 
-ENTRYPOINT	["daphne", "config.asgi:application", "-b", "0.0.0.0", "-p", "8002"]
+ENTRYPOINT	["./entrypoint.sh"]
