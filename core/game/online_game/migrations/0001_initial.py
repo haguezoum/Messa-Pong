@@ -38,7 +38,7 @@ class Migration(migrations.Migration):
                 ('player2_position', models.FloatField(default=50.0)),
                 ('player1_score', models.IntegerField(default=0)),
                 ('player2_score', models.IntegerField(default=0)),
-                ('game', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='state', to='game_app.game')),
+                ('game', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='state', to='online_game.game')),
             ],
         ),
     ]

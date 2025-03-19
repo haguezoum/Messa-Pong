@@ -38,7 +38,7 @@ The project follows a standard Django structure with additional organization for
 ```
 core/game/
 │
-├── game_app/                     # Main Django application
+├── online_game/                     # Main Django application
 │   ├── migrations/               # Database migrations
 │   │   └── 0001_initial.py      # Initial migration
 │   │
@@ -507,7 +507,7 @@ Follow these steps to set up and run the game locally:
 
 4. **Apply database migrations**:
    ```bash
-   python manage.py makemigrations game_app
+   python manage.py makemigrations online_game
    python manage.py migrate
    ```
 

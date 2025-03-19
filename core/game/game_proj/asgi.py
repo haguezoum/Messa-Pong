@@ -16,7 +16,7 @@ django.setup()  # Add this line to initialize Django before importing apps
 from django.core.asgi import get_asgi_application
 from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.auth import AuthMiddlewareStack
-from game_app.routing import websocket_urlpatterns
+from online_game.routing import websocket_urlpatterns
 from channels.layers import get_channel_layer
 from channels.sessions import SessionMiddlewareStack
 from django.contrib.sessions.middleware import SessionMiddleware

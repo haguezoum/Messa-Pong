@@ -15,7 +15,7 @@
 
 3. Apply database migrations:
    ```
-   python manage.py makemigrations game_app
+   python manage.py makemigrations online_game
    python manage.py migrate
    ```
 
