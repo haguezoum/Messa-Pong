@@ -24,6 +24,9 @@ template.innerHTML = /*html*/
         <div class="stat-bar-fill loss-bar" style="width: 0%"></div>
       </div>
     </div>
+    <div class="doughnut-chart">
+      <canvas id="doughnut-chart"></canvas>
+    </div>
   </div>
 </div>`;
 
@@ -65,12 +68,35 @@ class MatchstatsChart extends HTMLElement {
     const winBar = this.shadowRoot.querySelector('.win-bar');
     const drawBar = this.shadowRoot.querySelector('.draw-bar');
     const lossBar = this.shadowRoot.querySelector('.loss-bar');
+    const doughnutChart = this.shadowRoot.querySelector('#doughnut-chart');
     
     // Animate the bars to their actual percentages
     setTimeout(() => {
       winBar.style.width = `${data.matchStats.winPercentage}%`;
       drawBar.style.width = `${data.matchStats.drawPercentage}%`;
       lossBar.style.width = `${data.matchStats.lossPercentage}%`;
+      const ctx = doughnutChart.getContext('2d');
+      ctx.clearRect(0, 0, doughnutChart.width, doughnutChart.height);
+      const doughnutData = {
+        labels: ['Win', 'Draw', 'Loss'],
+        datasets: [{
+          data: [data.matchStats.winPercentage, data.matchStats.drawPercentage, data.matchStats.lossPercentage],
+          backgroundColor: ['#4CAF50', '#FFC107', '#F44336'],
+          hoverBackgroundColor: ['#4CAF50', '#FFC107', '#F44336']
+        }]
+      };
+      const doughnutChartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: doughnutData,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          legend: {
+            display: false
+          }
+        }
+      });
+      doughnutChartInstance.update();
     }, 300);
   }
 }
