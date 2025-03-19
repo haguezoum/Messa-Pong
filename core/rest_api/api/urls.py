@@ -111,6 +111,7 @@ urlpatterns = [
     # fetch('/block/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: 'userId' }) })
     path('block/', ChatViewSet.as_view({'post': 'block_user'}), name='block-user'),
 
+    #42 authentication endpoint
     path('auth/42/', auth_42, name='auth-42'),
     path('auth/42/callback/', auth_42_callback, name='auth-42-callback'),
 ]

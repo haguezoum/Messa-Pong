@@ -34,7 +34,6 @@ class AuthViewSet(viewsets.ViewSet):
                 }
                 return Response(response_data, status=status.HTTP_201_CREATED)
             
-            # Log validation errors
             logger.error(f"Validation errors: {serializer.errors}")
             return Response({
                 'status': 'error',
@@ -52,12 +51,13 @@ class AuthViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['post'], permission_classes=[AllowAny])
     def login(self, request):
         username = request.data.get('username')
+        email = request.data.get('email')
         password = request.data.get('password')
         
         user = Tuser.objects.filter(username=username).first() or \
-               Tuser.objects.filter(email=username).first()
+               Tuser.objects.filter(email=email).first()
 
-        if not user or not check_password(password, user.password_hash):
+        if not user or not check_password(password, user.password):
             return Response({
                 'error': 'Invalid username or password'
             }, status=status.HTTP_401_UNAUTHORIZED)
@@ -132,7 +132,6 @@ class AuthViewSet(viewsets.ViewSet):
 
 @api_view(['GET'])
 def auth_42(request):
-    # Redirect to 42's OAuth authorization page
     return redirect(f"{settings.API_42_AUTHORIZE_URL}?client_id={settings.API_42_CLIENT_ID}&redirect_uri={settings.API_42_REDIRECT_URI}&response_type=code")
 
 @api_view(['GET'])
@@ -141,7 +140,6 @@ def auth_42_callback(request):
     if not code:
         return Response({'error': 'No code provided'}, status=400)
 
-    # Exchange code for access token
     token_response = requests.post(settings.API_42_TOKEN_URL, data={
         'grant_type': 'authorization_code',
         'client_id': settings.API_42_CLIENT_ID,
@@ -154,8 +152,6 @@ def auth_42_callback(request):
         return Response({'error': 'Failed to obtain access token'}, status=400)
 
     access_token = token_response.json().get('access_token')
-
-    # Fetch user info
     user_info_response = requests.get(settings.API_42_USER_INFO_URL, headers={
         'Authorization': f'Bearer {access_token}'
     })

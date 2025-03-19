@@ -31,18 +31,6 @@ template.innerHTML = /*html*/
           </div>
           <div class="chat_friend_list_body">
              <ul class="chat_friend_list_item">
-              <li class="chat_friend_list_body__friend">
-                <div class="firend-info">
-                  <div class="friend-avatar">
-                    <img src="src/assets/images/charachters/bust-mask-13.svg" alt="avatar" class="friendAvatarImage" style="--isOnline:true">
-                    <div class="friend-status"></div>
-                  </div>
-                </div>
-                <div class="firend-info-message">
-                  <div class="friend-name">Hassan</div>
-                  <div class="friend-last-message">Lorem ipsum dolor, sit amet consectetur adipisicing elit. Aperiam quasi optio vero facilis, laborum porro obcaecati explicabo consectetur voluptates possimus, molestiae natus odit aliquam a nostrum non! Consectetur, fugit. Tempora.</div>
-                </div>
-              </li>
              </ul> 
           </div>
       </section>
@@ -53,27 +41,19 @@ template.innerHTML = /*html*/
             <div class="chat-header-avatar">
               <img src="https://cdn.intra.42.fr/users/d9f9db534fb3caa1b1e7eb8bb338f390/haguezou.jpg" alt="avatar" class="chatAvatarImage">
               <div class="chat-header-info">
-                <div class="chat-header-name">Axel zmamou baghugh</div>
-                <div class="chat-header-status">Active now</div>
+                <div class="chat-header-name"></div>
+                <div class="chat-header-status"></div>
               </div>
             </div>
             <div class="extra_info_button">
-            <ion-icon name="information-circle-outline" size="large"></ion-icon>
+              <ion-icon name="information-circle-outline" size="large"></ion-icon>
             </div>
         </div>
         <div class="chat-page__container__body__chat__messages">
              <!-- start message -->
             <div class="chat-container">
                 <div class="chat-messages">
-                    <div class="message received">
-                        <p>Hi there! How are you doing today?</p>
-                        <div class="message-time">10:30 AM</div>
-                    </div>
-
-                    <div class="message sent">
-                        <p>I'm doing great, thanks for asking! Just finished a big project.</p>
-                        <div class="message-time">10:32 AM</div>
-                    </div>
+                  <!-- messages -->
                 </div>
 
                 <div class="chat-input">
@@ -127,15 +107,18 @@ class CHAT extends HTMLElement {
 
   connectedCallback() {
     console.log("CHAT is Connected");
-    // let chatFriendList = this.shadow.querySelector('.chat_friend_list_item');
-    // let chatFriendListBody = this.shadow.querySelector('.chat_friend_list_body__friend');
-    // for(let i = 0; i < 10; i++) {
-    //   let fr = chatFriendListBody.cloneNode(true);
-    //   fr.querySelector('.friend-name').textContent = "Hassan" + i;
-    //   fr.setAttribute("style" , "animation-delay: " + i * 0.1 + "s");
-    //   chatFriendList.appendChild(fr);
-    // }
-    this.observeMessage();
+    this.chatAvatarImage = this.shadow.querySelector('.chatAvatarImage');
+    this.chatHeaderName = this.shadow.querySelector('.chat-header-name');
+    this.chatHeaderStatus = this.shadow.querySelector('.chat-header-status');
+    this.chatMessages = this.shadow.querySelector('.chat-messages');
+    this.chatFriendListParent  =  this.shadow.querySelector('.chat_friend_list_item');
+    this.infoButton = this.shadow.querySelector('.extra_info_button');
+    // --------------------------------
+    this.observeActionButtons();
+    this.conversationList();
+    this.selectConversation();
+    this.getConversationObjectOfCurrentUser();
+    this.getExtraInfo();
   }
   
   disconnectedCallback() {
@@ -150,8 +133,14 @@ class CHAT extends HTMLElement {
     // called when one of attributes listed above is modified
   }
 
-  // --- Methods ---
+  // *********[ Methods ]******************************************************************************************************************************************
 
+  // ------ Message tretment ------
+
+  /**
+   * @summary get the message from the input field and serilize it then return it to avoid any XSS attack
+   * @returns {String} - return the message from the input field
+   */
   getMessage(){
     const input = this.shadow.getElementById("messageInput");
     if(!input.value)
@@ -170,7 +159,11 @@ class CHAT extends HTMLElement {
     return newValue;
   }
 
-  observeMessage(){
+  /**
+   * @summary observe the action buttons (send Buuton -  Keyboard Enter - Send "thumb up 👍🏽" message ) and add the message to the chat by addMessage() method
+   * @returns {void} - no return value
+   */
+  observeActionButtons(){
     const sendButton = this.shadow.querySelector('.send-button');
     sendButton.addEventListener('click', (e) => {
       this.#messageInfo.message = this.getMessage();
@@ -199,9 +192,17 @@ class CHAT extends HTMLElement {
     });
   }
 
+  /**
+   * 
+   * @summary add the message to the chat body
+   * @param {*} messageInfo Object containes the message, time, type and imoji of the message
+   * @returns {void} - no return value
+   */
   addMessage(messageInfo){
     const chatMessages = this.shadow.querySelector('.chat-messages');
     const message = document.createElement('div');
+
+    chatMessages.classList.add('selectedChat');
     if(!messageInfo.message)
       return;
     message.classList.add('message', messageInfo.type);
@@ -212,22 +213,213 @@ class CHAT extends HTMLElement {
     chatMessages.appendChild(message);
     if(messageInfo.imoji == true)
       message.classList.add('imoji');
-    else if(messageInfo.imoji == false){
+    else if(messageInfo.imoji == false){  
       this.clearInput();
       message.classList.remove('imoji');
     }
+    message.classList.remove('imoji');
     this.scrollDown();
+
+    // use the API to post the message to the server
   }
 
+  /**
+   * 
+   * @summary get the conversation object of the current user and display the last conversation
+   * @returns {void} - no return value
+   */
   scrollDown(){
     const chatMessages = this.shadow.querySelector('.chat-messages');
     chatMessages.scrollTop = chatMessages.scrollHeight;
   }
 
+  /**
+   * 
+   * @summary get the conversation object of the current user and display the last conversation
+   * @returns {void} - no return value
+   */
   clearInput(){
     const input = this.shadow.getElementById("messageInput");
     input.value = "";
+    input.focus();  
   } 
+
+// ****************************************************************************************************************************************************************
+
+// ------ Select the conversation from the list ------
+
+/**
+ * 
+ * @param {*} friendElemnt 
+ * @param {*} clearInput 
+ * @sumery select the friend from the list of friends and display the conversation
+ * @return {void} - no return value
+ */
+async selectFriend(friendElemnt, clearInput = false){
+  const friendId = friendElemnt.dataset.id;
+  if(clearInput) this.clearInput();
+  friendElemnt.parentNode.querySelectorAll('.chat_friend_list_body__friend').forEach((friend) => {
+    friend.classList.remove('selected');
+  });
+  friendElemnt.classList.add('selected');
+  try{
+    const friendInfo = await this.getFriendInfo(friendId);
+    this.updateChatInterface(friendInfo);
+  }catch(err){
+    console.log(err);
+    this.chatMessages = "Error";
+  }
+}
+
+  /**
+   * @summary select the conversation from the list of friends and use this.addMessage() to display the conversation
+   * @param {void} - no parameters
+   * @returns {void} - no return value
+   */
+  selectConversation(){    
+    const observer  =  new MutationObserver((mutations) => {
+      // observe the chatFriendListParent for any changes(added by js to the DOM)
+      if(this.chatFriendListParent.children.length > 0){
+        const chatFriendListChild = this.chatFriendListParent.children;
+        // add the first conversation to the chat body by default
+        const firstFriend = chatFriendListChild[0];
+        this.selectFriend(firstFriend);
+          // --------------------------------------
+          Array.from(chatFriendListChild).forEach((friend) => {
+            friend.addEventListener('click', async (e) => {this.selectFriend(friend, true);});
+          });
+        observer.disconnect();
+      }
+    });
+    observer.observe(this.chatFriendListParent, {childList: true});
+}
+
+/**
+ * @summary update the chat interface with the new friend info
+ * @param {*} friendInfo 
+ * 
+ */
+updateChatInterface(friendInfo){
+  this.chatAvatarImage.src = friendInfo.profile_picture_url;
+  this.chatHeaderName.textContent = `${friendInfo.firstName} ${friendInfo.lastName}`;
+  this.chatHeaderStatus.textContent = friendInfo.status? "Active now" : "Offline";
+  this.chatMessages.innerHTML = "";
+  friendInfo.discussion.forEach((discussion) => {
+    const messageInfo = {
+      message: discussion.message,
+      time: discussion.timestamp.substring(11, 16),
+      type: discussion.message_type,
+      imoji: discussion.is_imoji
+    }
+    this.addMessage(messageInfo);
+  });
+
+}
+
+
+
+
+  /**
+   * 
+   * @param {*} id - alphanumerical ID of the friend that we want to get his info
+   * @returns  {Promise} - return the friend info object or throw an error
+   */
+  async getFriendInfo(id){
+    const response = await fetch('./src/pages/messags.json'); //replace with getConversationObject()
+    if(!response.ok)
+      throw new Error(`HTTP error! status: ${response.status}`);
+
+    const user = await response.json();
+    const friends = user.friends;
+    const friendInfo =  friends.find(friend => friend.userID == id);
+    return friendInfo;
+  }
+
+
+  /**
+   * 
+   * @summary get the conversation object of the current user by calling his ID from JWT token
+   * @returns {Promise} - return the conversation object of the current user
+   *  
+  */
+  async getConversationObjectOfCurrentUser(){
+    const response = await  app.API('./src/pages/messags.json'); //replace with getConversationObject()
+    return response;
+  }
+
+  /**
+   *
+   * @summary itereate over the conversation object and add each friend to the conversation list
+   * @returns {Promise} - return true if the operation is done successfully or throw an error 
+   */
+  
+  async conversationList(){
+    const response = await fetch('./src/pages/messags.json');
+    if(!response.ok){
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const user = await response.json();
+    const friend =  user.friends;
+
+    friend.forEach((friend) => {
+      this.addFriendToConversation(friend);
+    });
+    return true;
+  }
+
+
+  /**
+   * 
+   * @summary add the friend to the conversation list
+   * @param {*} firend Object - the friend object that we want to add to the conversation list
+   * @returns  {void} - add the friend to the conversation list
+   */
+  addFriendToConversation(firend){
+
+    let conversationListParent =  this.shadow.querySelector('.chat_friend_list_item');
+    let child = document.createElement('li');
+    child.classList.add('chat_friend_list_body__friend');
+    child.dataset.id = firend.userID;
+    let status = firend.status? "online" : "offline";
+    let firstName = firend.firstName;
+    let lastName = firend.lastName;
+    let lastMessage = firend.discussion.find(discussion => discussion.message_type == "received").message.substring(0, 60).concat(" ➢");
+    let avatar = firend.profile_picture_url;
+    child.innerHTML = `
+      <div class="firend-info">
+        <div class="friend-avatar">
+          <img src="${avatar}" alt="avatar" class="friendAvatarImage" style="--isOnline:true">
+          <div class="friend-status" data${status}></div>
+        </div>
+      </div>
+      <div class="firend-info-message">
+        <div class="friend-name">${firstName} ${lastName}</div>
+        <div class="friend-last-message">${lastMessage}</div>
+      </div>
+    `;
+    conversationListParent.appendChild(child);
+    return ;
+  }
+
+
+
+  // ****************************************************************************************************************************************************************
+
+
+  /**
+   * 
+   * @summary get extra information about the riend
+   * @param {void} - no parameters
+  * @returns {void} - no return value
+   */
+  getExtraInfo(){
+    this.shadow.querySelector('.extra_info_button').addEventListener('click', (e) => {
+      const id = e.currentTarget.parentNode.dataset.id;
+      alert("Extra Info "+ id);
+      console.log("Extra Info");
+    });
+  }
 }
 customElements.define('chat-page', CHAT);
 

@@ -21,7 +21,6 @@ class Tuser(AbstractUser):
     created_at = models.DateTimeField(auto_now_add=True)
     avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
     score = models.FloatField(default=0.0)
-    password_hash = models.CharField(max_length=256)
     friends = models.ManyToManyField("self", blank=True, symmetrical=False, related_name="friend_of")
     blocked = models.ManyToManyField("self", blank=True, symmetrical=False, related_name="blocked_by")
     tfa_enabled = models.BooleanField(default=False)

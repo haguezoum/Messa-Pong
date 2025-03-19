@@ -1,0 +1,214 @@
+/****** SELECTGAMEMODE.css ******/
+:root{
+    --primary-blue: rgb(14, 12, 40);
+    --secondary-blue: rgb(40, 105, 161);
+    --secondary-blue-on: rgba(40, 104, 161, 0.57);
+    --secondary-blue-off: rgba(56, 128, 255, 0.278);
+    --primary-success: rgb(34, 189, 79);
+    --socondry-success:rgba(103, 201, 131, 0.963);
+    --primary-danger: rgb(220, 53, 69);
+    --primary-warning:rgb(220, 181, 53);
+    --socondry-warning: rgba(220, 181, 53, 0.372);
+    --primary-black: rgba(0, 0, 0, 0.8);
+    --socondry-black: rgb(138, 146, 160);
+    --dead-blue: rgb(35, 52, 84);
+    --font-color-primary: rgb(255, 255, 255);
+    --font-color-secondry: rgb(138, 146, 160);
+    --font-color-third: rgb(5, 0, 38);
+    --alive-blue:rgb(135, 205, 234);
+    --white: rgb(255, 255, 255);
+    --black: rgb(0, 0, 0);
+    --gray: rgb(138, 146, 160);
+    --secondry-gray : rgba(217, 217, 217, 0.264);
+    --primary-font: "Righteous", sans-serif;
+    --socondry-font: "ABeeZee", sans-serif;
+    --primapry-purpule: rgb(156, 71, 255);
+    --background-yallow: rgb(255, 255, 0);
+    /* --primary-green: rgb(1, 50, 12); */
+    }
+    *{
+        padding: 0;
+        margin: 0;
+        box-sizing: border-box;
+    }
+    body{
+        background: linear-gradient(50deg , rgba(16, 147, 203), rgba(16, 147, 203, 0.5));
+        height: 100vh;
+        width: auto;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-evenly;
+    }
+    /* container 1 */
+    .container1{
+        background: linear-gradient(205deg, rgb(60, 96, 195) , rgb(60, 96, 195, 0));
+        border-radius: 50px;
+        width: 520px;
+        height: 550px;
+        display: flex;
+        flex-direction: column;
+        text-align: center;
+        cursor: pointer;
+        transition: background 0.5s ease-in-out;
+    }
+    .container1:hover{
+        background: rgba(60, 96, 195, 0.8);
+    }
+    .offline-image{
+        margin-top: -250px;
+        margin-left: 30px;
+    } 
+    p{
+        font-size: 60px;
+        margin-top: 0px;
+        margin-bottom: 0px;
+        letter-spacing: 6px;
+    }
+    .offline-text{
+        margin-top: -10px;
+        margin-right: 100px;
+        font-family: "Redressed", cursive;
+        color: whitesmoke;
+    }
+    .MODE-text{
+        margin-left: 100px;
+        font-family: "Bebas Neue", sans-serif;
+        color: whitesmoke;
+    }
+    .ball{
+        position: absolute;
+        top: 300px;
+        left: 460px;
+        width: 30px;
+        opacity: 0%;
+    }
+    @keyframes bounce{
+        0% { transform: translateY(0px); }
+        30% { transform: translateY(-10px); }
+        50% { transform: translateY(0); }
+        70% { transform: translateY(-10px); }
+        100% { transform: translateY(0); }
+    } 
+    .container1:hover .offline-image{
+        animation: bounce 3s ease-in-out infinite; 
+    }
+    
+    
+    @keyframes bounce_b{
+        0% { transform: translateX(0px); }
+        30% { transform: translateX(7px); }
+        50% { transform: translateX(0px); }
+        70% { transform: translateX(40px);}
+        100% { transform: translateX(0); }
+    }
+    .container1:hover .ball{
+        top: 120px;
+        left: 200px;
+        opacity: 1;
+        animation: bounce_b 1s infinite;
+    }
+    
+    /* container 2 */
+    .container2{
+        display: flex;
+        width: 520px;
+        height: 550px;
+        margin-top: 300px;
+        border-radius: 50px;
+        background: linear-gradient(210deg, #FD3F3F, rgb(253, 63, 63, 0));
+        text-align: center;
+        display: block;
+        cursor: pointer;
+        transition: background 0.5s ease;
+    }
+    .container2:hover{
+        animation: bon 3s ease-in infinite;
+        background: rgb(253, 63, 63, 0.8);
+    }
+    @keyframes bon{
+        0% { transform: translateY(0px); }
+        30% { transform: translateY(3px); }
+        50% { transform: translateY(0px); }
+        70% { transform: translateY(3px); }
+        100% { transform: translateY(0px); }
+    }
+    .online-image{
+        margin-top: -100px;
+        transition: transform 0.5s ease-in; 
+    }
+    .container2:hover .online-image{
+        transform: scale(1.3);
+    }
+    .texts{
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        padding: 30px;
+        padding-left: 100px;
+        padding-right: 100px;
+    }
+    .online-text{
+        display: flex;
+        justify-content: start;
+        font-family: "Redressed", cursive;
+        color: whitesmoke;
+    }
+    .MODE-online{
+        padding-left: 80px;
+        font-family: "Bebas Neue", sans-serif;
+        color: whitesmoke;
+    }
+    /* container 2 */
+    
+    .container3{
+        display: flex;
+        width: 520px;
+        height: 550px;
+        border-radius: 50px;
+        background: linear-gradient(210deg, rgb(219, 147, 8), rgb(227, 16, 125, 0));
+        text-align: center;
+        display: block;
+        cursor: pointer;
+        transition: background 0.5s ease;
+    }
+    .container3:hover{
+        background: rgb(219, 147, 8, 0.7);
+    }
+    .turnoi-image{
+        margin-left: 50px;
+        margin-top: -250px;
+    }
+    .texts_t{
+        padding-left: 70px;
+        padding-right: 100px;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+    }
+    .text1_t{
+        display: flex;
+        justify-content: start;
+    }
+    .turnoi-text{
+        font-family: "Redressed", cursive;
+        color: white;
+    }
+    .text2_t{
+        display: flex;
+        justify-content: end;
+    }
+    .MODE-textturnoi{
+        font-family: "Bebas Neue", sans-serif;
+        color: whitesmoke;
+    }
+    .container3:hover .turnoi-image{
+        animation: move_turnoi 3s ease-in-out infinite;
+    }
+    @keyframes move_turnoi{
+        0% { transform: translateY(0px); }
+        30% { transform: translateY(-10px); }
+        50% { transform: translateY(5px); }
+        70% { transform: translateY(-10px); }
+        100% { transform: translateY(0px); }
+    }

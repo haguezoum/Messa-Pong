@@ -15,7 +15,7 @@ template.innerHTML = /*html*/ `
           <div class="form-group">
               <div class="form-field">
                 <label for="email">Email</label>
-                <input type="email" class="email" id="email" autofocus name="email" placeholder="Username or email" autocomplete="email" pattern=".+@[a-z]+.[a-z]"
+                <input type="email" class="email" id="email" autofocus name="email" placeholder="Username or email" autocomplete="email"
                         title="Please provide only a Best Startup Ever corporate email address" required>
                 <p class="error" id="email-error" hidden>Error</p>
               </div>
@@ -72,7 +72,8 @@ class LOGIN extends HTMLElement {
           },
           credentials: 'include',
           body: JSON.stringify({
-            username: userData.email,  // Assuming login with email
+            email: userData.email,
+            username: userData.username,
             password: userData.password
           })
         });
@@ -80,7 +81,7 @@ class LOGIN extends HTMLElement {
         if (!response.ok) {
           const errorData = await response.json();
           console.error('Login error:', errorData);
-          throw new Error(errorData.detail || 'Login failed');
+          throw new Error(errorData.msg || 'Login failed');
         }
 
         return await response.json();
@@ -94,12 +95,14 @@ class LOGIN extends HTMLElement {
   constructor() {
     super();
     this.shadow = this.attachShadow({ mode: "open" });
-    this.shadow.appendChild(template.content.cloneNode(true));
     const linkElem = document.createElement("link");
     linkElem.setAttribute("rel", "stylesheet");
     linkElem.setAttribute("href", "src/assets/style/login-page.css");
     this.shadow.appendChild(linkElem);
+  }
 
+  connectedCallback() {
+    this.shadow.appendChild(template.content.cloneNode(true));
     this.setFormBinding(this.shadow.querySelector("form"));
   }
 
@@ -114,39 +117,24 @@ class LOGIN extends HTMLElement {
         };
 
         try {
-          await this.#api.loginUser(userData);
-          window.location.href = "/dashboard";  // Redirect on successful login
+          const responseData = await this.#api.loginUser(userData);
+          console.log('Login successful:', responseData);
+          window.location.href = "/home";
         } catch (error) {
           console.error('Login failed:', error);
-          // Show error message to user
+          alert('Login failed: ' + error.message);
         }
       });
     }
   }
 
-  connectedCallback() {
-    console.log("LOGIN is Connected");
-    console.log(this.shadow);
-    this.shadow.addEventListener("click", (e) => {
-      e.preventDefault();
-      console.log(e.target);
-    });
-  }
-
-  async disconnectedCallback() {
-    console.log("LOGIN is Disonnected");
-  }
-
   static get observedAttributes() {
-    return [
-      /* array of attribute names to monitor for changes */
-    ];
+    return [];
   }
 
-  attributeChangedCallback(name, oldValue, newValue) {
-    // called when one of attributes listed above is modified
-  }
+  attributeChangedCallback(name, oldValue, newValue) {}
 }
+
 customElements.define("login-page", LOGIN);
 
 export default LOGIN;

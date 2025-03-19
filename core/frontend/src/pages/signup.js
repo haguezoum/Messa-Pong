@@ -232,9 +232,8 @@ class SIGNUP extends HTMLElement {
     linkElem.setAttribute("href", "src/assets/style/signup-page.css");
 
     this.shadow = this.attachShadow({ mode: "open" });
-    this.shadow.appendChild(linkElem);
+    this.shadow.appendChild(linkElem); 
     this.shadow.appendChild(template.content.cloneNode(true));
-
     this.setFormBinding(this.shadow.querySelector("form"));
   }
 
