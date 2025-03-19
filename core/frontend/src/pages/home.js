@@ -1,12 +1,11 @@
 let template = document.createElement("template");
-
 template.innerHTML =
   /*html*/
   `<div id="home-page" class="home-page">
     <div class="container">
         <header-bar></header-bar>
         <main class="grid-layout">
-            <div class="grid-item" id="play-now" data-target="game">
+            <div class="grid-item" id="play-now" data-target="game" onclick='app.state.currentPage="/selectgamemode"'>
                <!-- <img class="selectCardImage"  src="src/assets/images/charachters/home_main/home_characters/l9erd.png" alt="" srcset="" loading="lazy"> -->
                 <img class="selectCardImage"  src="src/assets/images/pingpongPlayer.png" alt="" srcset="" loading="lazy">
                <div class="selectCardControles">
@@ -25,7 +24,7 @@ template.innerHTML =
                     </span>
                 </div>
             </div>
-            <div class="grid-item" id="dashboard" data-target="dashboard">
+            <div class="grid-item" id="dashboard" data-target="dashboard" onclick='app.state.currentPage="/dashboard"'>
                 <img class="selectCardImage" src="src/assets/images/charachters/home_main/home_characters/my_dashboard.png" alt="" srcset="" loading="lazy">
                 <div class="selectCardControles">
                     <h3 class="left">Dashboard</h3>
@@ -34,7 +33,7 @@ template.innerHTML =
                       </span>
                 </div>
             </div>
-            <div class="grid-item" id="chat-space" data-target="chat">
+            <div class="grid-item" id="chat-space" data-target="chat" onclick='app.state.currentPage="/chat"'>
                 <img class="selectCardImage" src="src/assets/images/charachters/home_main/home_characters/chat.png" alt="" srcset="" loading="lazy">
                 <div class="selectCardControles">
                     <h3 class="left">Chat space</h3>
@@ -44,9 +43,9 @@ template.innerHTML =
                 </div>
             </div>
         </main>
-        </div>
-        <cloud-moving cloudCount="10"></cloud-moving> 
-  </div>`;
+    </div>
+    <cloud-moving cloudCount="10"></cloud-moving> 
+</div>`;
 
 class HOME extends HTMLElement {
   constructor() {

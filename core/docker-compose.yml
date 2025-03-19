@@ -10,7 +10,7 @@ services:
             - 80:80/tcp
             - 443:443/tcp
         volumes:
-            - frontend-files:/www
+          - frontend-files:/www:ro
         networks:
             42network:
                 aliases:
@@ -18,22 +18,36 @@ services:
         depends_on:
             redis:
                 condition: service_healthy
+        security_opt:
+            - no-new-privileges:true
+        cap_drop:
+            - ALL
+        cap_add:
+            - NET_BIND_SERVICE
         restart: always
-
+    
     frontend:
         image: frontend:builder
         container_name: frontend
         build:
             context: ./frontend
         volumes:
-            - frontend-files:/www
+            - frontend-files:/www:cached
         networks:
             42network:
                 aliases:
                     - frontend
         depends_on:
-            database:
-                condition: service_healthy
+            - rest_api
+                # condition: service_healthy
+        deploy:
+            resources:
+                limits:
+                    cpus: '0.50'
+                    memory: 256M
+                reservations:
+                    cpus: '0.25'
+                    memory: 128M
         restart: always
 
     database:
@@ -52,10 +66,15 @@ services:
             - database-credentials
         healthcheck:
             test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
-            interval: 10s
-            timeout: 5s
-            retries: 3
-            start_period: 60s
+            interval: 15s
+            timeout: 10s
+            retries: 5
+            start_period: 50s
+        logging:
+            driver: "json-file"
+            options:
+                max-size: "10m"
+                max-file: "3"
         restart: always
 
     redis:
@@ -63,65 +82,120 @@ services:
         container_name: redis
         build:
             context: ./infrastructure/redis
-        ports:
-            - 6379:6379/tcp
         networks:
             42network:
                 aliases:
                     - redis
         healthcheck:
             test: ["CMD", "redis-cli", "ping"]
-            interval: 5s
-            timeout: 2s
+            interval: 10s
+            timeout: 5s
             retries: 3
-            start_period: 10s
+            start_period: 30s
         depends_on:
             database:
                 condition: service_healthy
         restart: always
 
-    # auth:
-    #     image: auth:alpine
-    #     container_name: auth
+    # game:
+    #     image: game:server
+    #     container_name: game
     #     build:
-    #         context: ./auth
-    #     volumes:
-    #         - auth_storage:/api/static
-    #     network:
+    #         context: ./game
+    #     networks:
     #         42network:
-    #           aliases:
-    #               - authentication
-    #               - api_gateway
+    #             aliases:
+    #                 - game
+    #     depends_on:
+    #         redis:
+    #             condition: service_healthy
+    #     healthcheck:
+    #         test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+    #         interval: 30s
+    #         timeout: 10s
+    #         retries: 3
+    #         start_period: 30s
+    #     restart: always
+
+    # chat:
+    #     image: chat:messenger
+    #     container_name: chat
+    #     build:
+    #         context: ./chat
+    #     networks:
+    #         42network:
+    #             aliases:
+    #                 - chat
     #     secrets:
     #         - database-credentials
-    #         - api-credentials
+    #     environment:
+    #         - DJANGO_SETTINGS_MODULE=chat.settings
+    #         - PG_HOST=database
+    #         - PG_PORT=5432
     #     depends_on:
     #         database:
     #             condition: service_healthy
+    #         redis:
+    #             condition: service_healthy
+    #     healthcheck:
+    #         test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+    #         interval: 30s
+    #         timeout: 10s
+    #         retries: 3
+    #         start_period: 30s
     #     restart: always
+
+    rest_api:
+        image: restapi:server
+        container_name: rest_api
+        build:
+            context: ./rest_api
+        networks:
+            42network:
+              aliases:
+                  - oauth
+                  - api_gateway
+        # ports:
+        #     - 8000:8000/tcp
+        environment:
+            - DJANGO_SETTINGS_MODULE=api.settings
+        # volumes:
+        #     - restapi_files:/api
+        #     - frontend-files:/www:ro
+        secrets:
+            - api-credentials
+            - database-credentials
+        depends_on:
+            database:
+                condition: service_healthy
+        deploy:
+            resources:
+                limits:
+                    memory: 256M
+        # healthcheck:
+        #     test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+        #     interval: 5s
+        #     timeout: 2s
+        #     retries: 3
+        #     start_period: 10s
+        restart: always
 
 
 volumes:
     database-data:
-        name: database_volume
-
-    redis-data:
-        name: redis_volume
-
+        name: database-data
     frontend-files:
-        name: frontend_volume
-    
-    auth_storage:
-        name: auth_storage
-
-    elk-data:
-        name: elk_volume
+        name: frontend-files
+    # restapi_files:
+    #     name: restapi_files
 
 
 networks:
     42network:
         name: 42network
         driver: bridge
+        driver_opts:
+            com.docker.network.driver.mtu: 1450
 
 
 secrets:
@@ -129,5 +203,3 @@ secrets:
         file: ../secrets/database-credentials.env
     api-credentials:
         file: ../secrets/api-credentials.env
-    elk-credentials:
-        file: ../secrets/elk-credentials.env
