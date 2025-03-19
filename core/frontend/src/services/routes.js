@@ -47,7 +47,14 @@ const routes = [
       view: async () => {
       await import('../pages/chat.js');
       return '<chat-page></chat-page>';
+      }
     },
-     }
+    {
+      path: '/dashboard',
+      view: async () => {
+      await import('../pages/dashboard.js');
+      return '<dashboard-page></dashboard-page>';
+      },
+    },
   ]
 export default routes;
