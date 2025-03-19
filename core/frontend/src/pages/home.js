@@ -48,6 +48,9 @@ template.innerHTML =
 </div>`;
 
 class HOME extends HTMLElement {
+
+  //should check if user is authenticated if not redirect to login page 
+  //if user is authenticated then show the home page
   constructor() {
     super();
      this.shadow = this.attachShadow({ mode: "open" });
@@ -57,8 +60,37 @@ class HOME extends HTMLElement {
     this.shadow.appendChild(linkElem);
   }
   
-  connectedCallback() {
+  async connectedCallback() {
     this.shadow.appendChild(template.content.cloneNode(true));
+    await this.checkAuthentication();
+  }
+
+  async checkAuthentication() {
+    try {
+      const token = localStorage.getItem('access_token'); // Assuming token is stored in localStorage
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await fetch('/api/auth/check/', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Not authenticated');
+      }
+
+      const data = await response.json();
+      console.log('User is authenticated:', data);
+    } catch (error) {
+      console.error('User is not authenticated:', error);
+      window.location.href = '/login';  // Redirect to login if not authenticated
+    }
   }
 
   async disconnectedCallback() {

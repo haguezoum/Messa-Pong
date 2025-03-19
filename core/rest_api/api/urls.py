@@ -19,7 +19,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
 from .views import tfa, password, friendship, game, tournament
-from .views.auth import AuthViewSet, auth_42, auth_42_callback
+from .views.auth import AuthViewSet, auth_login, callback, check_authentication
 from .views.user import UserViewSet
 from .views.chat import ChatViewSet
 
@@ -46,6 +46,13 @@ urlpatterns = [
     # POST /auth/logout/ - Logout a user
     # fetch('/auth/logout/', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
     path('auth/logout/', AuthViewSet.as_view({'post': 'logout'}), name='logout'),
+
+    # 42 OAuth endpoints
+    path('auth/42/', auth_login, name='auth-42'),
+    path('auth/42/callback/', callback, name='auth-42-callback'),
+
+    # Check authentication status
+    path('auth/check/', check_authentication, name='check-authentication'),
 
     # TFA endpoints
     # POST /auth/2fa/challenge/ - Verify 2FA OTP
@@ -110,8 +117,4 @@ urlpatterns = [
     # POST /block/ - Block a user from chatting
     # fetch('/block/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: 'userId' }) })
     path('block/', ChatViewSet.as_view({'post': 'block_user'}), name='block-user'),
-
-    #42 authentication endpoint
-    path('auth/42/', auth_42, name='auth-42'),
-    path('auth/42/callback/', auth_42_callback, name='auth-42-callback'),
 ]

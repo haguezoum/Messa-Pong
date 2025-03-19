@@ -73,7 +73,6 @@ class LOGIN extends HTMLElement {
           credentials: 'include',
           body: JSON.stringify({
             email: userData.email,
-            username: userData.username,
             password: userData.password
           })
         });
@@ -104,6 +103,17 @@ class LOGIN extends HTMLElement {
   connectedCallback() {
     this.shadow.appendChild(template.content.cloneNode(true));
     this.setFormBinding(this.shadow.querySelector("form"));
+
+    // Ensure the element exists before adding the event listener
+    const btn42Network = this.shadow.querySelector('.btn_42Network');
+    if (btn42Network) {
+      btn42Network.addEventListener('click', () => {
+        // Redirect to the 42 OAuth authorization URL
+        window.location.href = 'https://localhost/api/auth/42/';
+      });
+    } else {
+      console.error('42 Network button not found');
+    }
   }
 
   setFormBinding(form) {

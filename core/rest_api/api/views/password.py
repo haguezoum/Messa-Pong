@@ -47,7 +47,7 @@ def reset_password(request):
             'error': 'Password is too weak. Include uppercase, numbers and symbols.'
         }, status=status.HTTP_400_BAD_REQUEST)
     
-    user.password_hash = make_password(new_password)
+    user.password = make_password(new_password)
     user.fp_token = ''  # Clear the reset token
     user.save()
     

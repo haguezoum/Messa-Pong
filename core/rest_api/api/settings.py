@@ -191,7 +191,7 @@ AUTH_USER_MODEL = 'api.Tuser'
 
 # Custom settings
 DEFAULT_IMG = "anon.png"
-FRONT_URL = os.environ.get('API_42_CLIENT_ID')
+FRONT_URL = os.environ.get('FRONT_URL', 'https://localhost/')
 MAX_TOURNAMENT_PLAYERS = 64
 
 # 42 OAuth settings
