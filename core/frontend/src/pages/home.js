@@ -5,7 +5,7 @@ template.innerHTML =
     <div class="container">
         <header-bar></header-bar>
         <main class="grid-layout">
-            <div class="grid-item" id="play-now" data-target="game" onclick='app.state.currentPage="/game"'>
+            <div class="grid-item" id="play-now" data-target="game" onclick='app.state.currentPage="/selectgamemode"'>
                <!-- <img class="selectCardImage"  src="src/assets/images/charachters/home_main/home_characters/l9erd.png" alt="" srcset="" loading="lazy"> -->
                 <img class="selectCardImage"  src="src/assets/images/pingpongPlayer.png" alt="" srcset="" loading="lazy">
                <div class="selectCardControles">
