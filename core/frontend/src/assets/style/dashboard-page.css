@@ -128,11 +128,12 @@
   flex: 1;
 }
 
-.tab-content.active {
+.tab-content.active {  
   opacity: 1;
   height: auto;
   transform: translateY(0);
   position: relative;
+  transition-delay: 0.1s;
 }
 
 .all-active .tab-content.active {

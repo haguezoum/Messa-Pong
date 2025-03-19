@@ -16,7 +16,7 @@ template.innerHTML = /*html*/
             </div>
       
             <div class="content-container">
-              <div id="stats-content" class="stats-contentTab tab-content"> <!-- start first tab -->
+              <div id="stats-content" class="stats-contentTab tab-content active"> <!-- start first tab -->
                 <div class="stats-container">
                   <game-statscard></game-statscard>
                 </div>
@@ -29,7 +29,7 @@ template.innerHTML = /*html*/
                 </div>
               </div><!-- End first tab -->
 
-              <div id="history-content" class="tab-content history-contentTab active">
+              <div id="history-content" class="tab-content history-contentTab">
                 <h2>Game History</h2>
               </div>
             </div>
@@ -142,13 +142,11 @@ class DASHBOARD extends HTMLElement {
     const contentContainer = this.shadow.querySelector('.content-container');
     
     tabButtons.forEach(button => {
-      button.addEventListener('click', () =>{
-        // const tabToShow = button.getAttribute('data-tab');
-        // Remove active class from all buttons
+      button.addEventListener('click', (e) =>{
         tabButtons.forEach(btn => btn.classList.remove('active'));
         
         // Add active class to clicked button
-        this.classList.add('active');
+        e.target.classList.add('active');
         
         // Get the tab to show
         const tabToShow = button.getAttribute('data-tab');
