@@ -97,12 +97,16 @@ class DASHBOARD extends HTMLElement {
 
   async  fetchDashboardData() {
     // In a real application, this would be a fetch call to your API
-    // return fetch('/api/game-stats').then(response => response.json());
 
-    return new Promise(resolve => {
+    return fetch('https://localhost/api/friends').then(response => response.json()).then(data =>{
+      console.log(data);
+      return data;
+    });
+
+    /*return new Promise(resolve => {
       setTimeout(() => {
         resolve({
-          totalGames: 82892,
+          total-games: 82892,
           wins: 12,
           draws: 17,
           losses: 8,
@@ -127,7 +131,7 @@ class DASHBOARD extends HTMLElement {
           ]
         });
       }, 500);
-    });
+    });*/
   }
   
 
