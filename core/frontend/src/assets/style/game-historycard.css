@@ -1,13 +1,5 @@
 /****** game-history-card.css ******/
 
-/* :root {
-  --victory-bg: #5baa7f;
-  --draw-bg: #5b95aa;
-  --defeat-bg: #7d6a8b;
-  --text-color: #ffffff;
-  --player-a-bg: #a8c0e0;
-  --player-b-bg: #f5a78b;
-} */
 .game-history-card *{
   margin: 0;
   padding: 0;

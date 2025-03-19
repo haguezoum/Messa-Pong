@@ -1,6 +1,210 @@
 /****** game-statsCard.css ******/
 
 :host {
+  display: block;
+  width: 100%;
+  height: max-content;
+  /* border: 1px solid rgba(255, 255, 255, 0.2); */
+}
+
+.stats-container {
+  display: flex;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  width: 100%;
+  overflow: hidden;
+}
+
+.stat-card {
+  flex: 1;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  position: relative;
+}
+
+.stat-card:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 20%;
+  bottom: 20%;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.stat-icon {
+  font-size: 24px;
+  margin-bottom: 8px;
+}
+
+.stat-value {
+  font-size: 36px;
+  font-weight: bold;
+  line-height: 1;
+  margin-bottom: 5px;
+}
+
+.stat-label {
+  font-size: 18px;
+  opacity: 0.9;
+}
+
+@media (max-width: 768px) {
+  .stats-container {
+    flex-direction: column;
+  }
+  
+  .stat-card:not(:last-child)::after {
+    right: 20%;
+    left: 20%;
+    top: auto;
+    bottom: 0;
+    width: auto;
+    height: 1px;
+  }
+}/****** game-statsCard.css ******/
+
+:host {
+  display: block;
+  width: 100%;
+  height: max-content;
+  /* border: 1px solid rgba(255, 255, 255, 0.2); */
+}
+
+.stats-container {
+  display: flex;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  width: 100%;
+  overflow: hidden;
+}
+
+.stat-card {
+  flex: 1;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  position: relative;
+}
+
+.stat-card:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 20%;
+  bottom: 20%;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.stat-icon {
+  font-size: 24px;
+  margin-bottom: 8px;
+}
+
+.stat-value {
+  font-size: 36px;
+  font-weight: bold;
+  line-height: 1;
+  margin-bottom: 5px;
+}
+
+.stat-label {
+  font-size: 18px;
+  opacity: 0.9;
+}
+
+@media (max-width: 768px) {
+  .stats-container {
+    flex-direction: column;
+  }
+  
+  .stat-card:not(:last-child)::after {
+    right: 20%;
+    left: 20%;
+    top: auto;
+    bottom: 0;
+    width: auto;
+    height: 1px;
+  }
+}/****** game-statsCard.css ******/
+
+:host {
+    display: block;
+    width: 100%;
+    height: max-content;
+    /* border: 1px solid rgba(255, 255, 255, 0.2); */
+  }
+  
+  .stats-container {
+    display: flex;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 16px;
+    width: 100%;
+    overflow: hidden;
+  }
+  
+  .stat-card {
+    flex: 1;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    position: relative;
+  }
+  
+  .stat-card:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    top: 20%;
+    bottom: 20%;
+    width: 1px;
+    background: rgba(255, 255, 255, 0.2);
+  }
+  
+  .stat-icon {
+    font-size: 24px;
+    margin-bottom: 8px;
+  }
+  
+  .stat-value {
+    font-size: 36px;
+    font-weight: bold;
+    line-height: 1;
+    margin-bottom: 5px;
+  }
+  
+  .stat-label {
+    font-size: 18px;
+    opacity: 0.9;
+  }
+  
+  @media (max-width: 768px) {
+    .stats-container {
+      flex-direction: column;
+    }
+    
+    .stat-card:not(:last-child)::after {
+      right: 20%;
+      left: 20%;
+      top: auto;
+      bottom: 0;
+      width: auto;
+      height: 1px;
+    }
+  }/****** game-statsCard.css ******/
+
+:host {
     display: block;
     width: 100%;
     height: max-content;
