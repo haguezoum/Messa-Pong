@@ -72,7 +72,7 @@ class LOGIN extends HTMLElement {
           },
           credentials: 'include',
           body: JSON.stringify({
-            username: userData.email,  // Assuming login with email
+            email: userData.email,
             password: userData.password
           })
         });
@@ -80,7 +80,7 @@ class LOGIN extends HTMLElement {
         if (!response.ok) {
           const errorData = await response.json();
           console.error('Login error:', errorData);
-          throw new Error(errorData.detail || 'Login failed');
+          throw new Error(errorData.msg || 'Login failed');
         }
 
         return await response.json();
@@ -99,7 +99,22 @@ class LOGIN extends HTMLElement {
     linkElem.setAttribute("href", "src/assets/style/login-page.css");
     this.shadow.appendChild(linkElem);
     
+  }
+
+  connectedCallback() {
+    this.shadow.appendChild(template.content.cloneNode(true));
     this.setFormBinding(this.shadow.querySelector("form"));
+
+    // Ensure the element exists before adding the event listener
+    const btn42Network = this.shadow.querySelector('.btn_42Network');
+    if (btn42Network) {
+      btn42Network.addEventListener('click', () => {
+        // Redirect to the 42 OAuth authorization URL
+        window.location.href = 'https://localhost/api/auth/42/';
+      });
+    } else {
+      console.error('42 Network button not found');
+    }
   }
   
   connectedCallback() {
@@ -121,11 +136,12 @@ class LOGIN extends HTMLElement {
         };
 
         try {
-          await this.#api.loginUser(userData);
-          window.location.href = "/dashboard";  // Redirect on successful login
+          const responseData = await this.#api.loginUser(userData);
+          console.log('Login successful:', responseData);
+          window.location.href = "/home";
         } catch (error) {
           console.error('Login failed:', error);
-          // Show error message to user
+          alert('Login failed: ' + error.message);
         }
       });
     }
@@ -134,15 +150,12 @@ class LOGIN extends HTMLElement {
   }
 
   static get observedAttributes() {
-    return [
-      /* array of attribute names to monitor for changes */
-    ];
+    return [];
   }
 
-  attributeChangedCallback(name, oldValue, newValue) {
-    // called when one of attributes listed above is modified
-  }
+  attributeChangedCallback(name, oldValue, newValue) {}
 }
+
 customElements.define("login-page", LOGIN);
 
 export default LOGIN;

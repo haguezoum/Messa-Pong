@@ -191,7 +191,7 @@ AUTH_USER_MODEL = 'api.Tuser'
 
 # Custom settings
 DEFAULT_IMG = "anon.png"
-FRONT_URL = os.environ.get('API_42_CLIENT_ID')
+FRONT_URL = os.environ.get('FRONT_URL', 'https://localhost/')
 MAX_TOURNAMENT_PLAYERS = 64
 
 # 42 OAuth settings
@@ -202,23 +202,23 @@ API_42_AUTHORIZE_URL = 'https://api.intra.42.fr/oauth/authorize'
 API_42_TOKEN_URL = 'https://api.intra.42.fr/oauth/token'
 API_42_USER_INFO_URL = 'https://api.intra.42.fr/v2/me'
 
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-        },
-    },
-    'root': {
-        'handlers': ['console'],
-        'level': 'INFO',
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['console'],
-            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
-            'propagate': False,
-        },
-    },
-}
+# LOGGING = {
+#     'version': 1,
+#     'disable_existing_loggers': False,
+#     'handlers': {
+#         'console': {
+#             'class': 'logging.StreamHandler',
+#         },
+#     },
+#     'root': {
+#         'handlers': ['console'],
+#         'level': 'INFO',
+#     },
+#     'loggers': {
+#         'django': {
+#             'handlers': ['console'],
+#             'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
+#             'propagate': False,
+#         },
+#     },
+# }

@@ -1,5 +1,5 @@
 from rest_framework import status, viewsets
-from rest_framework.decorators import action, api_view
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -14,6 +14,10 @@ import logging
 import requests
 from django.shortcuts import redirect
 from django.conf import settings
+from django.http import JsonResponse, HttpResponse
+from rest_api.api import api
+from random import getrandbits
+from ninja import Form
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +38,6 @@ class AuthViewSet(viewsets.ViewSet):
                 }
                 return Response(response_data, status=status.HTTP_201_CREATED)
             
-            # Log validation errors
             logger.error(f"Validation errors: {serializer.errors}")
             return Response({
                 'status': 'error',
@@ -52,12 +55,13 @@ class AuthViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['post'], permission_classes=[AllowAny])
     def login(self, request):
         username = request.data.get('username')
+        email = request.data.get('email')
         password = request.data.get('password')
         
         user = Tuser.objects.filter(username=username).first() or \
-               Tuser.objects.filter(email=username).first()
+               Tuser.objects.filter(email=email).first()
 
-        if not user or not check_password(password, user.password_hash):
+        if not user or not check_password(password, user.password):
             return Response({
                 'error': 'Invalid username or password'
             }, status=status.HTTP_401_UNAUTHORIZED)
@@ -130,42 +134,73 @@ class AuthViewSet(viewsets.ViewSet):
             fail_silently=False,
         ) 
 
-@api_view(['GET'])
-def auth_42(request):
-    # Redirect to 42's OAuth authorization page
-    return redirect(f"{settings.API_42_AUTHORIZE_URL}?client_id={settings.API_42_CLIENT_ID}&redirect_uri={settings.API_42_REDIRECT_URI}&response_type=code")
+def get_user_info(access_token):
+    headers = {'Authorization': f'Bearer {access_token}'}
+    response = requests.get(settings.API_42_USER_INFO_URL, headers=headers)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        return None
 
-@api_view(['GET'])
-def auth_42_callback(request):
-    code = request.GET.get('code')
-    if not code:
-        return Response({'error': 'No code provided'}, status=400)
+@api.get("/callback")
+def callback(request, code: str):
+    token_url = settings.API_42_TOKEN_URL
 
-    # Exchange code for access token
-    token_response = requests.post(settings.API_42_TOKEN_URL, data={
+    data = {
         'grant_type': 'authorization_code',
         'client_id': settings.API_42_CLIENT_ID,
         'client_secret': settings.API_42_CLIENT_SECRET,
         'code': code,
         'redirect_uri': settings.API_42_REDIRECT_URI,
-    })
+    }
 
-    if token_response.status_code != 200:
-        return Response({'error': 'Failed to obtain access token'}, status=400)
+    responsex = requests.post(token_url, data=data)
+    token_info = responsex.json()
+    if 'access_token' in token_info:
+        user_info = get_user_info(token_info['access_token'])
+        if user_info:
+            user = Tuser.objects.filter(username=user_info["login"]).first()
+            if not user:
+                # Downloading the image
+                img_data = requests.get(user_info["image"]["link"]).content
+                img_npath = f"{getrandbits(128)}.{user_info['image']['link'].split('.')[-1]}"
+                img_path = os.path.join(settings.UPLOAD_DIR, img_npath)
+                with open(img_path, "wb") as img_file:
+                    img_file.write(img_data)
 
-    access_token = token_response.json().get('access_token')
+                # Create new user
+                user = Tuser(
+                    username=user_info["login"],
+                    email=user_info["email"],
+                    fname=user_info["first_name"],
+                    lname=user_info["last_name"],
+                    verified=True,
+                    image=img_npath
+                )
+                user.save()
 
-    # Fetch user info
-    user_info_response = requests.get(settings.API_42_USER_INFO_URL, headers={
-        'Authorization': f'Bearer {access_token}'
-    })
+            refresh_token = RefreshToken.for_user(user)
+            access_token = str(refresh_token.access_token)
 
-    if user_info_response.status_code != 200:
-        return Response({'error': 'Failed to fetch user info'}, status=400)
+            response = JsonResponse({"token": access_token})
+            response.set_cookie(
+                "refresh_token",
+                str(refresh_token),
+                httponly=True,
+                path='/'
+            )
+            return response
+        else:
+            return JsonResponse({"error": "Failed to fetch user info"}, status=400)
+    else:
+        return JsonResponse({"error": "Can't login, please contact support"}, status=400)
 
-    user_info = user_info_response.json()
+@api.get("/auth/42")
+def auth_login(request):
+    auth_url = f"{settings.API_42_AUTHORIZE_URL}?client_id={settings.API_42_CLIENT_ID}&redirect_uri={settings.API_42_REDIRECT_URI}&response_type=code"
+    return JsonResponse({"success": auth_url})
 
-    # Handle user info (e.g., create or update user in your database)
-    # ...
-
-    return Response({'success': 'Authenticated with 42', 'user_info': user_info}) 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def check_authentication(request):
+    return Response({'status': 'authenticated', 'user': UserSerializer(request.user).data})
