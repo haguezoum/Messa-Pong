@@ -68,6 +68,20 @@ const routes = [
       view: async () => {
       await import('../pages/leaderboard.js');
       return '<leaderboard-page></leaderboard-page>';
+    }
+     },
+    {
+      path: '/publicprofile',
+      view: async () => {
+      await import('../pages/publicprofile.js');
+      return '<publicprofile-page></publicprofile-page>';
+    }
+     },
+    {
+      path: '/friendrequest',
+      view: async () => {
+      await import('../pages/friendrequest.js');
+      return '<friendrequest-page></friendrequest-page>';
     },
      }
   ]
