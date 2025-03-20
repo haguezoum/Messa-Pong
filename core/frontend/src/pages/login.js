@@ -98,7 +98,6 @@ class LOGIN extends HTMLElement {
     linkElem.setAttribute("rel", "stylesheet");
     linkElem.setAttribute("href", "src/assets/style/login-page.css");
     this.shadow.appendChild(linkElem);
-    
   }
 
   connectedCallback() {
@@ -116,15 +115,7 @@ class LOGIN extends HTMLElement {
       console.error('42 Network button not found');
     }
   }
-  
-  connectedCallback() {
-    this.shadow.appendChild(template.content.cloneNode(true));
-    this.shadow.addEventListener("click", (e) => {
-      e.preventDefault();
-      console.log(e.target);
-    });
-  }
-  
+
   setFormBinding(form) {
     if (form) {
       form.addEventListener("submit", async (event) => {
@@ -145,8 +136,6 @@ class LOGIN extends HTMLElement {
         }
       });
     }
-  }
-  async disconnectedCallback() {
   }
 
   static get observedAttributes() {
