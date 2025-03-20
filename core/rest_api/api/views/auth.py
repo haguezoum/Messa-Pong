@@ -161,14 +161,12 @@ def callback(request, code: str):
         if user_info:
             user = Tuser.objects.filter(username=user_info["login"]).first()
             if not user:
-                # Downloading the image
                 img_data = requests.get(user_info["image"]["link"]).content
                 img_npath = f"{getrandbits(128)}.{user_info['image']['link'].split('.')[-1]}"
                 img_path = os.path.join(settings.UPLOAD_DIR, img_npath)
                 with open(img_path, "wb") as img_file:
                     img_file.write(img_data)
 
-                # Create new user
                 user = Tuser(
                     username=user_info["login"],
                     email=user_info["email"],

@@ -109,7 +109,7 @@ class LOGIN extends HTMLElement {
     if (btn42Network) {
       btn42Network.addEventListener('click', () => {
         // Redirect to the 42 OAuth authorization URL
-        window.location.href = 'https://localhost/api/auth/42/';
+        window.location.href = 'https://localhost/api/auth/42/callback';
       });
     } else {
       console.error('42 Network button not found');
