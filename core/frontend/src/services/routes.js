@@ -48,20 +48,27 @@ const routes = [
       await import('../pages/chat.js');
       return '<chat-page></chat-page>';
       }
-    },
+     },
     {
       path: '/dashboard',
       view: async () => {
       await import('../pages/dashboard.js');
       return '<dashboard-page></dashboard-page>';
-      },
-    },
+      }
+     },
     {
       path: '/selectgamemode',
       view: async () => {
       await import('../pages/selectgamemode.js');
       return '<selectgamemode-page></selectgamemode-page>';
       }
-    }
+     },
+    {
+      path: '/leaderboard',
+      view: async () => {
+      await import('../pages/leaderboard.js');
+      return '<leaderboard-page></leaderboard-page>';
+    },
+     }
   ]
 export default routes;
