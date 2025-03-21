@@ -19,6 +19,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
 
+
+INTRA_CLIENT_ID = os.getenv('API_42_CLIENT_ID')
+INTRA_CLIENT_SECRET = os.getenv('API_42_CLIENT_SECRET')
+INTRA_REDIRECT_URI = os.getenv('API_42_REDIRECT_URI', 'https://localhost/callback')
+
+
 if not SECRET_KEY:
     print("WARNING: DJANGO_SECRET_KEY is not set in the environment variables, a random key is being used. This is not safe for production use.")
     SECRET_KEY = get_random_secret_key()
@@ -93,6 +99,38 @@ DATABASES = {
     }
 }
 
+# JWT settings
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=int(os.environ.get('JWT_ACCESS_TOKEN_LIFETIME_MINUTES', 20))),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=int(os.environ.get('JWT_REFRESH_TOKEN_LIFETIME_DAYS', 1))),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+}
+
+# CORS settings
+CORS_ALLOW_CREDENTIALS = True
+CORS_ORIGIN_ALLOW_ALL = True
+CORS_ORIGIN_WHITELIST = [
+    'https://localhost:8080',
+    'https://localhost:8000',
+    'https://localhost'
+]
+
+CORS_ALLOW_METHODS = [
+    'OPTIONS',
+    'GET',
+    'POST',
+    'DELETE',
+    'PUT',
+    'PATCH',
+]
+
+CORS_ALLOW_HEADERS = [
+    'Content-Type',
+    'X-Requested-With',
+    'Authorization',
+    'X-CSRFToken',
+]
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
