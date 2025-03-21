@@ -16,7 +16,8 @@ let gameState = {
     player2_position: 50,
     player1_score: 0,
     player2_score: 0,
-    is_full: false
+    is_full: false,
+    game_ready: false  // Flag to determine if game is ready to start
 };
 
 // Client info
@@ -39,13 +40,12 @@ let paddle2Direction = -1; // Start in opposite direction
 let autoMovementEnabled = true; // Can be toggled via settings if desired
 let animationId = null; // Store the animation frame ID
 
-// Get room name from URL or generate one
-const urlParams = new URLSearchParams(window.location.search);
-const roomName = urlParams.get('room') || Math.random().toString(36).substring(2, 8);
+// Get room name from the global variable set in index.html
+const roomName = window.roomName || '';
 
-// Update URL if needed
-if (!urlParams.has('room')) {
-    window.history.replaceState({}, '', `?room=${roomName}`);
+// If no room name is provided, redirect to lobby
+if (!roomName) {
+    window.location.href = '/game/online_game/';
 }
 
 // Create WebSocket connection
@@ -358,95 +358,41 @@ function drawGame(currentTime) {
     }
 }
 
-// Add this new function for optimized frame requesting
+// Function to request the next animation frame
 function requestNextFrame() {
-    // Only request animation frame if the game is running (not paused and started)
-    if (!isPaused && isGameStarted) {
-        // For safety, always check if there's an existing animation frame and cancel it
-        if (animationFrameId) {
-            window.cancelAnimationFrame(animationFrameId);
-            animationFrameId = null;
-        }
-        
-        // Request a new animation frame
-        try {
-            animationFrameId = window.requestAnimationFrame(drawGame);
-        } catch (error) {
-            console.error("Error requesting animation frame:", error);
-            
-            // Fallback - try again after a short delay
-            setTimeout(() => {
-                if (!isPaused && isGameStarted && !animationFrameId) {
-                    console.log("Retrying animation frame request");
-                    animationFrameId = window.requestAnimationFrame(drawGame);
-                }
-            }, 16); // ~ 60fps
-        }
+    // Clear any existing animation frame first
+    if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+    }
+    
+    // Only request a new frame if game is started, not paused, and we have both players
+    if (isGameStarted && !isPaused && gameState.is_full) {
+        animationFrameId = requestAnimationFrame(drawGame);
     } else {
-        if (isPaused) {
-            console.log("Not requesting animation frame - game is paused");
-        }
-        if (!isGameStarted) {
-            console.log("Not requesting animation frame - game not started");
-        }
+        // For debugging
+        if (!isGameStarted) console.log("Not requesting animation - game not started");
+        if (isPaused) console.log("Not requesting animation - game is paused");
+        if (!gameState.is_full) console.log("Not requesting animation - game not full");
     }
 }
 
 // Update the updateGameState function to reconcile server state with predicted state
 function updateGameState(state) {
-    // Check for score changes and animate if needed
-    if (gameState.player1_score !== state.player1_score || gameState.player2_score !== state.player2_score) {
-        updateScoreWithAnimation(gameState.player1_score, state.player1_score, gameState.player2_score, state.player2_score);
-    }
+    // Store previous state for comparison
+    const wasFullBefore = gameState.is_full;
+    const wasReadyBefore = gameState.game_ready;
     
-    // Update the game state from server
+    // Update game state
     gameState = state;
     
-    // Check if the game is now full
-    if (state.is_full && !isGameStarted) {
-        console.log("Game is now full from updateGameState");
-        isGameStarted = true;
-        
-        // Update UI elements
-        pauseButton.disabled = false;
-        updatePauseButtonState();
-        updateGameStatus();
-        
-        // Start animation if not already running and not paused
-        if (!isPaused && !animationFrameId) {
-            console.log("Starting animation from updateGameState");
-            lastTime = performance.now();
-            animationFrameId = requestAnimationFrame(drawGame);
-        }
-    }
-    
-    // Also update our predicted state based on server's authoritative state
+    // Apply client-side smoothing for our own paddle
     if (isPlayer1) {
-        // If we're player 1, update our prediction's player 2 position
-        predictedState.player2_position = state.player2_position;
-        
-        // Gently reconcile our predicted position with server's position to avoid jumps
-        const diff = state.player1_position - predictedState.player1_position;
-        if (Math.abs(diff) > 5) {
-            // If too far off, snap to server position
-            predictedState.player1_position = state.player1_position;
-        } else if (Math.abs(diff) > 0.1) {
-            // Otherwise slowly correct
-            predictedState.player1_position += diff * 0.3;
-        }
+        // For player 1, keep using predicted player1 position for smoother movement
+        gameState.player1_position = predictedState.player1_position * (1 - MOVEMENT_SMOOTHING) + state.player1_position * MOVEMENT_SMOOTHING;
     } else if (isPlayer2) {
-        // If we're player 2, update our prediction's player 1 position
-        predictedState.player1_position = state.player1_position;
-        
-        // Gently reconcile our predicted position with server's position
-        const diff = state.player2_position - predictedState.player2_position;
-        if (Math.abs(diff) > 5) {
-            // If too far off, snap to server position
-            predictedState.player2_position = state.player2_position;
-        } else if (Math.abs(diff) > 0.1) {
-            // Otherwise slowly correct
-            predictedState.player2_position += diff * 0.3;
-        }
+        // For player 2, keep using predicted player2 position for smoother movement
+        gameState.player2_position = predictedState.player2_position * (1 - MOVEMENT_SMOOTHING) + state.player2_position * MOVEMENT_SMOOTHING;
     } else {
         // For spectators, just use the server state
         predictedState.player1_position = state.player1_position;
@@ -470,30 +416,86 @@ function updateGameState(state) {
         }
     }
     
-    // Update status
+    // Update status based on game state
     const statusElement = document.getElementById("game-status");
     if (!state.is_full) {
+        // Not enough players yet
         statusElement.innerText = "Waiting for opponent...";
-        statusElement.classList.remove('error', 'success');
+        statusElement.classList.remove('success', 'warning');
+        statusElement.classList.add('warning');
         pauseButton.disabled = true;
+        
+        // Make sure game is NOT started
+        isGameStarted = false;
+        
+        // Cancel any existing animation
+        if (animationFrameId) {
+            cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
+        }
     } else if (state.winner_id) {
-        // This will be handled by the game_over event
+        // Game has ended with a winner
         pauseButton.disabled = true;
     } else {
+        // Game is full and no winner - game should be running
         if (!isPaused) {
             statusElement.innerText = "Game in progress";
-            statusElement.classList.remove('error');
+            statusElement.classList.remove('warning');
             statusElement.classList.add('success');
+            pauseButton.disabled = false;
         }
-        pauseButton.disabled = false;
+        
+        // Start the game if it's now full and wasn't before
+        if (!wasFullBefore && state.is_full) {
+            console.log("Game is now full! Starting game");
+            isGameStarted = true;
+            
+            // Add notification for both players joined
+            addGameMessage("Both players have joined! Game starting.", "success");
+        }
+        
+        // If game should be running but animation isn't, start it
+        if (state.is_full && !animationFrameId && !isPaused) {
+            console.log("Starting animation - game is full");
+            isGameStarted = true;
+            lastTime = performance.now();
+            animationFrameId = requestAnimationFrame(drawGame);
+        }
     }
     
-    // Update score
+    // Update score display
     document.getElementById("player1-score").innerText = state.player1_score;
     document.getElementById("player2-score").innerText = state.player2_score;
+}
+
+function handleGameReady(data) {
+    console.log("Game is ready to start!");
     
-    // Start animation if not already running
-    if (!animationFrameId && !isPaused && isGameStarted) {
+    // Set game state to ready and full
+    if (gameState) {
+        gameState.game_ready = true;
+        gameState.is_full = true;
+    }
+    
+    // Update status display
+    const statusElement = document.getElementById("game-status");
+    statusElement.innerText = "Game in progress";
+    statusElement.classList.remove('warning');
+    statusElement.classList.add('success');
+    
+    // Enable pause button when game is ready
+    pauseButton.disabled = false;
+    
+    // Set game as started
+    isGameStarted = true;
+    
+    // Show notification
+    addGameMessage("Game has started!", "success");
+    
+    // Force animation to start if not already running
+    if (!animationFrameId && !isPaused) {
+        console.log("Starting game animation from game_ready event");
+        lastTime = performance.now();
         animationFrameId = requestAnimationFrame(drawGame);
     }
 }
@@ -520,22 +522,8 @@ socket.onmessage = function(event) {
                 if (data.client_id) {
                     clientId = data.client_id;
                 }
-                console.log("Updating game state:", data.state.player1_position, data.state.player2_position);
+                console.log("Updating game state:", data.state);
                 updateGameState(data.state);
-                
-                // Enable pause button when game starts
-                if (!isGameStarted && data.state.is_full) {
-                    console.log("Game is now full and ready to start");
-                    isGameStarted = true;
-                    pauseButton.disabled = false;
-                    
-                    // Start the animation if not paused and not already running
-                    if (!isPaused && !animationFrameId) {
-                        console.log("Starting initial animation frame");
-                        lastTime = performance.now();
-                        animationFrameId = requestAnimationFrame(drawGame);
-                    }
-                } 
                 break;
 
             case 'room_full':
@@ -545,6 +533,11 @@ socket.onmessage = function(event) {
                 
             case 'player_joined':
                 handlePlayerJoined(data);
+                break;
+                
+            case 'game_ready':
+                console.log("🎮 Game ready event received!");
+                handleGameReady(data);
                 break;
                 
             case 'chat':
@@ -560,11 +553,11 @@ socket.onmessage = function(event) {
                 break;
                 
             default:
-                console.log("Unknown message type:", data.type);
-                break;
+                console.log("Unhandled message type:", data.type);
         }
-    } catch (error) {
-        console.error("Error processing WebSocket message:", error, event.data);
+    } catch (e) {
+        console.error("Error processing message:", e);
+        console.error("Original message:", event.data);
     }
 };
 
@@ -1673,4 +1666,55 @@ function updateScoreWithAnimation(oldP1Score, newP1Score, oldP2Score, newP2Score
         // Add the animation class
         p2ScoreElem.classList.add("score-changed");
     }
+}
+
+// Expose the sendChatMessage function to the window object so it can be called from index.html
+window.sendChatMessage = function() {
+    const messageInput = document.getElementById('chat-message');
+    const message = messageInput.value.trim();
+    
+    if (message && message.length > 0) {
+        sendWsMessage({
+            'type': 'chat',
+            'message': message
+        });
+        
+        messageInput.value = '';
+        messageInput.focus();
+    }
+};
+
+// Also expose the closeVictoryOverlay function
+window.closeVictoryOverlay = function() {
+    const victoryOverlay = document.getElementById('victory-overlay');
+    if (victoryOverlay) {
+        victoryOverlay.classList.remove('active');
+        setTimeout(() => {
+            window.location.href = '/game/online_game/';
+        }, 200);
+    }
+};
+
+// Add a toast notification to the game
+function addGameMessage(message, type = 'info') {
+    // Create a toast element
+    const toast = document.createElement('div');
+    toast.className = `game-message ${type}`;
+    toast.innerHTML = `<p>${message}</p>`;
+    
+    // Add to document body
+    document.body.appendChild(toast);
+    
+    // Trigger animation
+    setTimeout(() => {
+        toast.classList.add('active');
+    }, 10);
+    
+    // Remove after animation completes
+    setTimeout(() => {
+        toast.classList.remove('active');
+        setTimeout(() => {
+            document.body.removeChild(toast);
+        }, 500);
+    }, 3000);
 } 

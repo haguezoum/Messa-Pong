@@ -1,0 +1,118 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messa Pong - Waiting for Opponent</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;900&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/pong.css' %}">
+    <link rel="stylesheet" href="{% static 'css/title.css' %}">
+    <link rel="stylesheet" href="{% static 'css/lobby.css' %}">
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <h1 class="game-title" data-text="Messa Pong">Messa Pong</h1>
+            <div class="status"><i class="fas fa-spinner fa-spin"></i> Waiting for Opponent...</div>
+        </div>
+        
+        <div class="waiting-content">
+            <div class="waiting-animation">
+                <div class="paddle left-paddle"></div>
+                <div class="ball"></div>
+                <div class="paddle right-paddle"></div>
+            </div>
+            
+            <div class="queue-position">
+                <p>You are in position <span id="position-number">{{ queue_position }}</span> in the queue</p>
+                <div class="progress-bar">
+                    <div class="progress"></div>
+                </div>
+            </div>
+            
+            <div class="waiting-info">
+                <p>When another player joins, your game will start automatically.</p>
+                <p>Please don't close this window.</p>
+            </div>
+            
+            <div class="lobby-stats">
+                <div class="stat-item">
+                    <i class="fas fa-users"></i>
+                    <span id="active-players" class="stat-value">{{ active_players|default:0 }}</span>
+                    <span class="stat-label">Players Online</span>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-trophy"></i>
+                    <span id="active-games" class="stat-value">{{ active_games|default:0 }}</span>
+                    <span class="stat-label">Active Games</span>
+                </div>
+            </div>
+            
+            <div class="waiting-actions">
+                <a href="{% url 'leave_queue' %}" class="leave-queue-btn">
+                    <i class="fas fa-sign-out-alt"></i> Leave Queue
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Check queue status every few seconds
+        let checkInterval = setInterval(checkQueueStatus, 2000);
+        
+        function checkQueueStatus() {
+            fetch("{% url 'check_queue_status' %}")
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('position-number').textContent = data.position;
+                    
+                    // Update active players and games
+                    document.getElementById('active-players').textContent = data.active_players;
+                    document.getElementById('active-games').textContent = data.active_games;
+                    
+                    // If matched, redirect to the game
+                    if (data.matched) {
+                        clearInterval(checkInterval);
+                        window.location.href = data.game_url;
+                    }
+                    
+                    // If we get a reload signal, the queue entry may be invalid
+                    if (data.reload) {
+                        clearInterval(checkInterval);
+                        window.location.href = "{% url 'game_lobby' %}";
+                    }
+                })
+                .catch(error => {
+                    console.error("Error checking queue status:", error);
+                    // Add error handling - after 3 failed attempts, reload the page
+                    if (!window.errorCount) window.errorCount = 0;
+                    window.errorCount++;
+                    
+                    if (window.errorCount >= 3) {
+                        clearInterval(checkInterval);
+                        window.location.href = "{% url 'game_lobby' %}";
+                    }
+                });
+        }
+        
+        // Animate the waiting paddles and ball
+        function animateWaiting() {
+            const ball = document.querySelector('.ball');
+            const leftPaddle = document.querySelector('.left-paddle');
+            const rightPaddle = document.querySelector('.right-paddle');
+            
+            // Animate paddles moving up and down
+            leftPaddle.style.animation = 'paddleMove 2s infinite alternate';
+            rightPaddle.style.animation = 'paddleMove 2s infinite alternate-reverse';
+            
+            // Animate ball bouncing back and forth
+            ball.style.animation = 'ballBounce 2s infinite alternate';
+        }
+        
+        // Start animation when page loads
+        document.addEventListener('DOMContentLoaded', animateWaiting);
+    </script>
+</body>
+</html> 

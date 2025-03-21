@@ -358,9 +358,32 @@ canvas:focus {
 
 /* Status indicator */
 .status {
-    display: inline-block;
-    min-width: 150px;
-    text-align: center;
+    font-size: 18px;
+    color: var(--accent-color);
+    text-shadow: 0 0 5px rgba(135, 205, 234, 0.7);
+    font-weight: 500;
+}
+
+.status.error {
+    color: var(--danger-color);
+    text-shadow: 0 0 5px rgba(255, 59, 48, 0.7);
+}
+
+.status.success {
+    color: var(--success-color);
+    text-shadow: 0 0 5px rgba(52, 199, 89, 0.7);
+}
+
+.status.warning {
+    color: #FFCC00;
+    text-shadow: 0 0 5px rgba(255, 204, 0, 0.7);
+    animation: warningPulse 1.5s infinite;
+}
+
+@keyframes warningPulse {
+    0% { opacity: 0.7; }
+    50% { opacity: 1; }
+    100% { opacity: 0.7; }
 }
 
 /* Game controls section */
@@ -860,32 +883,44 @@ canvas, .score-board {
     color: var(--danger-color);
 }
 
-/* Game message overlays */
+/* Game message toast notification */
 .game-message {
-    padding: 25px;
-    background-color: rgba(135, 205, 234, 0.95);
-    border-radius: 12px;
-    text-align: center;
-    width: 90%;
-    max-width: 500px;
-    box-shadow: var(--box-shadow);
-    border: 1px solid var(--accent-color-bright);
-    margin: 20px auto;
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 15px 25px;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    opacity: 0;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    border-left: 4px solid var(--accent-color);
 }
 
-.game-message h2 {
-    color: var(--accent-color-bright);
-    margin-bottom: 15px;
-    font-size: 24px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+.game-message.active {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+
+.game-message.success {
+    border-left: 4px solid var(--success-color);
+}
+
+.game-message.error {
+    border-left: 4px solid var(--danger-color);
+}
+
+.game-message.warning {
+    border-left: 4px solid #FFCC00;
 }
 
 .game-message p {
-    margin-bottom: 20px;
-    color: var(--text-color);
+    margin: 0;
     font-size: 16px;
-    line-height: 1.5;
+    font-weight: 500;
 }
 
 /* Disconnection message */

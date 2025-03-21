@@ -3,7 +3,7 @@ import random
 import asyncio
 from asgiref.sync import sync_to_async
 from django.db import transaction
-from .models import Game, GameState
+from .models import Game, GameState, PlayerQueue
 
 # Game constants
 CANVAS_WIDTH = 100  # Using percentage-based coordinates (0-100)
@@ -17,6 +17,7 @@ BALL_SPEED_INCREMENT = 0.5  # How much to increase speed on paddle hit
 MAX_BALL_SPEED = 8.0  # Maximum ball speed
 FPS = 60  # Target frames per second
 TIME_STEP = 1.0 / FPS  # Time step for physics calculations
+MIN_BALL_SPEED = 0.3  # Minimum ball speed to ensure movement
 
 
 class PongGameLogic:
@@ -80,6 +81,76 @@ class PongGameLogic:
                 
         return game, created, "success"
         
+    @staticmethod
+    def find_match_or_queue(client_id):
+        """Find a match for the player or add them to the queue."""
+        with transaction.atomic():
+            # First check if player is already in an active game
+            player_games = Game.objects.filter(
+                is_active=True
+            ).filter(
+                player1_id=client_id
+            ) | Game.objects.filter(
+                is_active=True
+            ).filter(
+                player2_id=client_id
+            )
+            
+            if player_games.exists():
+                # Player is already in a game, return it
+                return player_games.first(), False, "already_in_game"
+            
+            # Check if player is already in queue
+            existing_entry = PlayerQueue.objects.filter(
+                player_id=client_id, 
+                is_matched=False
+            ).first()
+            
+            if existing_entry:
+                # Player already in queue, return their queue entry
+                return existing_entry, False, "already_in_queue"
+            
+            # Look for the oldest unmatched player in queue
+            waiting_player = PlayerQueue.objects.filter(
+                is_matched=False
+            ).exclude(player_id=client_id).order_by('joined_at').first()
+            
+            if waiting_player:
+                # We found a match! Create a new game
+                room_name = f"match_{random.randint(1000, 9999)}"
+                
+                # Create a new game with both players
+                game = Game.objects.create(
+                    room_name=room_name,
+                    player1_id=waiting_player.player_id,
+                    player2_id=client_id,
+                )
+                
+                # Update the queue entries
+                waiting_player.is_matched = True
+                waiting_player.game = game
+                waiting_player.save()
+                
+                # Create a new queue entry for this player and mark as matched
+                queue_entry = PlayerQueue.objects.create(
+                    player_id=client_id,
+                    is_matched=True,
+                    game=game
+                )
+                
+                # Initialize game state
+                PongGameLogic._initialize_game_state(game)
+                
+                return game, True, "match_found"
+            else:
+                # No match available, add to queue
+                queue_entry = PlayerQueue.objects.create(
+                    player_id=client_id,
+                    is_matched=False
+                )
+                
+                return queue_entry, True, "added_to_queue"
+    
     @staticmethod
     def _initialize_game_state(game):
         """Initialize the game state for a new game."""
@@ -151,14 +222,57 @@ class PongGameLogic:
         """Update the game state (ball position, collisions, score)."""
         game = await sync_to_async(Game.objects.get)(room_name=room_name, is_active=True)
         
-        # Only update if game is full and active
-        if not await sync_to_async(lambda: game.is_full and game.is_active)():
-            return await sync_to_async(PongGameLogic._get_game_state_dict)(game)
-        
-        # Get current state from memory
+        # Get current state from memory or from database
         state = PongGameLogic.active_games.get(room_name)
         if not state:
-            return await sync_to_async(PongGameLogic._get_game_state_dict)(game)
+            # Recreate state from database if it's missing
+            print(f"State missing for room {room_name}, recreating from database")
+            state_dict = await sync_to_async(PongGameLogic._get_game_state_dict)(game)
+            is_full = await sync_to_async(lambda: game.is_full)()
+            
+            # If game is full, ensure we have proper ball velocity
+            if is_full:
+                # Initialize with random direction if both players present
+                state = {
+                    'ball_x': 50.0,
+                    'ball_y': 50.0,
+                    'ball_dx': INITIAL_BALL_SPEED if random.random() > 0.5 else -INITIAL_BALL_SPEED,
+                    'ball_dy': INITIAL_BALL_SPEED if random.random() > 0.5 else -INITIAL_BALL_SPEED,
+                    'player1_position': state_dict['player1_position'],
+                    'player2_position': state_dict['player2_position'],
+                    'player1_score': state_dict['player1_score'],
+                    'player2_score': state_dict['player2_score'],
+                }
+                PongGameLogic.active_games[room_name] = state
+            
+            return {
+                **state_dict,
+                'game_ready': is_full
+            }
+        
+        # Check if game is full and active
+        is_full = await sync_to_async(lambda: game.is_full)()
+        is_active = await sync_to_async(lambda: game.is_active)()
+        
+        # Return current state without movement if game is not full or not active
+        if not is_full or not is_active:
+            # Set ball position to center when not full/active
+            state['ball_x'] = 50.0
+            state['ball_y'] = 50.0
+            
+            return {
+                'ball_x': state['ball_x'],
+                'ball_y': state['ball_y'],
+                'player1_position': state['player1_position'],
+                'player2_position': state['player2_position'],
+                'player1_score': state['player1_score'],
+                'player2_score': state['player2_score'],
+                'player1_id': game.player1_id,
+                'player2_id': game.player2_id,
+                'is_full': is_full,
+                'winner_id': game.winner_id,
+                'game_ready': False  # Game is not ready when not full
+            }
         
         # Get current state values
         ball_x = state['ball_x']
@@ -169,6 +283,15 @@ class PongGameLogic:
         player2_pos = state['player2_position']
         player1_score = state['player1_score']
         player2_score = state['player2_score']
+        
+        # Ensure ball is moving if both players are present
+        if abs(ball_dx) < MIN_BALL_SPEED:
+            ball_dx = INITIAL_BALL_SPEED if ball_dx >= 0 else -INITIAL_BALL_SPEED
+            print(f"Fixing ball x velocity to {ball_dx}")
+        
+        if abs(ball_dy) < MIN_BALL_SPEED:
+            ball_dy = INITIAL_BALL_SPEED if ball_dy >= 0 else -INITIAL_BALL_SPEED
+            print(f"Fixing ball y velocity to {ball_dy}")
         
         # Move the ball
         ball_x += ball_dx
@@ -256,8 +379,9 @@ class PongGameLogic:
             'player2_score': player2_score,
             'player1_id': game.player1_id,
             'player2_id': game.player2_id,
-            'is_full': game.is_full,
-            'winner_id': winner_id
+            'is_full': is_full,
+            'winner_id': winner_id,
+            'game_ready': True  # Game is always ready when it's full
         }
 
     @staticmethod

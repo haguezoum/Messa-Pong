@@ -1,0 +1,48 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messa Pong - Lobby</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;900&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/pong.css' %}">
+    <link rel="stylesheet" href="{% static 'css/title.css' %}">
+    <link rel="stylesheet" href="{% static 'css/lobby.css' %}">
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <h1 class="game-title" data-text="Messa Pong">Messa Pong</h1>
+            <div class="status">Online Game Lobby</div>
+        </div>
+        
+        <div class="lobby-content">
+            <div class="lobby-info">
+                <h2>Ready to Play?</h2>
+                <p>Click the button below to join the matchmaking queue and get matched with another player automatically.</p>
+            </div>
+            
+            <div class="lobby-actions">
+                <a href="{% url 'join_queue' %}" class="join-queue-btn">
+                    <i class="fas fa-gamepad"></i> Click to Join Lobby
+                </a>
+            </div>
+            
+            <div class="lobby-stats">
+                <div class="stat-item">
+                    <i class="fas fa-users"></i>
+                    <span class="stat-value">{{ active_players }}</span>
+                    <span class="stat-label">Players Online</span>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-trophy"></i>
+                    <span class="stat-value">{{ active_games }}</span>
+                    <span class="stat-label">Active Games</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 

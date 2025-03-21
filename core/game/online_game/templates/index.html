@@ -36,6 +36,7 @@
                 
                 <div class="game-controls">
                     <button id="pauseButton" disabled>Pause Game</button>
+                    <a href="{% url 'game_lobby' %}" class="back-button"><i class="fas fa-arrow-left"></i> Return to Lobby</a>
                 </div>
                 
                 <div class="controls-help">
@@ -50,18 +51,25 @@
                 </div>
                 <div class="chat-messages" id="chat-box">
                     <div class="chat-message system">
-                        <div class="content">Welcome to Neon Pong! Use this chat to communicate with your opponent.</div>
+                        <div class="content">Welcome to Messa Pong! Use this chat to communicate with your opponent.</div>
                         <div class="time">Now</div>
                     </div>
                 </div>
                 <div class="chat-input-container">
                     <input type="text" id="chat-message" placeholder="Type your message...">
-                    <button id="send-button" onclick="sendChatMessage()"><i class="fas fa-paper-plane"></i></button>
+                    <button id="send-button"><i class="fas fa-paper-plane"></i></button>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Pass room name to the JS file -->
+    <script>
+        // Set room name as a global variable before loading pong.js
+        window.roomName = "{{ room_name }}";
+    </script>
+    
+    <!-- Load the main game script -->
     <script src="{% static 'js/pong.js' %}"></script>
     
     <script>
@@ -103,6 +111,13 @@
             if (e.key === 'Escape' && document.activeElement === document.getElementById('chat-message')) {
                 e.preventDefault();
                 document.getElementById('game-canvas').focus();
+            }
+        });
+        
+        // Connect send button to the sendChatMessage function from pong.js
+        document.getElementById('send-button').addEventListener('click', function() {
+            if (typeof window.sendChatMessage === 'function') {
+                window.sendChatMessage();
             }
         });
     </script>

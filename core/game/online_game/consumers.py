@@ -46,8 +46,12 @@ class PongConsumer(AsyncWebsocketConsumer):
         # If not full, then join the room group
         await self.channel_layer.group_add(self.room_group_name, self.channel_name)
         
+        print(f"Player {self.client_id} joined room {self.room_name} (Player {1 if game.player1_id == self.client_id else 2})")
+        
         # Send initial game state to the client
         game_state = await sync_to_async(PongGameLogic._get_game_state_dict)(game)
+        game_state['game_ready'] = game.is_full  # Only set game_ready to true if both players are present
+        
         await self.send(text_data=json.dumps({
             'type': 'game_state',
             'state': game_state,
@@ -55,8 +59,9 @@ class PongConsumer(AsyncWebsocketConsumer):
         }))
         
         # If this is a new full game, start the game loop
-        if created or not self.room_name in self.game_tasks:
+        if created or self.room_name not in self.game_tasks:
             self.game_tasks[self.room_name] = asyncio.create_task(self.game_loop())
+            print(f"Created new game loop for room {self.room_name}")
             
         # Notify all clients about the player joining
         await self.channel_layer.group_send(
@@ -67,6 +72,35 @@ class PongConsumer(AsyncWebsocketConsumer):
                 'state': game_state
             }
         )
+        
+        # Send game_ready message only if the room just became full with this player
+        is_full = await sync_to_async(lambda: game.is_full)()
+        if is_full:
+            # Check if this player was the one that made the game full
+            is_new_player = (game.player1_id == self.client_id and created) or (game.player2_id == self.client_id and not created)
+            print(f"Game {self.room_name} is {'now' if is_new_player else 'already'} full with players {game.player1_id} and {game.player2_id}")
+            
+            # Ensure the game state is updated before sending ready message
+            await asyncio.sleep(0.1)  # Small delay to ensure states are consistent
+            state = await PongGameLogic.update_game_state(self.room_name)
+            
+            # Send an immediate game state update first to ensure both clients have the same initial state
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'game_state_update',
+                    'state': state
+                }
+            )
+            
+            # Send a message to all clients that the game is ready to start
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'game_ready',
+                    'message': 'Game has started!'
+                }
+            )
 
     async def disconnect(self, close_code):
         print(f"DISCONNECT TRIGGERED for client {self.client_id} in room {self.room_name}, code: {close_code}")
@@ -229,36 +263,81 @@ class PongConsumer(AsyncWebsocketConsumer):
     async def game_loop(self):
         """Main game loop that updates the game state periodically."""
         try:
+            # Log that the game loop is starting
+            print(f"Starting game loop for room: {self.room_name}")
+            
+            # Small initial delay to allow clients to initialize
+            await asyncio.sleep(0.2)
+            
+            # Send an initial update to ensure we have the latest state
+            try:
+                initial_state = await PongGameLogic.update_game_state(self.room_name)
+                
+                # Send updated game state to all clients
+                await self.channel_layer.group_send(
+                    self.room_group_name,
+                    {
+                        'type': 'game_state_update',
+                        'state': initial_state
+                    }
+                )
+                print(f"Sent initial game state update for room {self.room_name}")
+            except Exception as e:
+                print(f"Error sending initial state: {e}")
+            
+            # Main game loop
+            update_count = 0
+            last_log_time = asyncio.get_event_loop().time()
+            
             while True:
                 # Only update game state if not paused
                 if self.room_name not in self.paused_games:
-                    state = await PongGameLogic.update_game_state(self.room_name)
-                    
-                    await self.channel_layer.group_send(
-                        self.room_group_name,
-                        {
-                            'type': 'game_state_update',
-                            'state': state
-                        }
-                    )
-                    
-                    if state.get('winner_id'):
+                    try:
+                        state = await PongGameLogic.update_game_state(self.room_name)
+                        
+                        # Send updated game state to all clients
                         await self.channel_layer.group_send(
                             self.room_group_name,
                             {
-                                'type': 'game_over',
-                                'winner_id': state.get('winner_id')
+                                'type': 'game_state_update',
+                                'state': state
                             }
                         )
-                        break
+                        
+                        update_count += 1
+                        current_time = asyncio.get_event_loop().time()
+                        
+                        # Log updates per second every 5 seconds for debugging
+                        if current_time - last_log_time >= 5:
+                            fps = update_count / (current_time - last_log_time)
+                            print(f"Game {self.room_name} running at {fps:.1f} updates/sec")
+                            update_count = 0
+                            last_log_time = current_time
+                        
+                        # Check for game over
+                        if state.get('winner_id'):
+                            print(f"Game over in room {self.room_name}, winner: {state.get('winner_id')}")
+                            await self.channel_layer.group_send(
+                                self.room_group_name,
+                                {
+                                    'type': 'game_over',
+                                    'winner_id': state.get('winner_id')
+                                }
+                            )
+                            break
+                    except Exception as e:
+                        print(f"Error in game update loop: {e}")
                 
-                # Pause between updates (60 FPS equivalent)
+                # Pause between updates (30 FPS equivalent)
                 await asyncio.sleep(1/30)
         except asyncio.CancelledError:
-            pass
+            print(f"Game loop cancelled for room: {self.room_name}")
+        except Exception as e:
+            print(f"Unexpected error in game loop: {e}")
         finally:
             if self.room_name in self.game_tasks:
                 del self.game_tasks[self.room_name]
+            print(f"Game loop ended for room: {self.room_name}")
 
     async def game_state_update(self, event):
         """Send game state update to client."""
@@ -338,6 +417,15 @@ class PongConsumer(AsyncWebsocketConsumer):
             print(f"✅ SENT player_disconnected to client {self.client_id}")
         except Exception as e:
             print(f"❌ ERROR in player_disconnected handler: {e}")
+
+    async def game_ready(self, event):
+        """Handle game ready event when both players have joined."""
+        message = event.get('message', 'Game is ready to start!')
+        
+        await self.send(text_data=json.dumps({
+            'type': 'game_ready',
+            'message': message
+        }))
 
     @sync_to_async
     def get_or_create_session(self):

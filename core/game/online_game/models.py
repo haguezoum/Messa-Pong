@@ -39,3 +39,17 @@ class GameState(models.Model):
     
     def __str__(self):
         return f"State for {self.game}"
+
+class PlayerQueue(models.Model):
+    """Model for tracking players waiting to be matched."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    player_id = models.CharField(max_length=100, unique=True)
+    joined_at = models.DateTimeField(auto_now_add=True)
+    is_matched = models.BooleanField(default=False)
+    game = models.ForeignKey(Game, on_delete=models.SET_NULL, null=True, blank=True, related_name='queue_entries')
+    
+    def __str__(self):
+        return f"Player {self.player_id} in queue"
+    
+    class Meta:
+        ordering = ['joined_at']  # Order by join time to match oldest first
