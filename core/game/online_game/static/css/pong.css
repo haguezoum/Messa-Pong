@@ -1382,4 +1382,222 @@ canvas, .score-board {
         transform: translate(var(--x, 100px), var(--y, -100px));
         opacity: 0;
     }
+}
+
+/* Back button styled similarly to pause button */
+.back-button {
+    position: relative;
+    min-width: 150px;
+    padding: 10px 20px;
+    font-size: 18px;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    color: var(--accent-color-bright);
+    background: linear-gradient(165deg, 
+        rgba(14, 12, 40, 0.95) 0%,
+        rgba(40, 105, 161, 0.15) 100%
+    );
+    border: 2px solid var(--accent-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+    text-shadow: 0 0 8px rgba(135, 205, 234, 0.7),
+                 0 0 15px rgba(135, 205, 234, 0.4);
+    box-shadow: 0 0 15px rgba(135, 205, 234, 0.2),
+                inset 0 0 10px rgba(135, 205, 234, 0.1);
+    backdrop-filter: blur(5px);
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
+}
+
+.back-button::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(45deg,
+        transparent 0%,
+        rgba(135, 205, 234, 0.1) 45%,
+        rgba(135, 205, 234, 0.3) 50%,
+        rgba(135, 205, 234, 0.1) 55%,
+        transparent 100%
+    );
+    transform: translateX(-100%);
+    transition: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1;
+}
+
+.back-button::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: linear-gradient(45deg,
+        var(--accent-color) 0%,
+        transparent 50%,
+        var(--accent-color) 100%
+    );
+    background-size: 300% 300%;
+    border-radius: 8px;
+    opacity: 0;
+    transition: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1;
+    pointer-events: none;
+}
+
+.back-button:hover {
+    transform: translateY(-2px);
+    border-color: var(--accent-color-bright);
+    box-shadow: 0 0 20px rgba(135, 205, 234, 0.4),
+                inset 0 0 15px rgba(135, 205, 234, 0.2),
+                0 0 30px rgba(135, 205, 234, 0.2);
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.8),
+                 0 0 20px rgba(135, 205, 234, 0.8),
+                 0 0 30px rgba(135, 205, 234, 0.4);
+    letter-spacing: 4px;
+}
+
+.back-button:hover::before {
+    transform: translateX(100%);
+}
+
+.back-button:hover::after {
+    opacity: 0.15;
+    animation: backGradientBorder 3s ease infinite;
+}
+
+.back-button:active {
+    transform: translateY(1px);
+    box-shadow: 0 0 10px rgba(135, 205, 234, 0.2),
+                inset 0 0 8px rgba(135, 205, 234, 0.1);
+    letter-spacing: 3px;
+}
+
+@keyframes backGradientBorder {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* Leave Queue button styled like Pause button */
+.leave-queue-btn {
+    position: relative;
+    min-width: 150px;
+    padding: 10px 20px;
+    font-size: 18px;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    color: var(--accent-color-bright);
+    background: linear-gradient(165deg, 
+        rgba(14, 12, 40, 0.95) 0%,
+        rgba(198, 40, 40, 0.15) 100%
+    );
+    border: 2px solid var(--danger-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+    text-shadow: 0 0 8px rgba(255, 59, 48, 0.7),
+                 0 0 15px rgba(255, 59, 48, 0.4);
+    box-shadow: 0 0 15px rgba(255, 59, 48, 0.2),
+                inset 0 0 10px rgba(255, 59, 48, 0.1);
+    backdrop-filter: blur(5px);
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
+}
+
+.leave-queue-btn::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(45deg,
+        transparent 0%,
+        rgba(255, 59, 48, 0.1) 45%,
+        rgba(255, 59, 48, 0.3) 50%,
+        rgba(255, 59, 48, 0.1) 55%,
+        transparent 100%
+    );
+    transform: translateX(-100%);
+    transition: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1;
+}
+
+.leave-queue-btn::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: linear-gradient(45deg,
+        var(--danger-color) 0%,
+        transparent 50%,
+        var(--danger-color) 100%
+    );
+    background-size: 300% 300%;
+    border-radius: 8px;
+    opacity: 0;
+    transition: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1;
+    pointer-events: none;
+}
+
+.leave-queue-btn:hover {
+    transform: translateY(-2px);
+    border-color: var(--danger-color);
+    box-shadow: 0 0 20px rgba(255, 59, 48, 0.4),
+                inset 0 0 15px rgba(255, 59, 48, 0.2),
+                0 0 30px rgba(255, 59, 48, 0.2);
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.8),
+                 0 0 20px rgba(255, 59, 48, 0.8),
+                 0 0 30px rgba(255, 59, 48, 0.4);
+    letter-spacing: 4px;
+}
+
+.leave-queue-btn:hover::before {
+    transform: translateX(100%);
+}
+
+.leave-queue-btn:hover::after {
+    opacity: 0.15;
+    animation: leaveGradientBorder 3s ease infinite;
+}
+
+.leave-queue-btn:active {
+    transform: translateY(1px);
+    box-shadow: 0 0 10px rgba(255, 59, 48, 0.2),
+                inset 0 0 8px rgba(255, 59, 48, 0.1);
+    letter-spacing: 3px;
+}
+
+.leave-queue-btn i {
+    margin-right: 10px;
+}
+
+@keyframes leaveGradientBorder {
+    0% {
+        background-position: 0% 50%;
+        opacity: 0.1;
+    }
+    50% {
+        background-position: 100% 50%;
+        opacity: 0.2;
+    }
+    100% {
+        background-position: 0% 50%;
+        opacity: 0.1;
+    }
+}
+
+/* Add style for back button icon */
+.back-button i {
+    margin-right: 10px;
 } 
