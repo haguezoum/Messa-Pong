@@ -39,7 +39,6 @@ services:
                     - frontend
         depends_on:
             - rest_api
-                # condition: service_healthy
         deploy:
             resources:
                 limits:
@@ -155,13 +154,8 @@ services:
               aliases:
                   - oauth
                   - api_gateway
-        # ports:
-        #     - 8000:8000/tcp
         environment:
             - DJANGO_SETTINGS_MODULE=api.settings
-        # volumes:
-        #     - restapi_files:/api
-        #     - frontend-files:/www:ro
         secrets:
             - api-credentials
             - database-credentials
@@ -172,12 +166,6 @@ services:
             resources:
                 limits:
                     memory: 256M
-        # healthcheck:
-        #     test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-        #     interval: 5s
-        #     timeout: 2s
-        #     retries: 3
-        #     start_period: 10s
         restart: always
 
 
@@ -186,8 +174,6 @@ volumes:
         name: database-data
     frontend-files:
         name: frontend-files
-    # restapi_files:
-    #     name: restapi_files
 
 
 networks:
