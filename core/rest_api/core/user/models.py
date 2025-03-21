@@ -69,3 +69,20 @@ class   Tournament(models.Model):
 
     def __str__(self):
         return self.name
+
+# class   Message(models.Model):
+#     sender = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='sent_messages')
+#     content = models.CharField(max_length=2048)
+#     created_at = models.DateTimeField(auto_now_add=True)
+#
+#     class Meta:
+#         ordering = ['created_at']
+#
+# class   Conversation(models.Model):
+#     participants = models.ManyToManyField(CustomUser, related_name='conversations')
+#     messages = models.ManyToManyField(Message, related_name='conversations')
+#     created_at = models.DateTimeField(auto_now_add=True)
+#     updated_at = models.DateTimeField(auto_now=True)
+#
+#     class Meta:
+#         ordering = ['-updated_at']

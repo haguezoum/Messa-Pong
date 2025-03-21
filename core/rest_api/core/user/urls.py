@@ -22,4 +22,5 @@ urlpatterns = [
         re_path('tournament_history', UserTournamentHistory.as_view()),
         re_path('intra_login', IntraLogin.as_view()),
         re_path('tfa_auth', TFA_Authentication.as_view()),
+        re_path('chat_api', ChatAPI.as_view()),
 ]

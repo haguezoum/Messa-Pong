@@ -379,6 +379,7 @@ class   IntraLogin(views.APIView):
     """" Lets create tfa authentication with open source library pyotp with qr code """"
 
 class   TFA_Authentication(views.APIView):
+
     def get(self, request):
         user = request.user
         if user.tfa_enabled:
@@ -391,3 +392,43 @@ class   TFA_Authentication(views.APIView):
         img = qrcode.make(uri)
         img.save(f'/tmp/{user.username}.png')
         return FileResponse(open(f'/tmp/{user.username}.png', 'rb'))
+
+
+    """" Lets create api for chat that handle invite game """"
+
+class   ChatAPI(views.APIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [CookieTokenAuthentication]
+
+    def post(self, request):
+        user = request.user
+        friend_username = request.data.get('username')
+        friend = get_object_or_404(CustomUser, username=friend_username)
+        if friend not in user.friends.all():
+            return Response({'Error': 'User not in your friend list'}, status=status.HTTP_400_BAD_REQUEST)
+
+        message = request.data.get('message')
+        if not message:
+            return Response({'Error': 'Message is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        chat = Chat.objects.create(user=user, friend=friend, message=message)
+        return Response({'message': 'Message sent'}, status=status.HTTP_200_OK)
+
+    def get(self, request):
+        user = request.user
+        friend_username = request.data.get('username')
+        friend = get_object_or_404(CustomUser, username=friend_username)
+        if friend not in user.friends.all():
+            return Response({'Error': 'User not in your friend list'}, status=status.HTTP_400_BAD_REQUEST)
+
+        chats = Chat.objects.filter(Q(user=user, friend=friend) | Q(user=friend, friend=user)).order_by('date')
+        chats_data = []
+        for chat in chats:
+            chat_data = {
+                'user': chat.user.username,
+                'friend': chat.friend.username,
+                'message': chat.message,
+                'date': chat.date
+            }
+            chats_data.append(chat_data)
+        return Response({'chats': chats_data}, status=status.HTTP_200_OK)
