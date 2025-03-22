@@ -16,11 +16,18 @@
     --victory-gradient-1: rgba(135, 205, 234, 0.95);
     --victory-gradient-2: rgba(40, 105, 161, 0.95);
     --victory-text-glow: 0 0 20px rgba(255, 255, 255, 0.8);
+    --primary-color: #4B7BFF;
+    --secondary-color: #0C359E;
+    --warning-color: #ffcc00;
+    --dark-bg: #131a2a;
+    --light-bg: #1b223b;
+    --text-secondary: #b0b7c9;
+    --grid-color: rgba(255, 255, 255, 0.05);
 }
 
 body {
     font-family: 'Montserrat', 'Segoe UI', Roboto, sans-serif;
-    background: linear-gradient(135deg, rgb(14, 12, 40) 0%, rgb(40, 105, 161) 100%);
+    background: var(--dark-bg);
     color: var(--text-color);
     margin: 0;
     padding: 0;
@@ -30,6 +37,27 @@ body {
     min-height: 100vh;
     overflow-x: hidden;
     animation: gradientBG 15s ease infinite;
+    background-image: 
+        radial-gradient(circle at 25% 25%, rgba(75, 123, 255, 0.05) 1%, transparent 8%),
+        radial-gradient(circle at 75% 75%, rgba(75, 123, 255, 0.05) 1%, transparent 8%),
+        linear-gradient(var(--dark-bg), var(--dark-bg));
+    background-attachment: fixed;
+    position: relative;
+}
+
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: 
+        linear-gradient(var(--grid-color) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+    background-size: 20px 20px;
+    z-index: -1;
+    opacity: 0.4;
 }
 
 @keyframes gradientBG {
@@ -44,7 +72,7 @@ body {
     margin: 115px auto;
     border-radius: 15px;
     padding: 25px;
-    background-color: rgba(40, 105, 161, 0.1);
+    background-color: var(--light-bg);
     box-shadow: var(--box-shadow), inset 0 0 30px rgba(135, 205, 234, 0.1);
     backdrop-filter: blur(10px);
     border: 2px solid rgba(135, 205, 234, 0.5);
@@ -358,25 +386,40 @@ canvas:focus {
 
 /* Status indicator */
 .status {
-    font-size: 18px;
+    font-size: 16px;
     color: var(--accent-color);
     text-shadow: 0 0 5px rgba(135, 205, 234, 0.7);
-    font-weight: 500;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 6px 15px;
+    border-radius: 20px;
+    display: inline-block;
+    background-color: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(135, 205, 234, 0.3);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2), inset 0 1px rgba(255, 255, 255, 0.1);
+    margin-top: 5px;
 }
 
 .status.error {
     color: var(--danger-color);
     text-shadow: 0 0 5px rgba(255, 59, 48, 0.7);
+    border-color: rgba(255, 59, 48, 0.3);
+    background-color: rgba(255, 59, 48, 0.1);
 }
 
 .status.success {
     color: var(--success-color);
     text-shadow: 0 0 5px rgba(52, 199, 89, 0.7);
+    border-color: rgba(52, 199, 89, 0.3);
+    background-color: rgba(52, 199, 89, 0.1);
 }
 
 .status.warning {
-    color: #FFCC00;
+    color: var(--warning-color);
     text-shadow: 0 0 5px rgba(255, 204, 0, 0.7);
+    border-color: rgba(255, 204, 0, 0.3);
+    background-color: rgba(255, 204, 0, 0.1);
     animation: warningPulse 1.5s infinite;
 }
 
@@ -897,7 +940,7 @@ canvas, .score-board {
     z-index: 1000;
     opacity: 0;
     transition: transform 0.3s ease, opacity 0.3s ease;
-    border-left: 4px solid var(--accent-color);
+    border-left: 4px solid var(--primary-color);
 }
 
 .game-message.active {
@@ -914,7 +957,7 @@ canvas, .score-board {
 }
 
 .game-message.warning {
-    border-left: 4px solid #FFCC00;
+    border-left: 4px solid var(--warning-color);
 }
 
 .game-message p {
@@ -1517,18 +1560,17 @@ canvas, .score-board {
 .leave-queue-btn::before {
     content: '';
     position: absolute;
-    top: -2px;
-    left: -2px;
-    right: -2px;
-    bottom: -2px;
-    background: linear-gradient(45deg,
-        transparent 0%,
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg,
+        transparent,
         rgba(255, 59, 48, 0.1) 45%,
         rgba(255, 59, 48, 0.3) 50%,
         rgba(255, 59, 48, 0.1) 55%,
         transparent 100%
     );
-    transform: translateX(-100%);
     transition: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 1;
 }

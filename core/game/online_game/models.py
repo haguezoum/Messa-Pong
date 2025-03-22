@@ -24,6 +24,12 @@ class Game(models.Model):
     @property
     def is_finished(self):
         return bool(self.winner_id)
+
+# Force a maximum of 2 players total in the system
+def is_system_at_capacity():
+    """Definitive check if the system already has 2 or more players"""
+    from django.db.models import Count
+    return PlayerQueue.objects.count() >= 2
         
 class GameState(models.Model):
     """Model representing the current state of a game."""

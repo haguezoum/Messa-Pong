@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.contrib.sessions.backends.db import SessionStore
 from django.views.decorators.http import require_POST
 from django.urls import reverse
@@ -8,31 +8,72 @@ import random
 import string
 from datetime import timedelta
 from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
 
-from .models import Game, PlayerQueue, GameState
+from .models import Game, PlayerQueue, GameState, is_system_at_capacity
 from .game_logic import PongGameLogic
 
 # Create your views here.
 def clean_old_queue_entries():
-    """Clean up old queue entries that might be orphaned"""
-    # Delete unmatched queue entries older than 15 minutes
-    old_time = timezone.now() - timedelta(minutes=15)
-    PlayerQueue.objects.filter(
+    """Clean up old queue entries and inactive games"""
+    # Delete unmatched queue entries older than 3 minutes (reduced from 5)
+    old_time = timezone.now() - timedelta(minutes=3)
+    deleted_entries = PlayerQueue.objects.filter(
         is_matched=False, 
         joined_at__lt=old_time
     ).delete()
     
     # Delete matched queue entries without a valid game
-    PlayerQueue.objects.filter(
+    deleted_invalid = PlayerQueue.objects.filter(
         is_matched=True, 
         game__isnull=True
     ).delete()
     
-    # Also, clean up matched entries where the game is no longer active
-    PlayerQueue.objects.filter(
+    # Clean up matched entries where the game is no longer active
+    deleted_inactive = PlayerQueue.objects.filter(
         is_matched=True,
         game__is_active=False
     ).delete()
+    
+    # Clean up games that have been inactive for too long (10 minutes - reduced from 15)
+    old_game_time = timezone.now() - timedelta(minutes=10)
+    inactive_games = Game.objects.filter(
+        last_updated__lt=old_game_time
+    ).update(is_active=False)
+    
+    # Clean up games without any players
+    orphaned_count = 0
+    for game in Game.objects.filter(is_active=True):
+        has_queue_entries = PlayerQueue.objects.filter(game=game).exists()
+        if not has_queue_entries:
+            game.is_active = False
+            game.save()
+            orphaned_count += 1
+    
+    # Force active games to have exactly 2 players or be marked inactive
+    for game in Game.objects.filter(is_active=True):
+        player_count = PlayerQueue.objects.filter(game=game).count()
+        if player_count != 2:
+            game.is_active = False
+            game.save()
+            # Also remove any queue entries for this game
+            PlayerQueue.objects.filter(game=game).delete()
+    
+    # CRITICAL: Make sure we never exceed 2 players total in the system
+    total_player_count = PlayerQueue.objects.count()
+    if total_player_count > 2:
+        # If we somehow have more than 2 players, keep only the two oldest entries
+        # This is a fallback protection that should rarely if ever be needed
+        keep_players = PlayerQueue.objects.order_by('joined_at')[:2]
+        if keep_players.exists():
+            keep_ids = [player.id for player in keep_players]
+            PlayerQueue.objects.exclude(id__in=keep_ids).delete()
+            print("⚠️ CRITICAL: Found more than 2 players in the system, removed excess entries!")
+    
+    print(f"Cleanup: Removed {deleted_entries[0] if deleted_entries else 0} old waiting entries, " +
+          f"{deleted_invalid[0] if deleted_invalid else 0} invalid entries, " +
+          f"{deleted_inactive[0] if deleted_inactive else 0} inactive game entries, " +
+          f"{inactive_games} old games, {orphaned_count} orphaned games")
 
 def game_view(request, room_name=None):
     """View for the game page with a specific room name"""
@@ -40,9 +81,22 @@ def game_view(request, room_name=None):
     if not room_name:
         return redirect('game_lobby')
     
+    # Ensure we have a session for the user
+    if not request.session.session_key:
+        request.session.create()
+    
+    client_id = request.session.session_key
+    
     # Check if the game exists
     try:
         game = Game.objects.get(room_name=room_name, is_active=True)
+        
+        # Check if this player is authorized to join this game
+        if game.player1_id != client_id and game.player2_id != client_id:
+            # This player is not authorized for this game, redirect to lobby with message
+            if hasattr(request, 'session'):
+                request.session['lobby_message'] = "You are not authorized to join this game. Only the two matched players can access it."
+            return redirect('game_lobby')
         
         # Check if game has a state, if not initialize it
         try:
@@ -65,18 +119,43 @@ def game_lobby(request):
     # Clean up old queue entries first
     clean_old_queue_entries()
     
+    # CRITICAL: Special emergency check to ensure we never exceed 2 players
+    total_player_count = PlayerQueue.objects.count()
+    if total_player_count > 2:
+        # If we somehow have more than 2 players, keep only the two oldest entries
+        keep_players = PlayerQueue.objects.order_by('joined_at')[:2]
+        if keep_players.exists():
+            keep_ids = [player.id for player in keep_players]
+            PlayerQueue.objects.exclude(id__in=keep_ids).delete()
+            print("⚠️ CRITICAL: Found more than 2 players in the system during lobby load, removed excess entries!")
+    
+    # Get current capacity status
+    at_capacity = is_system_at_capacity()
+    
     # Count active players and games
     active_games = Game.objects.filter(is_active=True).count()
-    active_players = PlayerQueue.objects.filter(is_matched=False).count()
+    active_players = PlayerQueue.objects.filter(is_matched=False).count() + active_games * 2
+    
+    # Check for any messages in the session
+    lobby_message = None
+    if hasattr(request, 'session') and 'lobby_message' in request.session:
+        lobby_message = request.session['lobby_message']
+        # Clear the message after retrieving it
+        del request.session['lobby_message']
     
     context = {
         'active_players': active_players,
         'active_games': active_games,
+        'message': lobby_message,
+        'at_capacity': at_capacity,
     }
     return render(request, 'lobby.html', context)
 
 def join_queue(request):
     """Add player to the matchmaking queue"""
+    # Run cleanup to ensure player counts are accurate
+    clean_old_queue_entries()
+    
     # Ensure we have a session for the user
     if not request.session.session_key:
         request.session.create()
@@ -96,6 +175,17 @@ def join_queue(request):
         # If player was matched but the game is no longer available, clean up and continue
         else:
             existing_entry.delete()
+    
+    # CRITICAL: Check definitively if we're at capacity of 2 players
+    # We MUST NOT allow more than 2 players total
+    if is_system_at_capacity():
+        # Add a clear message to the session
+        if hasattr(request, 'session'):
+            request.session['lobby_message'] = "SYSTEM AT CAPACITY: Maximum player limit reached (2 players). Please try again later when space opens up."
+        
+        return redirect('game_lobby')
+    
+    # If we're here, there's room for this player
     
     # Look for another player waiting in the queue
     waiting_player = PlayerQueue.objects.filter(
@@ -141,6 +231,19 @@ def join_queue(request):
 
 def waiting_room(request):
     """View for waiting room while player is in queue"""
+    # Run cleanup to ensure we have accurate player counts
+    clean_old_queue_entries()
+    
+    # CRITICAL: Special emergency check to ensure we never exceed 2 players
+    total_player_count = PlayerQueue.objects.count()
+    if total_player_count > 2:
+        # If we somehow have more than 2 players, keep only the two oldest entries
+        keep_players = PlayerQueue.objects.order_by('joined_at')[:2]
+        if keep_players.exists():
+            keep_ids = [player.id for player in keep_players]
+            PlayerQueue.objects.exclude(id__in=keep_ids).delete()
+            print("⚠️ CRITICAL: Found more than 2 players in the system during waiting room load, removed excess entries!")
+    
     if not request.session.session_key:
         request.session.create()
         
@@ -254,4 +357,19 @@ def leave_queue(request):
     PlayerQueue.objects.filter(player_id=client_id).delete()
     
     return redirect('game_lobby')
+
+@csrf_exempt
+def cleanup_api(request):
+    """API endpoint for cleanup tasks that can be called periodically"""
+    # Only allow POST requests with a secret key for security
+    if request.method == 'POST':
+        # You can add a secret key check here later if needed
+        # if request.POST.get('secret_key') != 'your_secret_key_here':
+        #     return HttpResponse('Unauthorized', status=401)
+        
+        # Run the cleanup
+        clean_old_queue_entries()
+        return HttpResponse('Cleanup completed successfully')
+    
+    return HttpResponse('Method not allowed', status=405)
 

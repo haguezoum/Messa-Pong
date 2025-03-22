@@ -150,7 +150,7 @@ class PongGameLogic:
                 )
                 
                 return queue_entry, True, "added_to_queue"
-    
+        
     @staticmethod
     def _initialize_game_state(game):
         """Initialize the game state for a new game."""
@@ -220,169 +220,179 @@ class PongGameLogic:
     @staticmethod
     async def update_game_state(room_name):
         """Update the game state (ball position, collisions, score)."""
-        game = await sync_to_async(Game.objects.get)(room_name=room_name, is_active=True)
-        
-        # Get current state from memory or from database
-        state = PongGameLogic.active_games.get(room_name)
-        if not state:
-            # Recreate state from database if it's missing
-            print(f"State missing for room {room_name}, recreating from database")
-            state_dict = await sync_to_async(PongGameLogic._get_game_state_dict)(game)
-            is_full = await sync_to_async(lambda: game.is_full)()
+        try:
+            game = await sync_to_async(Game.objects.get)(room_name=room_name, is_active=True)
             
-            # If game is full, ensure we have proper ball velocity
-            if is_full:
-                # Initialize with random direction if both players present
-                state = {
-                    'ball_x': 50.0,
-                    'ball_y': 50.0,
-                    'ball_dx': INITIAL_BALL_SPEED if random.random() > 0.5 else -INITIAL_BALL_SPEED,
-                    'ball_dy': INITIAL_BALL_SPEED if random.random() > 0.5 else -INITIAL_BALL_SPEED,
-                    'player1_position': state_dict['player1_position'],
-                    'player2_position': state_dict['player2_position'],
-                    'player1_score': state_dict['player1_score'],
-                    'player2_score': state_dict['player2_score'],
+            # Get current state from memory or from database
+            state = PongGameLogic.active_games.get(room_name)
+            if not state:
+                # Recreate state from database if it's missing
+                print(f"State missing for room {room_name}, recreating from database")
+                state_dict = await sync_to_async(PongGameLogic._get_game_state_dict)(game)
+                is_full = await sync_to_async(lambda: game.is_full)()
+                
+                # If game is full, ensure we have proper ball velocity
+                if is_full:
+                    # Initialize with random direction if both players present
+                    state = {
+                        'ball_x': 50.0,
+                        'ball_y': 50.0,
+                        'ball_dx': INITIAL_BALL_SPEED if random.random() > 0.5 else -INITIAL_BALL_SPEED,
+                        'ball_dy': INITIAL_BALL_SPEED if random.random() > 0.5 else -INITIAL_BALL_SPEED,
+                        'player1_position': state_dict['player1_position'],
+                        'player2_position': state_dict['player2_position'],
+                        'player1_score': state_dict['player1_score'],
+                        'player2_score': state_dict['player2_score'],
+                    }
+                    PongGameLogic.active_games[room_name] = state
+                
+                return {
+                    **state_dict,
+                    'game_ready': is_full
                 }
-                PongGameLogic.active_games[room_name] = state
             
-            return {
-                **state_dict,
-                'game_ready': is_full
-            }
-        
-        # Check if game is full and active
-        is_full = await sync_to_async(lambda: game.is_full)()
-        is_active = await sync_to_async(lambda: game.is_active)()
-        
-        # Return current state without movement if game is not full or not active
-        if not is_full or not is_active:
-            # Set ball position to center when not full/active
-            state['ball_x'] = 50.0
-            state['ball_y'] = 50.0
+            # Check if game is full and active
+            is_full = await sync_to_async(lambda: game.is_full)()
+            is_active = await sync_to_async(lambda: game.is_active)()
             
+            # Return current state without movement if game is not full or not active
+            if not is_full or not is_active:
+                # Set ball position to center when not full/active
+                state['ball_x'] = 50.0
+                state['ball_y'] = 50.0
+                
+                return {
+                    'ball_x': state['ball_x'],
+                    'ball_y': state['ball_y'],
+                    'player1_position': state['player1_position'],
+                    'player2_position': state['player2_position'],
+                    'player1_score': state['player1_score'],
+                    'player2_score': state['player2_score'],
+                    'player1_id': game.player1_id,
+                    'player2_id': game.player2_id,
+                    'is_full': is_full,
+                    'winner_id': game.winner_id,
+                    'game_ready': False  # Game is not ready when not full
+                }
+        
+            # Get current state values
+            ball_x = state['ball_x']
+            ball_y = state['ball_y']
+            ball_dx = state['ball_dx']
+            ball_dy = state['ball_dy']
+            player1_pos = state['player1_position']
+            player2_pos = state['player2_position']
+            player1_score = state['player1_score']
+            player2_score = state['player2_score']
+            
+            # Ensure ball is moving if both players are present
+            if abs(ball_dx) < MIN_BALL_SPEED:
+                ball_dx = INITIAL_BALL_SPEED if ball_dx >= 0 else -INITIAL_BALL_SPEED
+                print(f"Fixing ball x velocity to {ball_dx}")
+            
+            if abs(ball_dy) < MIN_BALL_SPEED:
+                ball_dy = INITIAL_BALL_SPEED if ball_dy >= 0 else -INITIAL_BALL_SPEED
+                print(f"Fixing ball y velocity to {ball_dy}")
+            
+            # Move the ball
+            ball_x += ball_dx
+            ball_y += ball_dy
+            
+            # Check for top/bottom wall collisions
+            if ball_y <= 0 or ball_y >= CANVAS_HEIGHT:
+                ball_dy = -ball_dy
+            
+            # Check for paddle collisions (left paddle - player 1)
+            if (ball_x <= PADDLE_WIDTH and 
+                ball_y >= player1_pos - PADDLE_HEIGHT/2 and 
+                ball_y <= player1_pos + PADDLE_HEIGHT/2):
+                # Calculate current speed
+                current_speed = abs(ball_dx)
+                # Increase speed but cap it
+                new_speed = min(current_speed + BALL_SPEED_INCREMENT, MAX_BALL_SPEED)
+                ball_dx = new_speed  # Bounce right
+                relative_intersect = (player1_pos - ball_y) / (PADDLE_HEIGHT/2)
+                ball_dy = -relative_intersect * new_speed
+            
+            # Check for paddle collisions (right paddle - player 2)
+            if (ball_x >= CANVAS_WIDTH - PADDLE_WIDTH and 
+                ball_y >= player2_pos - PADDLE_HEIGHT/2 and 
+                ball_y <= player2_pos + PADDLE_HEIGHT/2):
+                # Calculate current speed
+                current_speed = abs(ball_dx)
+                # Increase speed but cap it
+                new_speed = min(current_speed + BALL_SPEED_INCREMENT, MAX_BALL_SPEED)
+                ball_dx = -new_speed  # Bounce left
+                relative_intersect = (player2_pos - ball_y) / (PADDLE_HEIGHT/2)
+                ball_dy = -relative_intersect * new_speed
+            
+            # Check if ball goes out of bounds (scoring)
+            scored = False
+            if ball_x <= 0:  # Player 2 scores
+                player2_score += 1
+                scored = True
+            elif ball_x >= CANVAS_WIDTH:  # Player 1 scores
+                player1_score += 1
+                scored = True
+            
+            # Reset ball if someone scored
+            if scored:
+                ball_x = 50.0
+                ball_y = 50.0
+                # Reset to initial speed with random direction
+                ball_dx = INITIAL_BALL_SPEED if random.random() > 0.5 else -INITIAL_BALL_SPEED
+                ball_dy = INITIAL_BALL_SPEED if random.random() > 0.5 else -INITIAL_BALL_SPEED
+            
+            # Check for game end
+            winner_id = None
+            if player1_score >= WINNING_SCORE:
+                winner_id = game.player1_id
+            elif player2_score >= WINNING_SCORE:
+                winner_id = game.player2_id
+            
+            # Update in-memory state
+            state.update({
+                'ball_x': ball_x,
+                'ball_y': ball_y,
+                'ball_dx': ball_dx,
+                'ball_dy': ball_dy,
+                'player1_position': player1_pos,
+                'player2_position': player2_pos,
+                'player1_score': player1_score,
+                'player2_score': player2_score
+            })
+            
+            # If game is over, save final state to database
+            if winner_id:
+                await sync_to_async(PongGameLogic._save_final_game_state)(
+                    game, state, winner_id
+                )
+                # Clean up in-memory state
+                del PongGameLogic.active_games[room_name]
+            
+            # Return the updated state
             return {
-                'ball_x': state['ball_x'],
-                'ball_y': state['ball_y'],
-                'player1_position': state['player1_position'],
-                'player2_position': state['player2_position'],
-                'player1_score': state['player1_score'],
-                'player2_score': state['player2_score'],
+                'ball_x': ball_x,
+                'ball_y': ball_y,
+                'player1_position': player1_pos,
+                'player2_position': player2_pos,
+                'player1_score': player1_score,
+                'player2_score': player2_score,
                 'player1_id': game.player1_id,
                 'player2_id': game.player2_id,
                 'is_full': is_full,
-                'winner_id': game.winner_id,
-                'game_ready': False  # Game is not ready when not full
+                'winner_id': winner_id,
+                'game_ready': True  # Game is always ready when it's full
             }
-        
-        # Get current state values
-        ball_x = state['ball_x']
-        ball_y = state['ball_y']
-        ball_dx = state['ball_dx']
-        ball_dy = state['ball_dy']
-        player1_pos = state['player1_position']
-        player2_pos = state['player2_position']
-        player1_score = state['player1_score']
-        player2_score = state['player2_score']
-        
-        # Ensure ball is moving if both players are present
-        if abs(ball_dx) < MIN_BALL_SPEED:
-            ball_dx = INITIAL_BALL_SPEED if ball_dx >= 0 else -INITIAL_BALL_SPEED
-            print(f"Fixing ball x velocity to {ball_dx}")
-        
-        if abs(ball_dy) < MIN_BALL_SPEED:
-            ball_dy = INITIAL_BALL_SPEED if ball_dy >= 0 else -INITIAL_BALL_SPEED
-            print(f"Fixing ball y velocity to {ball_dy}")
-        
-        # Move the ball
-        ball_x += ball_dx
-        ball_y += ball_dy
-        
-        # Check for top/bottom wall collisions
-        if ball_y <= 0 or ball_y >= CANVAS_HEIGHT:
-            ball_dy = -ball_dy
-        
-        # Check for paddle collisions (left paddle - player 1)
-        if (ball_x <= PADDLE_WIDTH and 
-            ball_y >= player1_pos - PADDLE_HEIGHT/2 and 
-            ball_y <= player1_pos + PADDLE_HEIGHT/2):
-            # Calculate current speed
-            current_speed = abs(ball_dx)
-            # Increase speed but cap it
-            new_speed = min(current_speed + BALL_SPEED_INCREMENT, MAX_BALL_SPEED)
-            ball_dx = new_speed  # Bounce right
-            relative_intersect = (player1_pos - ball_y) / (PADDLE_HEIGHT/2)
-            ball_dy = -relative_intersect * new_speed
-        
-        # Check for paddle collisions (right paddle - player 2)
-        if (ball_x >= CANVAS_WIDTH - PADDLE_WIDTH and 
-            ball_y >= player2_pos - PADDLE_HEIGHT/2 and 
-            ball_y <= player2_pos + PADDLE_HEIGHT/2):
-            # Calculate current speed
-            current_speed = abs(ball_dx)
-            # Increase speed but cap it
-            new_speed = min(current_speed + BALL_SPEED_INCREMENT, MAX_BALL_SPEED)
-            ball_dx = -new_speed  # Bounce left
-            relative_intersect = (player2_pos - ball_y) / (PADDLE_HEIGHT/2)
-            ball_dy = -relative_intersect * new_speed
-        
-        # Check if ball goes out of bounds (scoring)
-        scored = False
-        if ball_x <= 0:  # Player 2 scores
-            player2_score += 1
-            scored = True
-        elif ball_x >= CANVAS_WIDTH:  # Player 1 scores
-            player1_score += 1
-            scored = True
-            
-        # Reset ball if someone scored
-        if scored:
-            ball_x = 50.0
-            ball_y = 50.0
-            # Reset to initial speed with random direction
-            ball_dx = INITIAL_BALL_SPEED if random.random() > 0.5 else -INITIAL_BALL_SPEED
-            ball_dy = INITIAL_BALL_SPEED if random.random() > 0.5 else -INITIAL_BALL_SPEED
-        
-        # Check for game end
-        winner_id = None
-        if player1_score >= WINNING_SCORE:
-            winner_id = game.player1_id
-        elif player2_score >= WINNING_SCORE:
-            winner_id = game.player2_id
-            
-        # Update in-memory state
-        state.update({
-            'ball_x': ball_x,
-            'ball_y': ball_y,
-            'ball_dx': ball_dx,
-            'ball_dy': ball_dy,
-            'player1_position': player1_pos,
-            'player2_position': player2_pos,
-            'player1_score': player1_score,
-            'player2_score': player2_score
-        })
-        
-        # If game is over, save final state to database
-        if winner_id:
-            await sync_to_async(PongGameLogic._save_final_game_state)(
-                game, state, winner_id
-            )
-            # Clean up in-memory state
-            del PongGameLogic.active_games[room_name]
-        
-        # Return the updated state
-        return {
-            'ball_x': ball_x,
-            'ball_y': ball_y,
-            'player1_position': player1_pos,
-            'player2_position': player2_pos,
-            'player1_score': player1_score,
-            'player2_score': player2_score,
-            'player1_id': game.player1_id,
-            'player2_id': game.player2_id,
-            'is_full': is_full,
-            'winner_id': winner_id,
-            'game_ready': True  # Game is always ready when it's full
-        }
+        except Game.DoesNotExist:
+            print(f"Game does not exist: room_name={room_name}")
+            # Re-raise to be caught by the consumer game loop
+            raise
+        except Exception as e:
+            print(f"Error updating game state for {room_name}: {e}")
+            import traceback
+            traceback.print_exc()
+            raise
 
     @staticmethod
     def _save_final_game_state(game, state, winner_id):

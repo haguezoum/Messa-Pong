@@ -449,9 +449,6 @@ function updateGameState(state) {
         if (!wasFullBefore && state.is_full) {
             console.log("Game is now full! Starting game");
             isGameStarted = true;
-            
-            // Add notification for both players joined
-            addGameMessage("Both players have joined! Game starting.", "success");
         }
         
         // If game should be running but animation isn't, start it
@@ -488,9 +485,6 @@ function handleGameReady(data) {
     
     // Set game as started
     isGameStarted = true;
-    
-    // Show notification
-    addGameMessage("Game has started!", "success");
     
     // Force animation to start if not already running
     if (!animationFrameId && !isPaused) {
@@ -529,6 +523,11 @@ socket.onmessage = function(event) {
             case 'room_full':
                 // Handle the case when the room is full
                 handleRoomFull(data);
+                break;
+                
+            case 'unauthorized':
+                // Handle the case when the player is not authorized
+                handleUnauthorized(data);
                 break;
                 
             case 'player_joined':
@@ -1717,4 +1716,60 @@ function addGameMessage(message, type = 'info') {
             document.body.removeChild(toast);
         }, 500);
     }, 3000);
+}
+
+// Function to handle unauthorized access message
+function handleUnauthorized(data) {
+    console.log("Unauthorized access:", data.message);
+    
+    // Create a completely new UI instead of modifying existing elements
+    
+    // First, store reference to body
+    const body = document.body;
+    
+    // Clear the entire page content
+    body.innerHTML = '';
+    
+    // Create a new container for the unauthorized player
+    const unauthorizedContainer = document.createElement("div");
+    unauthorizedContainer.className = "rejected-container";
+    unauthorizedContainer.style.cssText = `
+        width: 100%;
+        max-width: 600px;
+        margin: 50px auto;
+        padding: 20px;
+        background-color: #1e1e1e;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        text-align: center;
+        color: white;
+        font-family: Arial, sans-serif;
+    `;
+    
+    // Create message content
+    unauthorizedContainer.innerHTML = `
+        <h2 style="color: #f44336; margin-bottom: 20px;">Unauthorized Access</h2>
+        <p style="margin-bottom: 20px; font-size: 16px; line-height: 1.5;">${data.message}</p>
+        <p style="margin-bottom: 20px; font-size: 14px; color: #aaa;">You will be redirected to the lobby in 5 seconds...</p>
+        <a href="/online/" style="
+            display: inline-block;
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            text-decoration: none;
+        ">Return to Lobby Now</a>
+    `;
+    
+    // Add the container to the body
+    body.appendChild(unauthorizedContainer);
+    
+    // Set a timeout to redirect to the lobby
+    setTimeout(function() {
+        window.location.href = '/online/';
+    }, 5000);
 } 

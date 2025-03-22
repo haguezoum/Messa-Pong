@@ -7,6 +7,7 @@ from django.contrib.sessions.backends.db import SessionStore
 from channels.layers import get_channel_layer
 from asgiref.sync import sync_to_async
 from .game_logic import PongGameLogic
+from .models import Game
 
 class PongConsumer(AsyncWebsocketConsumer):
     game_tasks = {}  # Class variable to store game update tasks
@@ -18,6 +19,24 @@ class PongConsumer(AsyncWebsocketConsumer):
 
         # Ensure session key exists and is stored asynchronously
         self.client_id = await self.get_or_create_session()
+        
+        # Check if this player is authorized for this game
+        is_authorized = await self.check_player_authorization()
+        if not is_authorized:
+            print(f"Unauthorized player {self.client_id} tried to join room {self.room_name}")
+            
+            # Accept the connection so we can send the rejection message
+            await self.accept()
+            
+            # Send the unauthorized message
+            await self.send(text_data=json.dumps({
+                'type': 'unauthorized',
+                'message': 'You are not authorized to join this game. Only the two matched players can access it.'
+            }))
+            
+            # Close the connection after sending the message
+            await self.close(code=4001)  # Use custom code for unauthorized
+            return
         
         # First check if the room is full before joining
         game, created, status = await PongGameLogic.create_or_join_game(self.room_name, self.client_id)
@@ -152,18 +171,52 @@ class PongConsumer(AsyncWebsocketConsumer):
         except Exception as e:
             print(f"Error removing from group: {e}")
         
+        # Always try to clean up queue entries for this client, regardless of player status
+        try:
+            # Import models here to avoid circular imports
+            from .models import PlayerQueue
+            # Use database transaction to ensure atomic operation
+            from django.db import transaction
+            
+            @sync_to_async
+            def remove_from_queue():
+                with transaction.atomic():
+                    PlayerQueue.objects.filter(player_id=self.client_id).delete()
+                    print(f"Removed player {self.client_id} from queue")
+            
+            await remove_from_queue()
+        except Exception as e:
+            print(f"Error removing player from queue: {e}")
+        
         # Handle active player disconnect tasks
         if is_active_player:
             try:
-                # Mark the game as inactive in the database
-                try:
-                    from .models import Game
-                    game = await sync_to_async(Game.objects.get)(room_name=self.room_name, is_active=True)
-                    await sync_to_async(setattr)(game, 'is_active', False)
-                    await sync_to_async(game.save)()
-                    print(f"Game {self.room_name} marked as inactive in database")
-                except Exception as e:
-                    print(f"Error updating game in database: {e}")
+                # Mark the game as inactive in the database with retry logic
+                max_retries = 3
+                retry_count = 0
+                success = False
+                
+                while retry_count < max_retries and not success:
+                    try:
+                        from .models import Game
+                        # Use transaction to ensure database consistency
+                        @sync_to_async
+                        def mark_game_inactive():
+                            with transaction.atomic():
+                                game = Game.objects.get(room_name=self.room_name, is_active=True)
+                                game.is_active = False
+                                game.save(update_fields=['is_active', 'last_updated'])
+                        
+                        await mark_game_inactive()
+                        print(f"Game {self.room_name} marked as inactive in database")
+                        success = True
+                    except Exception as e:
+                        retry_count += 1
+                        print(f"Error updating game in database (attempt {retry_count}): {e}")
+                        await asyncio.sleep(0.5)  # Wait before retrying
+                
+                if not success:
+                    print(f"⚠️ Failed to mark game {self.room_name} as inactive after {max_retries} attempts")
                 
                 # Remove from paused games set
                 if self.room_name in self.paused_games:
@@ -325,8 +378,15 @@ class PongConsumer(AsyncWebsocketConsumer):
                                 }
                             )
                             break
+                    except Game.DoesNotExist:
+                        # Game was deleted or doesn't exist - terminate the game loop
+                        print(f"Game loop terminated: Game with room_name={self.room_name} no longer exists in database.")
+                        # Exit the loop if the game doesn't exist anymore
+                        break
                     except Exception as e:
                         print(f"Error in game update loop: {e}")
+                        import traceback
+                        traceback.print_exc()
                 
                 # Pause between updates (30 FPS equivalent)
                 await asyncio.sleep(1/30)
@@ -438,3 +498,33 @@ class PongConsumer(AsyncWebsocketConsumer):
         except KeyError:
             # If session is not available, generate a unique ID
             return str(uuid.uuid4())
+
+    async def check_player_authorization(self):
+        """Check if the player is one of the two authorized players for this game"""
+        try:
+            # Import models here to avoid circular imports
+            from .models import Game
+            
+            # Define an async function to check authorization
+            @sync_to_async
+            def is_player_authorized():
+                try:
+                    # Get the game object
+                    game = Game.objects.get(room_name=self.room_name, is_active=True)
+                    
+                    # Check if client is either player 1 or player 2
+                    return (game.player1_id == self.client_id or 
+                            game.player2_id == self.client_id)
+                except Game.DoesNotExist:
+                    # Game doesn't exist, but we'll handle this in the connect method
+                    return False
+                except Exception as e:
+                    print(f"Error checking player authorization: {e}")
+                    return False
+            
+            # Call the async function and return the result
+            return await is_player_authorized()
+        
+        except Exception as e:
+            print(f"Error in check_player_authorization: {e}")
+            return False

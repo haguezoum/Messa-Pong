@@ -14,6 +14,7 @@ urlpatterns = [
     path('local/', local_views.mode_selection, name='mode_selection'),
     path('local/friend/', local_views.friend_mode, name='friend_mode'),
     path('local/ai/', local_views.ai_mode, name='ai_mode'),
+    path('api/cleanup/', views.cleanup_api, name='cleanup_api'),
 ]
 
 
