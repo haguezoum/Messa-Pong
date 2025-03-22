@@ -202,3 +202,4 @@ def auth_login(request):
 @permission_classes([IsAuthenticated])
 def check_authentication(request):
     return Response({'status': 'authenticated', 'user': UserSerializer(request.user).data})
+
