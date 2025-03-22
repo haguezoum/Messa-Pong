@@ -1,7 +1,16 @@
 import routes from "./routes.js"; // import the routes object
 
-function navigateTo(url) {
-  history.pushState(null, null, url);
+function navigateTo(url, data = null) {
+  if(data){
+    history.replaceState(data, null, url);
+    import('../pages/publicprofile.js');
+    document.querySelector("#app").innerHTML = `<user-profile-page user-id="${data}"></user-profile-page>`;
+    return;
+  }
+  else if(data === null){
+    history.pushState(null, null, url);
+  }
+  document.title = url.substring(1).toUpperCase().concat(" 🏓");
   routerCore();
 }
 
@@ -14,13 +23,22 @@ const routerCore = async () => {
   });
 
   let match = potentialMatches.find((potentialMatch) => potentialMatch.isMatch);
-
   if (!match) {
+    if(location.pathname.includes("user/")) {
+      if(location.pathname.includes("undefined")){
+        history.pushState(null, null, "/dashboard");
+        return;  
+      }
+      import('../pages/publicprofile.js');
+      history.pushState(null, null, "/user");
+      const userId = history.state? history.state.user.id : 1;
+      document.querySelector("#app").innerHTML = `<user-profile-page user-id="${userId}"></user-profile-page>`;
+      return;
+    }
     match = {
       route: {
         path: "/404",
         view: async () => {
-          // await import("./pages/404.js");
           console.log("404");
           return /*html*/`<router-link to="/" kind="route"> GO HOME </router-link>`;
         },
@@ -34,7 +52,10 @@ const routerCore = async () => {
 const Router = {
   init: () => {
     window.addEventListener("stateChanged", (e) => {
-      navigateTo(e.detail.value);
+      const miniPath = e.detail.value.includes("user");
+      const data = miniPath ? e.detail.value.substring(5) : null;
+      const url = data ? "/user" : e.detail.value;
+      navigateTo(url, data);
     });
     routerCore();
   },
@@ -42,6 +63,11 @@ const Router = {
 
 // when the back or forward button is clicked
 window.addEventListener("popstate", () => {
+  if(location.pathname.includes("user/")){
+    const userId = history.state? history.state : history.state.user.id;
+    // app.state.currentPage = "/dashboard";
+    return;
+  }
   app.state.currentPage = location.pathname;
   routerCore();
 });
