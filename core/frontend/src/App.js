@@ -5,6 +5,8 @@
  * 
  */
 
+
+
 import API from "./services/API.js";
 import Router from "./services/Router.js";
 import State from "./services/State.js";
@@ -62,9 +64,14 @@ window.addEventListener("stateChanged", (event) => {
    * @param {boolean} event.detail.value - The new value of the state.
   */
  if (event.detail.key === "darkMode") {
-   document.querySelectorAll(".master-container .card").forEach((card) => {
+    document.querySelectorAll(".master-container .card").forEach((card) => {
      card.classList.toggle("dark", event.detail.value);
     });
   }
 });
 // --------------------This is a test of the custom event listener-------------------------------->
+
+
+window.addEventListener("load", (event) => {
+
+});
