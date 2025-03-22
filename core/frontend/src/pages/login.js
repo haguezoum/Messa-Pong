@@ -15,7 +15,7 @@ template.innerHTML = /*html*/ `
           <div class="form-group">
               <div class="form-field">
                 <label for="email">Email</label>
-                <input type="email" class="email" id="email" autofocus name="email" placeholder="Username or email" autocomplete="email"
+                <input type="text" class="email" id="email" autofocus name="email" placeholder="Username or email" autocomplete="email"
                         title="Please provide only a Best Startup Ever corporate email address" required>
                 <p class="error" id="email-error" hidden>Error</p>
               </div>
@@ -109,7 +109,7 @@ class LOGIN extends HTMLElement {
     if (btn42Network) {
       btn42Network.addEventListener('click', () => {
         // Redirect to the 42 OAuth authorization URL
-        window.location.href = 'https://localhost/api/auth/42/callback';
+        app.state.currentPage = 'https://localhost/api/auth/42/callback';
       });
     } else {
       console.error('42 Network button not found');
@@ -129,7 +129,7 @@ class LOGIN extends HTMLElement {
         try {
           const responseData = await this.#api.loginUser(userData);
           console.log('Login successful:', responseData);
-          window.location.href = "/home";
+          app.state.currentPage = "/home";
         } catch (error) {
           console.error('Login failed:', error);
           alert('Login failed: ' + error.message);
