@@ -186,14 +186,6 @@ class FRIENDREQUEST extends HTMLElement {
     })
   }
 
-  setupEventListeners() {
-    // No global event listeners needed for now
-  }
-
-  removeEventListeners() {
-    // No global event listeners to remove
-  }
-
   acceptRequest(requestId) {
     // Find the request
     const request = this.requests.find((r) => r.id === requestId)
