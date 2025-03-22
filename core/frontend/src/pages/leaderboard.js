@@ -11,20 +11,6 @@ template.innerHTML = /*html*/`
       <div class="stats-header">
         <div class="stats-title">ACTIVITY SCORE</div>
       </div>
-      <div class="metrics-row">
-        <div>
-          <div class="metric-label">Total Games</div>
-        </div>
-        <div>
-          <div class="metric-label">Wins</div>
-        </div>
-        <div>
-          <div class="metric-label">Defeats</div>
-        </div>
-        <div>
-          <div class="metric-label">Draws</div>
-        </div>
-      </div>
       <div class="leaderboard-header">
         <div>Rank</div>
         <div>Player</div>
@@ -61,7 +47,6 @@ class LEADERBOARD extends HTMLElement {
   }
   
   disconnectedCallback() {
-    console.log('LEADERBOARD is Disconnected');
   }
 
   static get observedAttributes() {
@@ -87,7 +72,6 @@ class LEADERBOARD extends HTMLElement {
       }
       
       const users = await response.json();
-      console.log(users.length);
       // Add game statistics for demonstration purposes
       this.users = users.map(user => {
         const totalGames = Math.floor(Math.random() * 100) + 20;
@@ -95,7 +79,6 @@ class LEADERBOARD extends HTMLElement {
         const draws = Math.floor(Math.random() * (totalGames - wins));
         const losses = totalGames - wins - draws;
         const winRate = (wins / totalGames) * 100;
-        
         return {
           id: user.id,
           name: user.name,
@@ -113,7 +96,7 @@ class LEADERBOARD extends HTMLElement {
       
       this.renderLeaderboard();
     } catch (error) {
-      this.leaderboardBody.innerHTML = `
+      this.leaderboardBody.innerHTML = /*html*/`
         <div class="error">
           Error loading leaderboard: ${error.message}
         </div>
@@ -140,7 +123,7 @@ class LEADERBOARD extends HTMLElement {
   
   renderLeaderboard() {
     if (this.users.length === 0) {
-      this.leaderboardBody.innerHTML = `
+      this.leaderboardBody.innerHTML = /*html*/`
         <div class="error">No users found</div>
       `;
       return;
@@ -161,7 +144,7 @@ class LEADERBOARD extends HTMLElement {
         </div>
         <div class="user-info">
           <img class="avatar" src="${user.avatarUrl}" alt="${user.name}'s avatar">
-          <div class="user-name">${user.name}</div>
+          <div class="user-name" onclick='app.state.currentPage="user/${user.id}"'>${user.name}</div>
         </div>
         <div class="score-container">
           <div class="progress-bar">
