@@ -343,7 +343,7 @@ updateChatInterface(friendInfo){
    *  
   */
   async getConversationObjectOfCurrentUser(){
-    const response = await  app.API('./src/pages/messags.json'); //replace with getConversationObject()
+    const response = await api.get('/api/conversation/');
     return response;
   }
 
