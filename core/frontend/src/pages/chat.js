@@ -325,14 +325,16 @@ updateChatInterface(friendInfo){
    * @returns  {Promise} - return the friend info object or throw an error
    */
   async getFriendInfo(id){
-    const response = await fetch('./src/pages/messags.json'); //replace with getConversationObject()
-    if(!response.ok)
-      throw new Error(`HTTP error! status: ${response.status}`);
-
-    const user = await response.json();
-    const friends = user.friends;
-    const friendInfo =  friends.find(friend => friend.userID == id);
-    return friendInfo;
+    try {
+      const headers = {
+        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+      };
+      const response = await app.API.get(`/api/users/${id}/`, { headers });
+      return response;
+    } catch (error) {
+      console.error('Error fetching friend info:', error);
+      return null;
+    }
   }
 
 
@@ -342,9 +344,18 @@ updateChatInterface(friendInfo){
    * @returns {Promise} - return the conversation object of the current user
    *  
   */
-  async getConversationObjectOfCurrentUser(){
-    const response = await api.get('/api/conversation/');
-    return response;
+  async getConversationObjectOfCurrentUser() {
+    try {
+      const headers = {
+        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+      };
+      // get the conversation object of the current user
+      const response = await app.API.get('/api/conversations/', { headers }); // temporary
+      return response;
+    } catch (error) {
+      console.error('Error fetching conversations:', error);
+      return null;
+    }
   }
 
   /**
@@ -353,19 +364,21 @@ updateChatInterface(friendInfo){
    * @returns {Promise} - return true if the operation is done successfully or throw an error 
    */
   
-  async conversationList(){
-    const response = await fetch('./src/pages/messags.json');
-    if(!response.ok){
-      throw new Error(`HTTP error! status: ${response.status}`);
+  async conversationList() {
+    try {
+      const headers = {
+        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+      };
+      // get the conversation object of the current user
+      const response = await app.API.get('/api/conversations/', { headers });
+      if (response && response.data) {
+        response.data.forEach(conversation => {
+          this.addFriendToConversation(conversation);
+        });
+      }
+    } catch (error) {
+      console.error('Error loading conversation list:', error);
     }
-
-    const user = await response.json();
-    const friend =  user.friends;
-
-    friend.forEach((friend) => {
-      this.addFriendToConversation(friend);
-    });
-    return true;
   }
 
 
