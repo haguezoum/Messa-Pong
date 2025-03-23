@@ -1,6 +1,7 @@
 import { notificationStyles } from '../components/notification-styles.js';
 import { ToastNotification } from '../components/toast-notification.js';
 import api from '../services/API.js';
+import Auth from '../services/Auth.js';
 
 let template = document.createElement("template");
 
@@ -156,8 +157,29 @@ class LOGIN extends HTMLElement {
 
     // Handle 42 Network login
     const btn42Network = this.shadow.querySelector('.btn_42Network');
-    btn42Network.addEventListener('click', () => {
-      window.location.href = '/api/oauth/42/login/';
+    btn42Network.addEventListener('click', async () => {
+      try {
+        const response = await Auth.loginWith42();
+        if(response){
+          this.toastNotification.show({
+            title: 'Login Successful',
+            message: 'Redirecting to home...',
+            type: 'success',
+            duration: 2000
+          });
+          setTimeout(() => {
+            app.state.currentPage = '/home';
+          }, 1000);
+        }
+      } catch (error) {
+        console.error('42 login error:', error);
+        this.toastNotification.show({
+          title: 'Login Error',
+          message: 'Failed to initiate 42 login. Please try again.',
+          type: 'error',
+          duration: 4000
+        });
+      }
     });
 
     // Handle Google login

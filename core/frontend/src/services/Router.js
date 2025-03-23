@@ -1,4 +1,5 @@
 import routes from "./routes.js"; // import the routes object
+import Auth from "./Auth.js";
 
 function navigateTo(url, data = null) {
   if(data){
@@ -26,7 +27,7 @@ const routerCore = async () => {
   if (!match) {
     if(location.pathname.includes("user/")) {
       if(location.pathname.includes("undefined")){
-        history.pushState(null, null, "/dashboard");
+        window.location.replace("/dashboard");
         return;  
       }
       import('../pages/publicprofile.js');
@@ -65,7 +66,6 @@ const Router = {
 window.addEventListener("popstate", () => {
   if(location.pathname.includes("user/")){
     const userId = history.state? history.state : history.state.user.id;
-    // app.state.currentPage = "/dashboard";
     return;
   }
   app.state.currentPage = location.pathname;

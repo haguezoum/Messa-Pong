@@ -1,4 +1,3 @@
-
 const routes = [
     {
       path: '/home',
@@ -119,6 +118,13 @@ const routes = [
       await import('../pages/selectgamemode.js');
       return '<selectgamemode-page></selectgamemode-page>';
     },
-     }
+     },
+    {
+      path: '/auth/callback/' ,
+      view: async () => {
+        // This is handled by the router directly
+        return '<div>Processing authentication...</div>';
+      }
+    }
   ]
 export default routes;
