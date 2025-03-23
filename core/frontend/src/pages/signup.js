@@ -175,9 +175,11 @@ class SIGNUP extends HTMLElement {
 
         // Store tokens if provided
         if (response.tokens) {
-          localStorage.setItem('accessToken', response.tokens.access);
-          localStorage.setItem('refreshToken', response.tokens.refresh);
-          localStorage.setItem('userData', JSON.stringify(response.user));
+          localStorage.setItem('access_token', response.tokens.access);
+          localStorage.setItem('refresh_token', response.tokens.refresh);
+          if (response.user) {
+            localStorage.setItem('user_data', JSON.stringify(response.user));
+          }
         }
 
         // Clear the form

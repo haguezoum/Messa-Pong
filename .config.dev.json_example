@@ -2,7 +2,7 @@
   "projectName": "Trancendence",
   "version": "1.0.0",
   "paths": {
-    "project": "PROJECT_PATH/ft_transcendence/core/frontend",
+    "project": "/Users/haguezou/Documents/tass-Trance/core",
     "basename": "tran"
   }
 }

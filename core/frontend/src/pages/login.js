@@ -1,5 +1,6 @@
 import { notificationStyles } from '../components/notification-styles.js';
 import { ToastNotification } from '../components/toast-notification.js';
+import api from '../services/API.js';
 
 let template = document.createElement("template");
 
@@ -90,72 +91,61 @@ class LOGIN extends HTMLElement {
     const password = form.querySelector('#password').value;
 
     try {
-      const response = await fetch('/api/login/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          login,
-          password
-        })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        let errorMessage = 'An error occurred during login.';
-        if (data.error) {
-          errorMessage = data.error;
-        } else if (data.errors) {
-          errorMessage = Object.values(data.errors)[0];
-        }
-        
-        this.toastNotification.show({
-          title: 'Login Failed',
-          message: errorMessage,
-          type: 'error',
-          duration: 4000
-        });
-        return;
+      // Disable form submission while processing
+      const submitButton = form.querySelector('.btn_submit');
+      if (submitButton) {
+        submitButton.disabled = true;
       }
 
-      // Store tokens and user data
-      localStorage.setItem('accessToken', data.tokens.access);
-      localStorage.setItem('refreshToken', data.tokens.refresh);
-      localStorage.setItem('userData', JSON.stringify(data.user));
-
-      // Show success message
-      this.toastNotification.show({
-        title: 'Welcome Back!',
-        message: 'Login successful! Redirecting...',
-        type: 'success',
-        duration: 2000
+      const response = await api.post('/api/login/', {
+        login,
+        password
       });
 
-      // Clear form
-      form.reset();
-
-      // Redirect after success message using app state
-      setTimeout(() => {
-        if (window.app && window.app.state) {
-          window.app.state.currentPage = "/home";
-        } else {
-          console.warn("Global app state not found, falling back to default navigation");
-          window.location.href = '/home';
+      // Handle successful login
+      if (response && response.tokens) {
+        // Store tokens and user data
+        localStorage.setItem('access_token', response.tokens.access);
+        localStorage.setItem('refresh_token', response.tokens.refresh);
+        if (response.user) {
+          localStorage.setItem('user_data', JSON.stringify(response.user));
         }
-      }, 1000);
 
+        // Show success message
+        this.toastNotification.show({
+          title: 'Welcome Back!',
+          message: 'Login successful! Redirecting...',
+          type: 'success',
+          duration: 2000
+        });
+
+        // Clear form
+        form.reset();
+
+        // Redirect after success message using app state
+        setTimeout(() => {
+          if (window.app && window.app.state) {
+            window.app.state.currentPage = "/home";
+          } else {
+            console.warn("Global app state not found, falling back to default navigation");
+            window.location.href = '/home';
+          }
+        }, 1000);
+      }
     } catch (error) {
       console.error('Login error:', error);
       this.toastNotification.show({
-        title: 'Error',
-        message: 'Network error. Please try again.',
+        title: 'Login Failed',
+        message: error.detail || error.error || 'Invalid credentials. Please try again.',
         type: 'error',
         duration: 4000
       });
+    } finally {
+      // Re-enable the submit button
+      const submitButton = form.querySelector('.btn_submit');
+      if (submitButton) {
+        submitButton.disabled = false;
+      }
     }
   }
 

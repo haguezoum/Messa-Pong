@@ -11,7 +11,7 @@ class API {
   static BASE_URL = 'https://localhost';
   static pendingRequests = new Map();
 
-  static async request(endpoint, method = 'GET', data = null) {
+  static async request(endpoint, method = 'GET', data = null, customHeaders = {}) {
     // Create a unique key for this request
     const requestKey = `${method}:${endpoint}:${JSON.stringify(data)}`;
     
@@ -23,7 +23,8 @@ class API {
     const url = `${this.BASE_URL}${endpoint}`;
     const headers = {
       'Content-Type': 'application/json',
-      'Accept': 'application/json'
+      'Accept': 'application/json',
+      ...customHeaders // Merge custom headers
     };
 
     const config = {
@@ -55,26 +56,17 @@ class API {
 
         if (!response.ok) {
           // Check for specific error cases
-          if (response.status === 500 && responseData.detail?.includes('duplicate key value')) {
-            if (responseData.detail.includes('email')) {
-              throw {
-                status: 400,
-                error: 'Email already registered',
-                detail: 'This email address is already in use. Please use a different email or try logging in.'
-              };
-            }
-            if (responseData.detail.includes('username')) {
-              throw {
-                status: 400,
-                error: 'Username already taken',
-                detail: 'This username is already taken. Please choose a different username.'
-              };
-            }
+          if (response.status === 401) {
+            throw {
+              status: 401,
+              error: 'Authentication required',
+              detail: 'Please log in to continue'
+            };
           }
           
           throw {
             status: response.status,
-            error: responseData.error || 'An error occurred',
+            error: responseData.error || responseData.detail || 'An error occurred',
             detail: responseData.detail || 'Please try again'
           };
         }
@@ -95,20 +87,20 @@ class API {
     return requestPromise;
   }
 
-  static async get(endpoint) {
-    return this.request(endpoint, 'GET');
+  static async get(endpoint, { headers = {} } = {}) {
+    return this.request(endpoint, 'GET', null, headers);
   }
 
-  static async post(endpoint, data) {
-    return this.request(endpoint, 'POST', data);
+  static async post(endpoint, data, { headers = {} } = {}) {
+    return this.request(endpoint, 'POST', data, headers);
   }
 
-  static async put(endpoint, data) {
-    return this.request(endpoint, 'PUT', data);
+  static async put(endpoint, data, { headers = {} } = {}) {
+    return this.request(endpoint, 'PUT', data, headers);
   }
 
-  static async delete(endpoint) {
-    return this.request(endpoint, 'DELETE');
+  static async delete(endpoint, { headers = {} } = {}) {
+    return this.request(endpoint, 'DELETE', null, headers);
   }
 }
 

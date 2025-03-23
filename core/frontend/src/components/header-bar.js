@@ -4,7 +4,7 @@ template.innerHTML =
   /*html*/
   ` <div id="header-bar" class="header-bar">
       <header class="header">
-            <div class="logo">
+            <div class="logo" onclick="app.state.currentPage = '/home'" style="cursor: pointer;">
                 <ion-icon src="src/assets/images/42_logo.svg"></ion-icon>
             </div>
             <div class="search_wraper" style="--showResult:true">
@@ -35,6 +35,11 @@ template.innerHTML =
                             <router-link to="/profile">
                                 <span slot="title">Profile</span>
                             </router-link>
+                        </li>
+                        <li class="dropdown-item">
+                          <router-link to="/leaderboard">
+                            <span slot="title">Leaderboard</span>
+                          </router-link>
                         </li>
                         <li class="dropdown-item">
                           <router-link to="/settings">
