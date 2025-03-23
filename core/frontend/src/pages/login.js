@@ -138,10 +138,15 @@ class LOGIN extends HTMLElement {
       // Clear form
       form.reset();
 
-      // Redirect after success message
+      // Redirect after success message using app state
       setTimeout(() => {
-        window.location.href = '/dashboard';
-      }, 2500);
+        if (window.app && window.app.state) {
+          window.app.state.currentPage = "/home";
+        } else {
+          console.warn("Global app state not found, falling back to default navigation");
+          window.location.href = '/home';
+        }
+      }, 1000);
 
     } catch (error) {
       console.error('Login error:', error);

@@ -1,4 +1,7 @@
 export const notificationStyles = /*css*/ `
+  * {
+    font-family: var(--font-family-primary);
+  }
   .notification-container {
     position: fixed;
     top: 20px;
@@ -28,6 +31,7 @@ export const notificationStyles = /*css*/ `
     pointer-events: auto;
     max-width: 400px;
     margin: 0 auto;
+    font-family: var(--font-family-primary);
   }
 
   .notification.show {

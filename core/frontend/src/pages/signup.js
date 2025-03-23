@@ -1,5 +1,6 @@
 import { notificationStyles } from '../components/notification-styles.js';
 import { ToastNotification } from '../components/toast-notification.js';
+import api from '../services/API.js';
 
 let template = document.createElement("template");
 
@@ -124,38 +125,46 @@ class SIGNUP extends HTMLElement {
     this.shadow.appendChild(linkElem);
     
     // Add toast notification
-    this.toastNotification = document.createElement('toast-notification');
+    this.toastNotification = new ToastNotification();
     this.shadow.appendChild(this.toastNotification);
 
+    // Bind handleSignup to preserve this context
+    this.handleSignup = this.handleSignup.bind(this);
     this.setFormBinging(this.shadow.querySelector("form"));
   }
 
   async handleSignup(event) {
     event.preventDefault();
+    const form = event.target; // Store form reference
 
     try {
-      // Make the registration request
-      const response = await fetch('/api/register/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          first_name: this.#newUser.firstname,
-          last_name: this.#newUser.lastname,
-          username: this.#newUser.username,
-          email: this.#newUser.email,
-          password: this.#newUser.password,
-          password2: this.#newUser.confirm_password
-        })
+      // Disable form submission while processing
+      const submitButton = form.querySelector('.btn_submit');
+      if (submitButton) {
+        submitButton.disabled = true;
+      }
+
+      console.log('Attempting registration with data:', {
+        first_name: this.#newUser.firstname,
+        last_name: this.#newUser.lastname,
+        username: this.#newUser.username,
+        email: this.#newUser.email,
       });
 
-      const data = await response.json();
+      // Make the registration request using the API service
+      const response = await api.post('/api/register/', {
+        first_name: this.#newUser.firstname,
+        last_name: this.#newUser.lastname,
+        username: this.#newUser.username,
+        email: this.#newUser.email,
+        password: this.#newUser.password,
+        password2: this.#newUser.confirm_password
+      });
+
+      console.log('Registration response:', response);
 
       // Handle successful registration
-      if (response.status === 201) {
+      if (response && response.user) {
         // Show success notification
         this.toastNotification.show({
           title: 'Welcome!',
@@ -165,26 +174,67 @@ class SIGNUP extends HTMLElement {
         });
 
         // Store tokens if provided
-        if (data.tokens) {
-          localStorage.setItem('accessToken', data.tokens.access);
-          localStorage.setItem('refreshToken', data.tokens.refresh);
-          localStorage.setItem('userData', JSON.stringify(data.user));
+        if (response.tokens) {
+          localStorage.setItem('accessToken', response.tokens.access);
+          localStorage.setItem('refreshToken', response.tokens.refresh);
+          localStorage.setItem('userData', JSON.stringify(response.user));
         }
 
         // Clear the form
-        event.target.reset();
+        form.reset();
 
-        // Redirect to login page after delay
+        // Reset the newUser object
+        Object.keys(this.#newUser).forEach(key => {
+          this.#newUser[key] = "";
+        });
+
+        // Redirect to login page after delay using app state
         setTimeout(() => {
-          window.location.href = '/login';
-        }, 2500);
+          if (window.app && window.app.state) {
+            window.app.state.currentPage = "/login";
+          } else {
+            console.warn("Global app state not found, falling back to default navigation");
+            window.app.state.currentPage = '/not-found';
+          }
+        }, 1000);
 
         return;
       }
 
+    } catch (error) {
+      console.error('Registration error:', error);
+      
+      // Handle specific error cases
+      if (error.status === 400) {
+        this.toastNotification.show({
+          title: 'Registration Error',
+          message: error.detail || error.error,
+          type: 'error',
+          duration: 4000
+        });
+        
+        // Clear the specific field if it's a duplicate error
+        if (error.error === 'Email already registered') {
+          const emailInput = form.querySelector('#email');
+          if (emailInput) {
+            emailInput.value = '';
+            this.#newUser.email = '';
+            emailInput.focus();
+          }
+        } else if (error.error === 'Username already taken') {
+          const usernameInput = form.querySelector('#username');
+          if (usernameInput) {
+            usernameInput.value = '';
+            this.#newUser.username = '';
+            usernameInput.focus();
+          }
+        }
+        return;
+      }
+
       // Handle validation errors
-      if (data.errors) {
-        const errorMessage = Object.values(data.errors)[0];
+      if (error.errors) {
+        const errorMessage = Object.values(error.errors)[0];
         this.toastNotification.show({
           title: 'Validation Error',
           message: errorMessage,
@@ -195,22 +245,18 @@ class SIGNUP extends HTMLElement {
       }
 
       // Handle any other errors
-      if (data.error) {
-        this.toastNotification.show({
-          title: 'Error',
-          message: data.error,
-          type: 'error',
-          duration: 4000
-        });
-      }
-
-    } catch (error) {
       this.toastNotification.show({
         title: 'Error',
-        message: 'Unable to complete registration. Please try again.',
+        message: error.detail || error.error || 'An unexpected error occurred. Please try again.',
         type: 'error',
         duration: 4000
       });
+    } finally {
+      // Re-enable the submit button
+      const submitButton = form.querySelector('.btn_submit');
+      if (submitButton) {
+        submitButton.disabled = false;
+      }
     }
   }
 
