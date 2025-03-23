@@ -158,8 +158,11 @@ class HOME extends HTMLElement {
                 }
             } else {
                 debugInfo.push(`No callback data found, checking authentication status`);
-                // Check if user is already logged in
-                this.checkAuthenticationStatus(debugInfo);
+                // Check if user is already logged in, but wait to ensure any redirects have completed
+                setTimeout(() => {
+                    this.checkAuthenticationStatus(debugInfo);
+                }, 500);
+                return; // Return early to prevent the immediate authentication check
             }
         } catch (error) {
             debugInfo.push(`Critical error in processOAuthCallback: ${error.message}`);
@@ -175,9 +178,31 @@ class HOME extends HTMLElement {
     checkAuthenticationStatus(debugInfo = []) {
         const userData = localStorage.getItem('userData');
         const accessToken = localStorage.getItem('accessToken');
+        const oauthCode = localStorage.getItem('oauth_code');
+        const oauthTimestamp = localStorage.getItem('oauth_callback_timestamp');
         
         debugInfo.push(`User data in localStorage: ${!!userData}`);
         debugInfo.push(`Access token in localStorage: ${!!accessToken}`);
+        debugInfo.push(`OAuth code in localStorage: ${!!oauthCode}`);
+        
+        // If we have an OAuth code but no user data yet, it means we just came from
+        // the OAuth callback and are waiting for data to arrive
+        if (oauthCode && oauthTimestamp) {
+            const timestamp = parseInt(oauthTimestamp, 10);
+            const currentTime = Date.now();
+            const timeDiff = currentTime - timestamp;
+            
+            // If the OAuth redirect happened less than 5 seconds ago, wait for data
+            if (timeDiff < 5000) {
+                debugInfo.push(`Recent OAuth redirect detected (${timeDiff}ms ago), waiting for data...`);
+                return; // Don't redirect to login, wait for data
+            } else {
+                // Clean up old OAuth data after 5 seconds
+                localStorage.removeItem('oauth_code');
+                localStorage.removeItem('oauth_callback_timestamp');
+                debugInfo.push(`Cleaned up stale OAuth data`);
+            }
+        }
         
         if (!userData || !accessToken) {
             debugInfo.push(`User not authenticated, redirecting to login`);

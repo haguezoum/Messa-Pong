@@ -1,4 +1,3 @@
-
 const routes = [
     {
       path: '/home',
@@ -35,6 +34,37 @@ const routes = [
       return '<profile-page></profile-page>';
     }
      },
+    {
+      path: '/auth/callback',
+      view: async () => {
+        // Handle OAuth callback from 42
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        const state = urlParams.get('state');
+        
+        if (code) {
+          console.log("OAuth callback received with code:", code);
+          
+          // Store the code in localStorage so we know this is a redirect from OAuth
+          localStorage.setItem('oauth_code', code);
+          localStorage.setItem('oauth_callback_timestamp', Date.now().toString());
+          
+          // This redirect approach is more reliable than window.location.href
+          setTimeout(() => {
+            window.location.replace('/home');
+          }, 100);
+        } else {
+          console.error("OAuth callback missing code parameter");
+          // Redirect to login page if something went wrong
+          setTimeout(() => {
+            window.location.replace('/login');
+          }, 100);
+        }
+        
+        // Return loading indicator while redirecting
+        return "<loading-progress></loading-progress>";
+      }
+    },
     {
       path: '/',
       view: async () => {
