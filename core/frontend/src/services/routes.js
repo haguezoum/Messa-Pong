@@ -71,6 +71,43 @@ const routes = [
       await import('../pages/entrypoint.js');
       return '<entrypoint-page></entrypoint-page>';
     },
-     }
+     },
+     {
+      path: '/chat',
+      view: async () => {
+      await import('../pages/chat.js');
+      return '<chat-page></chat-page>';
+    }
+     },
+     {
+      path: '/dashboard',
+      view: async () => {
+      await import('../pages/dashboard.js');
+      return '<dashboard-page></dashboard-page>';
+    }
+     },
+     {
+      path: '/leaderboard',
+      view: async () => {
+      await import('../pages/leaderboard.js');
+      return '<leaderboard-page></leaderboard-page>';
+    }
+     },
+     {
+      path: '/friendrequest',
+      view: async () => {
+      await import('../pages/friendrequest.js');
+      return '<friendrequest-page></friendrequest-page>';
+    }
+     },
+     {
+      path: '/user',
+      view: async () => {
+      const userId = history.state? history.state : window.location.pathname.split('/')[2];
+      await import('../pages/publicprofile.js');
+      return `<user-profile-page user-id="${userId}"></user-profile-page>`;
+    }
+     },
+
   ]
 export default routes;

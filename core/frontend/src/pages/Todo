@@ -1,0 +1,362 @@
+//Chat GPT
+
+{
+    "owner": {
+      "firstName": "John",
+      "lastName": "Doe",
+      "username": "johndoe",
+      "profilePicture": "https://example.com/johndoe.jpg"
+    },
+    "users": [
+      {
+        "firstName": "Alice",
+        "lastName": "Smith",
+        "username": "alice_smith",
+        "profilePicture": "https://example.com/alice.jpg",
+        "messageHistory": [
+          {
+            "userId": "alice_smith",
+            "name": "Alice Smith",
+            "message": "Hey John!",
+            "messageType": "received",
+            "status": "delivered",
+            "read": true,
+            "emoji": false
+          },
+          {
+            "userId": "johndoe",
+            "name": "John Doe",
+            "message": "👋",
+            "messageType": "sent",
+            "status": "delivered",
+            "read": true,
+            "emoji": true
+          }
+        ]
+      },
+      {
+        "firstName": "Bob",
+        "lastName": "Johnson",
+        "username": "bob_johnson",
+        "profilePicture": "https://example.com/bob.jpg",
+        "messageHistory": [
+          {
+            "userId": "bob_johnson",
+            "name": "Bob Johnson",
+            "message": "😂",
+            "messageType": "received",
+            "status": "delivered",
+            "read": false,
+            "emoji": true
+          },
+          {
+            "userId": "johndoe",
+            "name": "John Doe",
+            "message": "Haha! That's funny!",
+            "messageType": "sent",
+            "status": "delivered",
+            "read": false,
+            "emoji": false
+          }
+        ]
+      }
+    ]
+  }
+
+  
+//   DeepSeek
+
+// Grok
+{
+    "users": [
+      {
+        "id": "owner123",
+        "first_name": "John",
+        "last_name": "Doe",
+        "username": "johndoe",
+        "profile_picture_url": "https://example.com/john_doe.jpg",
+        "message_history": []
+      },
+      {
+        "id": "friend001",
+        "first_name": "Alice",
+        "last_name": "Smith",
+        "username": "alice_smith",
+        "profile_picture_url": "https://example.com/alice_smith.jpg",
+        "message_history": [
+          {
+            "user_id": "owner123",
+            "name": "John Doe",
+            "message": "Hey, Alice! How are you?",
+            "message_type": "received",
+            "status": "delivered",
+            "read": true,
+            "is_emoji": false
+          },
+          {
+            "user_id": "friend001",
+            "name": "Alice Smith",
+            "message": "Hi, John! I'm good. You?",
+            "message_type": "sent",
+            "status": "delivered",
+            "read": true,
+            "is_emoji": false
+          },
+          {
+            "user_id": "owner123",
+            "name": "John Doe",
+            "message": "😄",
+            "message_type": "received",
+            "status": "delivered",
+            "read": false,
+            "is_emoji": true
+          }
+        ]
+      },
+      {
+        "id": "friend002",
+        "first_name": "Bob",
+        "last_name": "Johnson",
+        "username": "bob_johnson",
+        "profile_picture_url": "https://example.com/bob_johnson.jpg",
+        "message_history": [
+          {
+            "user_id": "owner123",
+            "name": "John Doe",
+            "message": "Hey Bob, what's up?",
+            "message_type": "received",
+            "status": "delivered",
+            "read": true,
+            "is_emoji": false
+          },
+          {
+            "user_id": "friend002",
+            "name": "Bob Johnson",
+            "message": "Not much, you?",
+            "message_type": "sent",
+            "status": "delivered",
+            "read": false,
+            "is_emoji": false
+          }
+        ]
+      },
+      {
+        "id": "friend003",
+        "first_name": "Carol",
+        "last_name": "Williams",
+        "username": "carol_w",
+        "profile_picture_url": "https://example.com/carol_williams.jpg",
+        "message_history": [
+          {
+            "user_id": "friend003",
+            "name": "Carol Williams",
+            "message": "😊",
+            "message_type": "sent",
+            "status": "delivered",
+            "read": true,
+            "is_emoji": true
+          },
+          {
+            "user_id": "owner123",
+            "name": "John Doe",
+            "message": "Nice to hear from you!",
+            "message_type": "received",
+            "status": "delivered",
+            "read": true,
+            "is_emoji": false
+          }
+        ]
+      },
+      {
+        "id": "friend004",
+        "first_name": "David",
+        "last_name": "Brown",
+        "username": "david_b",
+        "profile_picture_url": "https://example.com/david_brown.jpg",
+        "message_history": [
+          {
+            "user_id": "owner123",
+            "name": "John Doe",
+            "message": "Hey David!",
+            "message_type": "received",
+            "status": "delivered",
+            "read": false,
+            "is_emoji": false
+          }
+        ]
+      },
+      {
+        "id": "friend005",
+        "first_name": "Emma",
+        "last_name": "Davis",
+        "username": "emma_davis",
+        "profile_picture_url": "https://example.com/emma_davis.jpg",
+        "message_history": [
+          {
+            "user_id": "friend005",
+            "name": "Emma Davis",
+            "message": "Hi John, how’s it going?",
+            "message_type": "sent",
+            "status": "delivered",
+            "read": true,
+            "is_emoji": false
+          },
+          {
+            "user_id": "owner123",
+            "name": "John Doe",
+            "message": "👍",
+            "message_type": "received",
+            "status": "delivered",
+            "read": true,
+            "is_emoji": true
+          }
+        ]
+      },
+      {
+        "id": "friend006",
+        "first_name": "Frank",
+        "last_name": "Miller",
+        "username": "frank_m",
+        "profile_picture_url": "https://example.com/frank_miller.jpg",
+        "message_history": [
+          {
+            "user_id": "owner123",
+            "name": "John Doe",
+            "message": "Hey Frank, you around?",
+            "message_type": "received",
+            "status": "delivered",
+            "read": false,
+            "is_emoji": false
+          }
+        ]
+      },
+      {
+        "id": "friend007",
+        "first_name": "Grace",
+        "last_name": "Wilson",
+        "username": "grace_w",
+        "profile_picture_url": "https://example.com/grace_wilson.jpg",
+        "message_history": [
+          {
+            "user_id": "friend007",
+            "name": "Grace Wilson",
+            "message": "😂",
+            "message_type": "sent",
+            "status": "delivered",
+            "read": true,
+            "is_emoji": true
+          }
+        ]
+      },
+      {
+        "id": "friend008",
+        "first_name": "Henry",
+        "last_name": "Moore",
+        "username": "henry_m",
+        "profile_picture_url": "https://example.com/henry_moore.jpg",
+        "message_history": [
+          {
+            "user_id": "owner123",
+            "name": "John Doe",
+            "message": "Hey Henry, long time!",
+            "message_type": "received",
+            "status": "delivered",
+            "read": true,
+            "is_emoji": false
+          }
+        ]
+      },
+      {
+        "id": "friend009",
+        "first_name": "Isabella",
+        "last_name": "Taylor",
+        "username": "isabella_t",
+        "profile_picture_url": "https://example.com/isabella_taylor.jpg",
+        "message_history": [
+          {
+            "user_id": "friend009",
+            "name": "Isabella Taylor",
+            "message": "Hi John!",
+            "message_type": "sent",
+            "status": "delivered",
+            "read": false,
+            "is_emoji": false
+          }
+        ]
+      },
+      {
+        "id": "friend010",
+        "first_name": "James",
+        "last_name": "Anderson",
+        "username": "james_a",
+        "profile_picture_url": "https://example.com/james_anderson.jpg",
+        "message_history": [
+          {
+            "user_id": "owner123",
+            "name": "John Doe",
+            "message": "Hey James, you free?",
+            "message_type": "received",
+            "status": "delivered",
+            "read": true,
+            "is_emoji": false
+          },
+          {
+            "user_id": "friend010",
+            "name": "James Anderson",
+            "message": "Yeah, let’s chat!",
+            "message_type": "sent",
+            "status": "delivered",
+            "read": true,
+            "is_emoji": false
+          }
+        ]
+      }
+    ]
+  }
+
+
+//   example
+
+
+hmm i thing there is only one owner , and the other juts users the owner had a discussion with other users or friends , and everyone of them had an array of object called history of messages , every object should contain this information 
+{
+        "user_id": "friend010",
+        "profile_picture_url": "https://example.com/james_anderson.jpg",
+        "name": "James Anderson",
+        "discussion":{
+            "sent": {
+              "message_id": "msg001",
+              "message": "Hey, how are you?",
+              "message_type": "sent",
+              "status": "delivered",
+              "read": true,
+              "is_emoji": false
+            },
+            "received": {
+              "message_id": "msg002",
+              "message": "I’m good, thanks for asking!",
+              "message_type": "received",
+              "status": "delivered",
+              "read": true,
+              "is_emoji": false
+            },
+            "sent": {
+              "message_id": "msg003",
+              "message": "I’m planning to visit you next week.",
+              "message_type": "sent",
+              "status": "delivered",
+              "read": true,
+              "is_emoji": false
+            }
+        },
+}
+
+"users": [
+    {
+      "id": "owner123",
+      "first_name": "John",
+      "last_name": "Doe",
+      "username": "johndoe",
+      "profile_picture_url": "https://example.com/john_doe.jpg",
+      "message_history": []
+    },
