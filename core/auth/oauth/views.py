@@ -23,8 +23,21 @@ logger.setLevel(logging.DEBUG)
 
 User = get_user_model()
 
+# Helper function to add CORS headers to all responses
+def add_cors_headers(response):
+    response["Access-Control-Allow-Origin"] = settings.FRONTEND_URL
+    response["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+    response["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+    response["Access-Control-Allow-Credentials"] = "true"
+    response["Access-Control-Max-Age"] = "86400"  # 24 hours
+    return response
+
 class FortyTwoLoginView(APIView):
     permission_classes = [AllowAny]  # Allow unauthenticated access
+    
+    def options(self, request, *args, **kwargs):
+        response = HttpResponse()
+        return add_cors_headers(response)
     
     def get(self, request):
         # Construct the 42 OAuth URL with correct parameters
@@ -43,10 +56,15 @@ class FortyTwoLoginView(APIView):
         )
         
         logger.info(f"Redirecting to 42 OAuth URL: {auth_url}")
-        return HttpResponseRedirect(auth_url)
+        response = HttpResponseRedirect(auth_url)
+        return add_cors_headers(response)
 
 class FortyTwoCallbackView(APIView):
     permission_classes = [AllowAny]  # Allow unauthenticated access
+    
+    def options(self, request, *args, **kwargs):
+        response = HttpResponse()
+        return add_cors_headers(response)
     
     def get(self, request):
         logger.debug(f"Callback received - Full URL: {request.build_absolute_uri()}")
@@ -58,14 +76,15 @@ class FortyTwoCallbackView(APIView):
             error_msg = request.GET.get('error', 'Authorization code not provided')
             error_description = request.GET.get('error_description', '')
             logger.error(f"OAuth error: {error_msg} - {error_description}")
-            return JsonResponse({
+            response = JsonResponse({
                 'error': error_msg,
                 'error_description': error_description
             }, status=400)
+            return add_cors_headers(response)
 
         try:
             # Exchange code for access token
-            token_url = 'https://api.intra.42.fr/oauth/token'
+            token_url = 'https://api.intra.42.fr/api/oauth/token'
             token_data = {
                 'grant_type': 'authorization_code',
                 'client_id': settings.FORTYTWO_CLIENT_ID,
@@ -79,9 +98,10 @@ class FortyTwoCallbackView(APIView):
             
             if not token_response.ok:
                 logger.error(f"Token exchange failed: {token_response.status_code} - {token_response.text}")
-                return JsonResponse({
+                response = JsonResponse({
                     'error': f'Failed to authenticate with 42: {token_response.text}'
                 }, status=400)
+                return add_cors_headers(response)
                 
             token_json = token_response.json()
             logger.debug(f"Token exchange successful: {token_json.keys()}")
@@ -94,9 +114,10 @@ class FortyTwoCallbackView(APIView):
             
             if not user_response.ok:
                 logger.error(f"User info request failed: {user_response.status_code} - {user_response.text}")
-                return JsonResponse({
+                response = JsonResponse({
                     'error': f'Failed to get user info from 42: {user_response.text}'
                 }, status=400)
+                return add_cors_headers(response)
                 
             user_data = user_response.json()
             logger.debug(f"User info received: {user_data.get('login')}")
@@ -126,49 +147,129 @@ class FortyTwoCallbackView(APIView):
                 'email': user.email,
                 'first_name': user.first_name,
                 'last_name': user.last_name,
+                'is_active': user.is_active,
             }
             
             # Encode the data for URL
             response_data = {
                 'user': user_info,
-                'tokens': tokens
+                'tokens': tokens,
+                'authSuccess': True,
             }
             encoded_data = urllib.parse.quote(json.dumps(response_data))
             
-            # Create redirect URL and redirect directly
+            # Create redirect URL with data
             redirect_url = f"{settings.FRONTEND_URL}/home?data={encoded_data}"
             logger.debug(f"Redirecting to frontend URL: {redirect_url}")
             
-            # Create HTML response with JavaScript redirection for more reliable redirect
+            # Create HTML response with JavaScript redirection and cookie setting
             html = f"""
             <!DOCTYPE html>
             <html>
             <head>
                 <title>Authentication Successful</title>
                 <script>
-                    console.log("Authentication successful, redirecting to {settings.FRONTEND_URL}/home");
-                    window.location.href = "{redirect_url}";
+                    // Set secure cookies
+                    function setCookie(name, value, days, path = '/') {{
+                        const date = new Date();
+                        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+                        const expires = `expires=${{date.toUTCString()}}`;
+                        document.cookie = `${{name}}=${{value}}; ${{expires}}; path=${{path}}; SameSite=Lax`;
+                        console.log(`Set cookie: ${{name}}`);
+                    }}
+                    
+                    // Store authentication data
+                    const authData = {json.dumps(response_data)};
+                    
+                    // These cookies are also set by the server, but we set them here as backup
+                    setCookie('userData', JSON.stringify(authData.user), 7);
+                    setCookie('authSuccess', 'true', 7);
+                    
+                    // We don't set the sensitive tokens here since the server will set them as HttpOnly
+                    
+                    // For debugging
+                    console.log("Authentication successful");
+                    
+                    // Wait a moment to ensure cookies are set, then redirect
+                    setTimeout(() => {{
+                        console.log("Cookies set, redirecting to {settings.FRONTEND_URL}/home");
+                        window.location.href = "{settings.FRONTEND_URL}/home";
+                    }}, 1000);
                 </script>
-                <meta http-equiv="refresh" content="0;url={redirect_url}">
+                <meta http-equiv="refresh" content="2;url={redirect_url}">
             </head>
             <body>
                 <h1>Authentication Successful!</h1>
-                <p>You will be redirected automatically.</p>
+                <p>You will be redirected automatically in 2 seconds.</p>
                 <p>If you are not redirected, <a href="{redirect_url}">click here</a>.</p>
             </body>
             </html>
             """
-            return HttpResponse(html, content_type='text/html')
+            response = HttpResponse(html, content_type='text/html')
+            
+            # Set cookies in the response for added security
+            max_age_access = 60 * 60 * 24  # 1 day in seconds
+            max_age_refresh = 60 * 60 * 24 * 7  # 7 days in seconds
+            
+            # Set the access token cookie - httponly for security
+            response.set_cookie(
+                'accessToken', 
+                tokens['access'], 
+                max_age=max_age_access, 
+                httponly=True,  # True because we don't need JS access to this sensitive token
+                samesite='Lax', 
+                secure=settings.SESSION_COOKIE_SECURE  # Use the Django setting
+            )
+            
+            # Set the refresh token cookie - httponly for security
+            response.set_cookie(
+                'refreshToken', 
+                tokens['refresh'], 
+                max_age=max_age_refresh, 
+                httponly=True,  # True because we don't need JS access to this sensitive token 
+                samesite='Lax', 
+                secure=settings.SESSION_COOKIE_SECURE
+            )
+            
+            # Set the user data cookie - NOT httponly so JavaScript can read it
+            response.set_cookie(
+                'userData', 
+                json.dumps(user_info), 
+                max_age=max_age_refresh, 
+                httponly=False,  # False because we need JS access to user data
+                samesite='Lax', 
+                secure=settings.SESSION_COOKIE_SECURE
+            )
+            
+            # Add another non-httponly cookie to signal authentication success
+            response.set_cookie(
+                'authSuccess', 
+                'true', 
+                max_age=max_age_refresh,
+                httponly=False,  # False so JavaScript can detect login state
+                samesite='Lax',
+                secure=settings.SESSION_COOKIE_SECURE
+            )
+            
+            return add_cors_headers(response)
             
         except requests.exceptions.RequestException as e:
             logger.error(f"Request error during OAuth flow: {str(e)}")
             traceback.print_exc()
-            return JsonResponse({
+            response = JsonResponse({
                 'error': f'Failed to authenticate with 42: {str(e)}'
             }, status=500)
+            return add_cors_headers(response)
         except Exception as e:
             logger.error(f"Unexpected error during OAuth callback: {str(e)}")
             traceback.print_exc()
-            return JsonResponse({
+            response = JsonResponse({
                 'error': f'An unexpected error occurred: {str(e)}'
-            }, status=500) 
+            }, status=500)
+            return add_cors_headers(response) 
+        
+class TokenView(APIView):
+    permission_classes = [AllowAny]
+    
+    def get(self, request):
+        return Response({"message": "Token endpoint reached"}, status=200)

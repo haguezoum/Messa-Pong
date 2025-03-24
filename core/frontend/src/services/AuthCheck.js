@@ -189,9 +189,11 @@ class AuthCheck {
                 if (userData) sessionStorage.setItem('userData', userData);
             }
             
-            // Clean up stale OAuth data if present
+            // Clean up any leftover OAuth authentication data from previous login attempts
+            // OAuth (Open Authorization) data includes temporary codes and tokens used during
+            // the authentication process with third-party services like 42 School
             if (localStorage.getItem('oauth_code')) {
-                this._debug('Cleaning up stale OAuth data');
+                this._debug('Cleaning up stale OAuth authentication data');
                 app.API.auth.cleanupOAuthData();
             }
             

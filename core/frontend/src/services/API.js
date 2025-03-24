@@ -1,23 +1,90 @@
-/**
- * 
- * This will take the endpoint URL, method and headers as input and return the response as JSON
- * @param {string} URL 
- * @param {string} metode
- * @param {Object} headers 
- * @returns {Promise}
- */
+import Auth from './Auth.js';
 
-const API = async (URL, metode ,headers) => {
-    // const URL = new URL(URL, "http://localhost:3000"); // Param 1 : URL, Param 2 : Base URL
+class API {
+  static async get(endpoint, options = {}) {
+    return this.request(endpoint, { 
+      ...options,
+      method: 'GET'
+    });
+  }
+
+  static async post(endpoint, data = {}, options = {}) {
+    return this.request(endpoint, {
+      ...options,
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  }
+
+  static async put(endpoint, data = {}, options = {}) {
+    return this.request(endpoint, {
+      ...options, 
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+  }
+
+  static async delete(endpoint, options = {}) {
+    return this.request(endpoint, {
+      ...options,
+      method: 'DELETE'
+    });
+  }
+
+  static async request(endpoint, options = {}) {
     try {
-        const response = await fetch(URL, {
-            method: metode,
-            headers: headers
-        });
-        return response.json();
+      const accessToken = Auth.getCookie('accessToken');
+      
+      const defaultHeaders = {
+        'Content-Type': 'application/json',
+        ...(accessToken && { 'Authorization': `Bearer ${accessToken}` })
+      };
+
+      const response = await fetch(`/api${endpoint}`, {
+        ...options,
+        headers: {
+          ...defaultHeaders,
+          ...options.headers
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        return await response.json();
+      }
+      return await response.text();
+
     } catch (error) {
-        console.log(`Error on fetch : ${error.message}`);
+      console.error('API request failed:', error);
+      throw error;
     }
+  }
+
+  static async getUser() {
+    return this.get('/user');
+  }
+
+  // Auth-related methods
+  static auth = {
+    isAuthenticated() {
+      return Auth.isAuthenticated();
+    },
+    
+    async isAuthenticatedWithServerCheck() {
+      try {
+        const response = await API.get('/auth/verify/');
+        return response.status === 200;
+      } catch (error) {
+        console.error('Server authentication check failed:', error);
+        // Fall back to client-side check if server is unavailable
+        return Auth.isAuthenticated();
+      }
+    }
+  }
 }
 
 export default API;

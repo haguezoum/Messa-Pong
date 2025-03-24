@@ -177,17 +177,36 @@ LOGGING = {
 }
 
 # CORS settings
+CORS_ALLOW_ALL_ORIGINS = True  # For development only
+
 CORS_ALLOWED_ORIGINS = [
     "https://localhost",
     "http://localhost",
+    "http://127.0.0.1",
+    "http://localhost:5500",
+    "http://localhost:80",
+    "http://localhost:8080",
+]
+
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
 ]
 
 CORS_ALLOW_CREDENTIALS = True
 
+CORS_PREFLIGHT_MAX_AGE = 86400  # 24 hours
+
 CORS_EXPOSE_HEADERS = [
     'content-type',
     'x-csrftoken',
+    'authorization',
 ]
+
 CORS_ALLOW_HEADERS = [
     'accept',
     'accept-encoding',

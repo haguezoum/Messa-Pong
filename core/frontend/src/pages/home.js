@@ -1,5 +1,6 @@
 import { notificationStyles } from '../components/notification-styles.js';
 import { ToastNotification } from '../components/toast-notification.js';
+import Auth from '../services/Auth.js';
 
 let template = document.createElement("template");
 
@@ -129,10 +130,30 @@ class HOME extends HTMLElement {
                         throw new Error('Invalid callback data structure');
                     }
                     
-                    // Store tokens and user data
-                    localStorage.setItem('accessToken', decodedData.tokens.access);
-                    localStorage.setItem('refreshToken', decodedData.tokens.refresh);
-                    localStorage.setItem('userData', JSON.stringify(decodedData.user));
+                    // Store tokens and user data in cookies
+                    debugInfo.push(`Setting accessToken cookie...`);
+                    Auth.setCookie('accessToken', decodedData.tokens.access);
+                    
+                    debugInfo.push(`Setting refreshToken cookie...`);
+                    Auth.setCookie('refreshToken', decodedData.tokens.refresh);
+                    
+                    debugInfo.push(`Setting userData cookie...`);
+                    Auth.setCookie('userData', JSON.stringify(decodedData.user));
+                    
+                    // Verify cookies were set correctly
+                    setTimeout(() => {
+                        const accessTokenCookie = Auth.getCookie('accessToken');
+                        const refreshTokenCookie = Auth.getCookie('refreshToken');
+                        const userDataCookie = Auth.getCookie('userData');
+                        
+                        debugInfo.push(`Verification - Access token cookie: ${!!accessTokenCookie}`);
+                        debugInfo.push(`Verification - Refresh token cookie: ${!!refreshTokenCookie}`);
+                        debugInfo.push(`Verification - User data cookie: ${!!userDataCookie}`);
+                        
+                        if (statusDisplay) {
+                            statusDisplay.textContent = debugInfo.join('\n');
+                        }
+                    }, 500);
                     
                     debugInfo.push(`Stored tokens and user data for: ${decodedData.user.username}`);
                     
@@ -160,7 +181,8 @@ class HOME extends HTMLElement {
                 debugInfo.push(`No callback data found, checking authentication status`);
                 // Check if user is already logged in, but wait to ensure any redirects have completed
                 setTimeout(() => {
-                    this.checkAuthenticationStatus(debugInfo);
+                    this.checkAuthenticationStatus();
+                    console.log("checkAuthenticationStatus");
                 }, 500);
                 return; // Return early to prevent the immediate authentication check
             }
@@ -176,35 +198,88 @@ class HOME extends HTMLElement {
     }
     
     checkAuthenticationStatus(debugInfo = []) {
-        const userData = localStorage.getItem('userData');
-        const accessToken = localStorage.getItem('accessToken');
-        const oauthCode = localStorage.getItem('oauth_code');
-        const oauthTimestamp = localStorage.getItem('oauth_callback_timestamp');
+        const isAuthenticated = Auth.isAuthenticated();
+        debugInfo.push(`Auth.isAuthenticated() result: ${isAuthenticated}`);
         
-        debugInfo.push(`User data in localStorage: ${!!userData}`);
-        debugInfo.push(`Access token in localStorage: ${!!accessToken}`);
-        debugInfo.push(`OAuth code in localStorage: ${!!oauthCode}`);
+        // Get separate state items for debugging
+        const userData = Auth.getCookie('userData');
+        const accessToken = Auth.getCookie('accessToken');
+        const oauthCode = Auth.getCookie('oauth_code');
+        const oauthTimestamp = Auth.getCookie('oauth_callback_timestamp');
         
-        // If we have an OAuth code but no user data yet, it means we just came from
-        // the OAuth callback and are waiting for data to arrive
-        if (oauthCode && oauthTimestamp) {
+        debugInfo.push(`User data in cookies: ${!!userData}`);
+        debugInfo.push(`Access token in cookies: ${!!accessToken}`);
+        debugInfo.push(`OAuth code in cookies/session: ${!!oauthCode}`);
+        
+        // If we have an OAuth code but no authentication tokens yet, we need to handle the callback
+        if (oauthCode && !isAuthenticated) {
             const timestamp = parseInt(oauthTimestamp, 10);
             const currentTime = Date.now();
             const timeDiff = currentTime - timestamp;
             
-            // If the OAuth redirect happened less than 5 seconds ago, wait for data
-            if (timeDiff < 5000) {
-                debugInfo.push(`Recent OAuth redirect detected (${timeDiff}ms ago), waiting for data...`);
-                return; // Don't redirect to login, wait for data
+            debugInfo.push(`OAuth code present but not authenticated. Code age: ${timeDiff}ms`);
+            
+            // If the OAuth code is recent (less than 10 seconds old), try to exchange it for tokens
+            if (timeDiff < 10000) {
+                debugInfo.push(`Recent OAuth code detected, attempting to exchange it for tokens...`);
+                
+                // Call the backend to exchange the code for tokens if needed
+                fetch('/api/oauth/token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'Authorization': `Bearer ${Auth.getCookie('accessToken')}`
+                    },
+                    body: JSON.stringify({ code: oauthCode }),
+                    credentials: 'include',
+                }).then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    } else {
+                        throw new Error('Failed to exchange code for tokens');
+                    }
+                }).then(data => {
+                    debugInfo.push(`Successfully exchanged code for tokens`);
+                    
+                    // Tokens should be set as cookies by the server, but we can set user data here
+                    if (data.user) {
+                        Auth.setCookie('userData', JSON.stringify(data.user));
+                    }
+                    
+                    // Refresh the page to update auth state
+                    window.location.reload();
+                }).catch(error => {
+                    debugInfo.push(`Error exchanging code for tokens: ${error.message}`);
+                    console.error('Error exchanging OAuth code:', error);
+                    
+                    // Clean up the stale OAuth code
+                    Auth.deleteCookie('oauth_code');
+                    Auth.deleteCookie('oauth_callback_timestamp');
+                    sessionStorage.removeItem('oauth_code');
+                    sessionStorage.removeItem('oauth_callback_timestamp');
+                });
+                
+                // Show a waiting message
+                this.toastNotification.show({
+                    title: 'Processing Login',
+                    message: 'Completing your authentication...',
+                    type: 'info',
+                    duration: 4000
+                });
+                
+                return; // Wait for the token exchange to complete
             } else {
-                // Clean up old OAuth data after 5 seconds
-                localStorage.removeItem('oauth_code');
-                localStorage.removeItem('oauth_callback_timestamp');
-                debugInfo.push(`Cleaned up stale OAuth data`);
+                // Clean up old OAuth data
+                debugInfo.push(`OAuth code is stale, cleaning up`);
+                Auth.deleteCookie('oauth_code');
+                Auth.deleteCookie('oauth_callback_timestamp');
+                sessionStorage.removeItem('oauth_code');
+                sessionStorage.removeItem('oauth_callback_timestamp');
             }
         }
         
-        if (!userData || !accessToken) {
+        if (!isAuthenticated) {
             debugInfo.push(`User not authenticated, redirecting to login`);
             // Redirect to login if not authenticated
             this.toastNotification.show({
@@ -221,8 +296,12 @@ class HOME extends HTMLElement {
             debugInfo.push(`User is authenticated`);
             // Parse user data
             try {
-                const user = JSON.parse(userData);
-                debugInfo.push(`User info: ${user.username}`);
+                if (userData) {
+                    const user = JSON.parse(userData);
+                    debugInfo.push(`User info: ${user.username}`);
+                } else {
+                    debugInfo.push(`No user data available despite being authenticated`);
+                }
             } catch (error) {
                 debugInfo.push(`Error parsing user data: ${error.message}`);
                 console.error("Error parsing user data:", error);
@@ -237,7 +316,7 @@ class HOME extends HTMLElement {
             item.addEventListener('click', () => {
                 const target = item.getAttribute('data-target');
                 console.log(`Navigating to: ${target}`);
-                window.location.href = `/${target}`;
+                app.state.currentPage = `/${target}`;
             });
         });
     }

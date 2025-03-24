@@ -1,5 +1,6 @@
 import { notificationStyles } from '../components/notification-styles.js';
 import { ToastNotification } from '../components/toast-notification.js';
+import Auth from '../services/Auth.js';
 
 let template = document.createElement("template");
 
@@ -95,6 +96,7 @@ class LOGIN extends HTMLElement {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
+          'Authorization': `Bearer ${Auth.getCookie('accessToken')}`
         },
         credentials: 'include',
         body: JSON.stringify({
@@ -122,10 +124,25 @@ class LOGIN extends HTMLElement {
         return;
       }
 
-      // Store tokens and user data
-      localStorage.setItem('accessToken', data.tokens.access);
-      localStorage.setItem('refreshToken', data.tokens.refresh);
-      localStorage.setItem('userData', JSON.stringify(data.user));
+      console.log('Login successful, setting cookies...');
+      
+      // Store tokens and user data in cookies
+      Auth.setCookie('accessToken', data.tokens.access);
+      Auth.setCookie('refreshToken', data.tokens.refresh);
+      Auth.setCookie('userData', JSON.stringify(data.user));
+      
+      // Verify cookies were set correctly
+      setTimeout(() => {
+        const accessTokenCookie = Auth.getCookie('accessToken');
+        const refreshTokenCookie = Auth.getCookie('refreshToken');
+        const userDataCookie = Auth.getCookie('userData');
+        
+        console.log('Cookie verification:', {
+          accessToken: !!accessTokenCookie,
+          refreshToken: !!refreshTokenCookie,
+          userData: !!userDataCookie
+        });
+      }, 500);
 
       // Show success message
       this.toastNotification.show({
@@ -140,7 +157,7 @@ class LOGIN extends HTMLElement {
 
       // Redirect after success message
       setTimeout(() => {
-        window.location.href = '/dashboard';
+        window.location.href = '/home';
       }, 2500);
 
     } catch (error) {
@@ -163,7 +180,8 @@ class LOGIN extends HTMLElement {
     const btn42Network = this.shadow.querySelector('.btn_42Network');
     btn42Network.addEventListener('click', () => {
       try {
-        window.location.href = '/api/oauth/42/login/';
+        // Use the Auth service for 42 login
+        Auth.direct42Login();
       } catch (error) {
         console.error('Failed to initiate 42 login:', error);
         this.toastNotification.show({
@@ -181,7 +199,26 @@ class LOGIN extends HTMLElement {
       window.location.href = '/api/oauth/google/login/';
     });
 
-    // Handle OAuth callback
+    // Check if we have an OAuth code in cookies
+    const oauthCode = Auth.getCookie('oauth_code');
+    if (oauthCode) {
+      console.log('OAuth code found in cookies, attempting to process...');
+      // Display loading message
+      this.toastNotification.show({
+        title: 'Processing Login',
+        message: 'Completing your authentication...',
+        type: 'info',
+        duration: 4000
+      });
+
+      // Redirect to home page to let it handle the OAuth code
+      setTimeout(() => {
+        window.location.href = '/home';
+      }, 1000);
+      return;
+    }
+
+    // Handle OAuth callback data parameter
     const urlParams = new URLSearchParams(window.location.search);
     const data = urlParams.get('data');
     if (data) {
@@ -191,10 +228,11 @@ class LOGIN extends HTMLElement {
           throw new Error('Invalid callback data');
         }
         
-        // Store tokens and user data
-        localStorage.setItem('accessToken', decodedData.tokens.access);
-        localStorage.setItem('refreshToken', decodedData.tokens.refresh);
-        localStorage.setItem('userData', JSON.stringify(decodedData.user));
+        // Store tokens and user data in cookies
+        Auth.setCookie('accessToken', decodedData.tokens.access);
+        Auth.setCookie('refreshToken', decodedData.tokens.refresh);
+        Auth.setCookie('userData', JSON.stringify(decodedData.user));
+        Auth.setCookie('authSuccess', 'true');
         
         this.toastNotification.show({
           title: 'Welcome Back!',
@@ -202,6 +240,9 @@ class LOGIN extends HTMLElement {
           type: 'success',
           duration: 2000
         });
+
+        // Clean up the URL
+        window.history.replaceState({}, document.title, '/login');
 
         // Redirect to dashboard after success message
         setTimeout(() => {
@@ -211,11 +252,24 @@ class LOGIN extends HTMLElement {
         console.error('Error processing callback data:', error);
         this.toastNotification.show({
           title: 'Error',
-          message: 'Failed to process login response',
+          message: 'Failed to process login response: ' + error.message,
           type: 'error',
           duration: 4000
         });
       }
+    }
+
+    // Check for authentication error in session storage
+    const oauthError = sessionStorage.getItem('oauth_error');
+    if (oauthError) {
+      console.error('OAuth error from callback:', oauthError);
+      this.toastNotification.show({
+        title: 'Authentication Error',
+        message: oauthError,
+        type: 'error',
+        duration: 4000
+      });
+      sessionStorage.removeItem('oauth_error');
     }
   }
 
