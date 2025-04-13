@@ -115,17 +115,17 @@ img {
 }
 
 .grid-item:nth-child(1) {
-    background-image: linear-gradient(256deg, #FFB422 0%, rgba(238, 210, 14, 0.5) 100%), url("../images/noise.svg");
+    background-image: linear-gradient(256deg, #FFB422 0%, rgba(238, 210, 14, 0.5) 100%), url("../images/noise.png");
     backdrop-filter: blur(10px);
 }
 
 .grid-item:nth-child(1):hover {
-    background-image: linear-gradient(94deg, rgba(255, 180, 34, 0.80) -11.69%, rgba(238, 210, 14, 0.50) 71.23%), url("../images/noise.svg");
+    background-image: linear-gradient(94deg, rgba(255, 180, 34, 0.80) -11.69%, rgba(238, 210, 14, 0.50) 71.23%), url("../images/noise.png");
     backdrop-filter: blur(10px);
 }
 
 .grid-item:nth-child(2) {
-    background-image: linear-gradient(261deg, #9c39ff 1.77%, rgba(156, 57, 255, 0.534) 120.78%), url("../images/noise.svg");
+    background-image: linear-gradient(261deg, #9c39ff 1.77%, rgba(156, 57, 255, 0.534) 120.78%), url("../images/noise.png");
     backdrop-filter: blur(10px);
     /* transition: all 1s ease-in-out; */
 }
@@ -141,7 +141,7 @@ img {
     font-family: var(--socondry-font);
     position: absolute;
     inset: 0;
-    background-image: linear-gradient(rgba(81, 107, 255, 0.739), rgba(61, 193, 255, 0.685)), url("../images/noise.svg");
+    background-image: linear-gradient(rgba(81, 107, 255, 0.739), rgba(61, 193, 255, 0.685)), url("../images/noise.png");
     backdrop-filter:brightness(0.1);
     cursor: not-allowed;
     z-index: 3;
@@ -150,7 +150,7 @@ img {
     opacity: 0;
 }
 .grid-item:nth-child(2):hover::after{
-    /* background-image: linear-gradient(257deg, #9C39FF 1.83%, rgba(156, 57, 255, 0.712) 98.73%), url("../images/noise.svg");
+    /* background-image: linear-gradient(257deg, #9C39FF 1.83%, rgba(156, 57, 255, 0.712) 98.73%), url("../images/noise.png");
     backdrop-filter: blur(10px); */
     /* display: flex !important; */
     visibility: visible;
@@ -158,22 +158,22 @@ img {
 }
 
 .grid-item:nth-child(3) {
-    background-image: linear-gradient(256deg, #FFB3A1 14.61%, rgba(254, 159, 129, 0.5) 95%), url("../images/noise.svg");
+    background-image: linear-gradient(256deg, #FFB3A1 14.61%, rgba(254, 159, 129, 0.5) 95%), url("../images/noise.png");
     backdrop-filter: blur(10px);
 }
 
 .grid-item:nth-child(3):hover {
-    background-image: linear-gradient(256deg, #FFB3A1 -21.16%, #FE9F81 94.99%), url("../images/noise.svg");
+    background-image: linear-gradient(256deg, #FFB3A1 -21.16%, #FE9F81 94.99%), url("../images/noise.png");
     backdrop-filter: blur(10px);
 }
 
 .grid-item:nth-child(4) {
-    background-image: linear-gradient(254deg, #22BD4F 1.53%, rgba(3, 169, 51, 0.5) 93.16%), url("../images/noise.svg");
+    background-image: linear-gradient(254deg, #22BD4F 1.53%, rgba(3, 169, 51, 0.5) 93.16%), url("../images/noise.png");
     backdrop-filter: blur(10px);
 }
 
 .grid-item:nth-child(4):hover {
-    background-image: linear-gradient(254deg, #22BD4F 1.53%, rgba(34, 189, 79, 0.50) 93.16%), url("../images/noise.svg");
+    background-image: linear-gradient(254deg, #22BD4F 1.53%, rgba(34, 189, 79, 0.50) 93.16%), url("../images/noise.png");
     backdrop-filter: blur(10px);
 }
 

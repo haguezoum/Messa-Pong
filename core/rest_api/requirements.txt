@@ -1,0 +1,15 @@
+Django==5.0.7
+djangorestframework==3.14.0
+psycopg2==2.9.9
+python-decouple==3.8
+django-otp==1.2
+qrcode[pil]
+pillow>=10.0
+django-cors-headers>=4.3
+requests
+djangorestframework-simplejwt
+channels==4.0.0
+channels-redis==4.1.0
+pyotp
+daphne
+redis
