@@ -1,7 +1,7 @@
 let template = document.createElement("template");
 
 template.innerHTML = /*html*/
-`<div id="match-statschart" class="match-statschart">
+`<div id="match-statsChart" class="match-statsChart">
   <h2>Match Stats</h2>    
   <div class="stats-container">
     <div class="stat-row">
@@ -38,7 +38,7 @@ class MatchstatsChart extends HTMLElement {
     this.shadow.appendChild(template.content.cloneNode(true));
     const linkElem = document.createElement('link');
     linkElem.setAttribute('rel', 'stylesheet');
-    linkElem.setAttribute('href', 'src/assets/style/match-statschart.css');
+    linkElem.setAttribute('href', 'src/assets/style/match-statsChart.css');
     this.shadow.appendChild(linkElem);
   }
 
@@ -64,23 +64,40 @@ class MatchstatsChart extends HTMLElement {
   // ------------------------------ Custom Methods ------------------------------
 
   updateStats(data) {
+    // Ensure we have valid data
+    if (!data || !data.matchStats) {
+      console.warn('Invalid data format for match stats chart, using default values');
+      data = { 
+        matchStats: { 
+          winPercentage: 0, 
+          drawPercentage: 0, 
+          lossPercentage: 0 
+        } 
+      };
+    }
+    
     // Get references to the stat bar fills
     const winBar = this.shadowRoot.querySelector('.win-bar');
     const drawBar = this.shadowRoot.querySelector('.draw-bar');
     const lossBar = this.shadowRoot.querySelector('.loss-bar');
     const doughnutChart = this.shadowRoot.querySelector('#doughnut-chart');
     
+    // Ensure the matchStats properties exist, defaulting to 0 if not
+    const winPercent = data.matchStats.winPercentage || 0;
+    const drawPercent = data.matchStats.drawPercentage || 0;
+    const lossPercent = data.matchStats.lossPercentage || 0;
+    
     // Animate the bars to their actual percentages
     setTimeout(() => {
-      winBar.style.width = `${data.matchStats.winPercentage}%`;
-      drawBar.style.width = `${data.matchStats.drawPercentage}%`;
-      lossBar.style.width = `${data.matchStats.lossPercentage}%`;
+      winBar.style.width = `${winPercent}%`;
+      drawBar.style.width = `${drawPercent}%`;
+      lossBar.style.width = `${lossPercent}%`;
       const ctx = doughnutChart.getContext('2d');
       ctx.clearRect(0, 0, doughnutChart.width, doughnutChart.height);
       const doughnutData = {
         labels: ['Win', 'Draw', 'Loss'],
         datasets: [{
-          data: [data.matchStats.winPercentage, data.matchStats.drawPercentage, data.matchStats.lossPercentage],
+          data: [winPercent, drawPercent, lossPercent],
           backgroundColor: ['#4CAF50', '#FFC107', '#F44336'],
           hoverBackgroundColor: ['#4CAF50', '#FFC107', '#F44336']
         }]

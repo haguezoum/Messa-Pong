@@ -27,6 +27,20 @@
     );
 }
 
+/* Special styling for user profile pages */
+body[data-route="/users"] #app,
+body[data-route^="/users/"] #app {
+    display: flex;
+    justify-content: flex-start;
+    align-items: flex-start;
+    background-image: radial-gradient(
+        farthest-corner at 30% 80%,
+        var(--primary-blue),
+        var(--dead-blue)
+    );
+    overflow-y: auto;
+}
+
 .shadow {
     -webkit-box-shadow: 54.7px 46.9px 60.7px -30px rgba(0, 0, 0, 0.025), 126px 108px 270px -30px rgba(0, 0, 0, 0.06);
     /* Safari 3-4, iOS 4.0.2 - 4.2, Android 2.3+ */

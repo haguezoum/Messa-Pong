@@ -42,10 +42,16 @@ class Minuteschart extends HTMLElement {
   // <------------------------------ Methods ------------------------------>
 
   updateChart(data) {
+    if (!data || !data.minutesPlayed || !Array.isArray(data.minutesPlayed)) {
+      console.warn('Invalid data format for minutes chart, using empty data');
+      data = { minutesPlayed: [] };
+    }
+    
     let ctx = this.shadow.getElementById('minutesChart').getContext('2d');
-    let minutesPlayed = data.minutesPlayed;
-    let labels = minutesPlayed.map(item => item.day);
-    let minutes = minutesPlayed.map(item => item.minutes);
+    let minutesPlayed = data.minutesPlayed || [];
+    let labels = minutesPlayed.map(item => item?.day || 'Unknown');
+    let minutes = minutesPlayed.map(item => item?.minutes || 0);
+    
     let minutesChart = new Chart(ctx, {
       type: 'bar',
       data: {

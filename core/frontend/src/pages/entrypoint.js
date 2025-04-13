@@ -432,4 +432,3 @@ class ENTRYPOINT extends HTMLElement {
 customElements.define('entrypoint-page', ENTRYPOINT);
 
 export default ENTRYPOINT;
-

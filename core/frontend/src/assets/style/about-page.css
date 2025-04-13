@@ -1,0 +1,380 @@
+/* Base Styles */
+@import url('https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&display=swap');
+
+:host {
+  display: block;
+  width: 100%;
+  --primary-color: #ff5252;
+  --secondary-color: #ffeb3b;
+  --accent-color: #2196f3;
+  --dark-color: #212121;
+  --light-color: #f5f5f5;
+  --burst-color: #ffa726;
+  --comic-font: var(--primary-font);
+  --body-font: var(--socondry-font);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+.about-page {
+  font-family: var(--body-font);
+  background-color: var(--secondary-blue);
+  color: var(--dark-color);
+  position: relative;
+  overflow: hidden;
+  min-height: 100vh;
+  padding: 2rem 0;
+}
+
+.container {
+  /* max-width: 1200px; */
+  margin: 0 auto;
+  padding: 0 1rem;
+  position: relative;
+  z-index: 2;
+}
+
+/* Comic Dots Background */
+.comic-dots {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: radial-gradient(#212121 1px, transparent 1px);
+  background-size: 20px 20px;
+  opacity: 0.1;
+  z-index: 1;
+}
+
+/* Header Styles */
+.page-header {
+    text-align: center;
+    margin-bottom: 3rem;
+    position: relative;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    flex-direction: column;
+    gap: 25px;
+}
+
+.title {
+  font-family: var(--comic-font);
+  font-size: 4rem;
+  color: var(--primary-color);
+  text-shadow: 3px 3px 0 var(--dark-color), 
+               6px 6px 0 rgba(0,0,0,0.2);
+  letter-spacing: 2px;
+  transform: rotate(-2deg);
+  margin-bottom: 0.5rem;
+  position: relative;
+  display: inline-block;
+}
+
+.title::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  right: -10px;
+  bottom: -10px;
+  background-color: var(--secondary-color);
+  z-index: -1;
+  transform: rotate(2deg);
+  clip-path: polygon(
+    0% 0%, 100% 0%, 97% 10%, 100% 20%, 98% 30%, 
+    100% 40%, 97% 50%, 100% 60%, 98% 70%, 100% 80%, 
+    97% 90%, 100% 100%, 0% 100%, 3% 90%, 0% 80%, 
+    2% 70%, 0% 60%, 3% 50%, 0% 40%, 2% 30%, 0% 20%, 3% 10%
+  );
+}
+
+.subtitle {
+  font-family: var(--comic-font);
+  font-size: 1.5rem;
+  color: var(--accent-color);
+  letter-spacing: 1px;
+  position: relative;
+  display: inline-block;
+  padding: 0.25rem 1rem;
+  background-color: white;
+  border: 2px solid var(--dark-color);
+  box-shadow: 4px 4px 0 var(--dark-color);
+}
+
+/* Team Grid Layout */
+.team-grid {
+  display: flex;
+  justify-content: space-evenly;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2rem;
+}
+
+/* Team Member Card Styles */
+.team-member {
+  position: relative;
+  opacity: 0;
+  transform: translateY(50px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+  width: 400px;
+}
+
+.team-member.animate-in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.member-card {
+  position: relative;
+  height: 450px;
+  perspective: 1000px;
+  cursor: pointer;
+}
+
+.card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.8s;
+  transform-style: preserve-3d;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+  border: 3px solid var(--dark-color);
+}
+
+.member-card.flipped .card-inner {
+  transform: rotateY(180deg);
+}
+
+.card-front, .card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.card-front {
+  background-color: white;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 1rem;
+}
+
+.card-back {
+  background-color: var(--dark-color);
+  color: white;
+  transform: rotateY(180deg);
+  padding: 2rem;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+/* Comic Burst Effect */
+.comic-burst {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at center, var(--burst-color) 0%, transparent 70%);
+  z-index: 0;
+}
+
+.member-image {
+  width: 100%;
+  height: 350px;
+  object-fit: cover;
+  object-position: center;
+  border-bottom: 3px solid var(--dark-color);
+  position: relative;
+  z-index: 1;
+}
+
+.member-name {
+  font-family: var(--comic-font);
+  font-size: 1.8rem;
+  margin-top: 0.5rem;
+  color: var(--dark-color);
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+.member-title {
+  font-family: var(--body-font);
+  font-weight: bold;
+  font-size: 1rem;
+  color: var(--primary-color);
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+.member-bio {
+  font-size: 1.1rem;
+  line-height: 1.5;
+  margin-bottom: 2rem;
+}
+
+/* Social Links */
+.social-links {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+}
+
+.social-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-color: white;
+  color: var(--dark-color);
+  font-size: 1.5rem;
+  text-decoration: none;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 3px 3px 0 rgba(0,0,0,0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.social-icon::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
+}
+
+.social-icon:hover {
+  transform: translateY(-5px);
+  box-shadow: 3px 8px 0 rgba(0,0,0,0.3);
+}
+
+.social-icon:hover::after {
+  transform: translateY(0);
+}
+
+.social-icon.pulse {
+  animation: pulse 0.5s ease-in-out;
+}
+
+/* Footer Styles */
+.page-footer {
+  text-align: center;
+  margin-top: 2rem;
+  padding: 1rem;
+  font-family: var(--comic-font);
+  font-size: 1.2rem;
+  color: var(--dark-color);
+  position: relative;
+}
+
+.footer-text {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  background-color: var(--secondary-color);
+  border: 2px solid var(--dark-color);
+  transform: rotate(-1deg);
+  box-shadow: 3px 3px 0 var(--dark-color);
+}
+
+/* Social Icons */
+.icon-github::before {
+  content: "";
+  display: block;
+  width: 24px;
+  height: 24px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z'/%3E%3C/svg%3E");
+}
+
+.icon-linkedin::before {
+  content: "";
+  display: block;
+  width: 24px;
+  height: 24px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z'/%3E%3C/svg%3E");
+}
+
+.icon-email::before {
+  content: "";
+  display: block;
+  width: 24px;
+  height: 24px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M0 3v18h24v-18h-24zm21.518 2l-9.518 7.713-9.518-7.713h19.036zm-19.518 14v-11.817l10 8.104 10-8.104v11.817h-20z'/%3E%3C/svg%3E");
+}
+
+/* Animations */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Media Queries */
+@media (max-width: 768px) {
+  .title {
+    font-size: 3rem;
+  }
+  
+  .subtitle {
+    font-size: 1.2rem;
+  }
+  
+  .team-grid {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+  }
+  
+  .member-card {
+    height: 400px;
+  }
+  
+  .member-image {
+    height: 300px;
+  }
+}
+
+@media (max-width: 480px) {
+  .title {
+    font-size: 2.5rem;
+  }
+  
+  .subtitle {
+    font-size: 1rem;
+  }
+  
+  .member-name {
+    font-size: 1.5rem;
+  }
+  
+  .member-card {
+    height: 380px;
+  }
+  
+  .member-image {
+    height: 280px;
+  }
+}

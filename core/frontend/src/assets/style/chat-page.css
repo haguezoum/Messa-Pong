@@ -489,6 +489,36 @@
       color: var(--socondry-black);
       font-family: var(--socondry-font);
   }
+  .chat-header-status.online {
+    color: var(--primary-success);
+  }
+
+  .chat-header-status.warning {
+    color: #f59e0b;
+    position: relative;
+    display: inline-block;
+    padding-right: 16px;
+  }
+
+  .chat-header-status.warning::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #f59e0b;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  .chat-header-status.connecting {
+    color: #f59e0b;
+    position: relative;
+    display: inline-block;
+    padding-right: 16px;
+  }
   /* --------- chat container ------- */
   .chat-page .container .chat-page__container__body section.chat-page__container__body__chat .chat-page__container__body__chat__messages{
       height: 100%;
@@ -690,4 +720,114 @@
       width:"30";
       height:"30";
   }
-  
+
+  .chat-header {
+    display: flex;
+    align-items: center;
+    position: relative;
+  }
+
+  /* Connection mode toggle button */
+  .connection-mode-toggle {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 16px;
+    border: 1px solid var(--primary-light);
+    background-color: transparent;
+    color: var(--socondry-black);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .connection-mode-toggle.api-mode {
+    background-color: rgba(245, 158, 11, 0.1);
+    border-color: #f59e0b;
+    color: #f59e0b;
+  }
+
+  .connection-mode-toggle.websocket-mode {
+    background-color: rgba(52, 211, 153, 0.1);
+    border-color: var(--primary-success);
+    color: var(--primary-success);
+  }
+
+  .connection-mode-toggle:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+  }
+
+  .connection-mode-toggle.api-mode:hover {
+    background-color: rgba(245, 158, 11, 0.2);
+  }
+
+  .connection-mode-toggle.websocket-mode:hover {
+    background-color: rgba(52, 211, 153, 0.2);
+  }
+
+  .connection-mode-toggle svg {
+    flex-shrink: 0;
+  }
+
+  /* Loading and error states */
+  .chat-loading, .chat-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 20px;
+    text-align: center;
+    color: var(--socondry-black);
+  }
+
+  .chat-loading .spinner {
+    border: 3px solid rgba(0, 0, 0, 0.1);
+    border-top: 3px solid var(--primary-color);
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    animation: spin 1s linear infinite;
+    margin-bottom: 16px;
+  }
+
+  .chat-error svg {
+    color: #ef4444;
+    margin-bottom: 12px;
+  }
+
+  .chat-error p {
+    margin-bottom: 16px;
+    font-size: 15px;
+  }
+
+  .retry-button {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s;
+  }
+
+  .retry-button:hover {
+    background-color: var(--primary-hover);
+  }
+
+  @keyframes pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }

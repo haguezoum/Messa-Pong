@@ -10,7 +10,8 @@ services:
             - 80:80/tcp
             - 443:443/tcp
         volumes:
-          - frontend-files:/www:ro
+            - frontend-files:/www:ro
+            - shared-static_files:/app/media:rw
         networks:
             42network:
                 aliases:
@@ -39,7 +40,6 @@ services:
                     - frontend
         depends_on:
             - rest_api
-                # condition: service_healthy
         deploy:
             resources:
                 limits:
@@ -97,54 +97,6 @@ services:
                 condition: service_healthy
         restart: always
 
-    # game:
-    #     image: game:server
-    #     container_name: game
-    #     build:
-    #         context: ./game
-    #     networks:
-    #         42network:
-    #             aliases:
-    #                 - game
-    #     depends_on:
-    #         redis:
-    #             condition: service_healthy
-    #     healthcheck:
-    #         test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
-    #         interval: 30s
-    #         timeout: 10s
-    #         retries: 3
-    #         start_period: 30s
-    #     restart: always
-
-    # chat:
-    #     image: chat:messenger
-    #     container_name: chat
-    #     build:
-    #         context: ./chat
-    #     networks:
-    #         42network:
-    #             aliases:
-    #                 - chat
-    #     secrets:
-    #         - database-credentials
-    #     environment:
-    #         - DJANGO_SETTINGS_MODULE=chat.settings
-    #         - PG_HOST=database
-    #         - PG_PORT=5432
-    #     depends_on:
-    #         database:
-    #             condition: service_healthy
-    #         redis:
-    #             condition: service_healthy
-    #     healthcheck:
-    #         test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
-    #         interval: 30s
-    #         timeout: 10s
-    #         retries: 3
-    #         start_period: 30s
-    #     restart: always
-
     rest_api:
         image: restapi:server
         container_name: rest_api
@@ -155,13 +107,8 @@ services:
               aliases:
                   - oauth
                   - api_gateway
-        # ports:
-        #     - 8000:8000/tcp
-        environment:
-            - DJANGO_SETTINGS_MODULE=api.settings
-        # volumes:
-        #     - restapi_files:/api
-        #     - frontend-files:/www:ro
+        volumes:
+            - shared-static_files:/app/media:rw
         secrets:
             - api-credentials
             - database-credentials
@@ -172,13 +119,72 @@ services:
             resources:
                 limits:
                     memory: 256M
-        # healthcheck:
-        #     test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-        #     interval: 5s
-        #     timeout: 2s
-        #     retries: 3
-        #     start_period: 10s
         restart: always
+
+    # prometheus:
+    #     image: prometheus:monitoring
+    #     container_name: prometheus
+    #     build:
+    #         context: ./monitoring/prometheus
+    #     volumes:
+    #         - prometheus-data:/prometheus
+    #     networks:
+    #         42network:
+    #             aliases:
+    #                 - prometheus
+    #     deploy:
+    #         resources:
+    #             limits:
+    #                 cpus: '0.25'
+    #                 memory: 128M
+    #             reservations:
+    #                 cpus: '0.10'
+    #                 memory: 64M
+    #     restart: always
+    #
+    # node-exporter:
+    #     image: node-exporter:monitoring
+    #     container_name: node-exporter
+    #     build:
+    #         context: ./monitoring/node-exporter
+    #     volumes:
+    #         - /:/host:ro
+    #     networks:
+    #         42network:
+    #             aliases:
+    #                 - node-exporter
+    #     deploy:
+    #         resources:
+    #             limits:
+    #                 cpus: '0.10'
+    #                 memory: 64M
+    #             reservations:
+    #                 cpus: '0.05'
+    #                 memory: 32M
+    #     restart: always
+    #
+    # grafana:
+    #     image: grafana:monitoring
+    #     container_name: grafana
+    #     build:
+    #         context: ./monitoring/grafana
+    #     volumes:
+    #         - grafana-data:/var/lib/grafana
+    #     networks:
+    #         42network:
+    #             aliases:
+    #                 - grafana
+    #     depends_on:
+    #         - prometheus
+    #     deploy:
+    #         resources:
+    #             limits:
+    #                 cpus: '0.25'
+    #                 memory: 128M
+    #             reservations:
+    #                 cpus: '0.10'
+    #                 memory: 64M
+    #     restart: always
 
 
 volumes:
@@ -186,8 +192,12 @@ volumes:
         name: database-data
     frontend-files:
         name: frontend-files
-    # restapi_files:
-    #     name: restapi_files
+    shared-static_files:
+        name: shared-static_files
+    # prometheus-data:
+    #     name: prometheus-data
+    # grafana-data:
+    #     name: grafana-data
 
 
 networks:

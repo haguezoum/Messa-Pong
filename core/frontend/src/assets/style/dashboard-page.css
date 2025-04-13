@@ -57,21 +57,9 @@
 }
 
 .stats-body-container {
-  /* display: flex;
-  background: rgba(121, 184, 255, 0.15);
-  background: rgb(103, 0, 109);
-  border-radius: 16px;
-  overflow: hidden;
-  padding: 5rem;
-  margin-inline: 1rem;
-  display: grid;
-  grid-template-columns: repeat(10,1fr);
-  grid-template-rows: repeat(10, 1fr);
-  gap: 20px;
-  flex: 1; */
-  /* border: 1px solid #10dc60; */
   width: 100%;
   height: fit-content;
+  backdrop-filter: blur(30px);
 }
 
 /* ********************* Start of Tab selctor **************************** */

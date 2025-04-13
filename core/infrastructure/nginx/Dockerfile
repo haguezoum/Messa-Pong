@@ -13,9 +13,8 @@
 FROM		alpine:3.19
 
 RUN		apk update && apk add --no-cache nginx \
-		openssl curl && rm -rf /var/cache/apk/* 
-
-RUN 		mkdir -p /www /etc/nginx/ssl /var/log/nginx /run/nginx && \
+		openssl curl && rm -rf /var/cache/apk/* && \
+ 		mkdir -p /www /etc/nginx/ssl /var/log/nginx /run/nginx && \
 		chown -R nginx:nginx /var/log/nginx /run/nginx /www /etc/nginx/ssl 
 
 COPY		./configuration/http.conf /etc/nginx/nginx.conf
