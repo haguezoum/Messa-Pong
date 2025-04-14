@@ -8,10 +8,8 @@ A PING PONG online game SPA with microservice architecture.
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
 - [Running the Project](#running-the-project)
-- [Development](#development)
-- [Testing](#testing)
-- [Deployment](#deployment)
-- [API Documentation](#api-documentation)
+- [Contributing ✨✨](#contributing)
+- [License](#license)
 
 ## Features
 - Real-time multiplayer gameplay
@@ -61,9 +59,7 @@ git clone https://github.com/haguezoum/ft_transcendence.git
 cd ft_transcendence
 ```
 
-
-
-### Development Mode
+### Running the Project
 
 2. Make using Makefile:
 ```bash
@@ -74,7 +70,7 @@ The application will be available at:
 - Frontend: http://localhost
 - Backend API: http://localhost
 
-## Contributing
+### Contributing ✨
 Special thanks for all the tesm member who contrubute on this project :
 - [Hassan Aguezoum](https://github.com/haguezoum) - Project Lead & Frontend Developer
 - [Ayoub Et Tass](https://github.com/aet-tass) - Backend Developer
