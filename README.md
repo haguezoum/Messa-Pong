@@ -47,9 +47,6 @@ A PING PONG online game SPA with microservice architecture.
 
 ## Prerequisites
 - Docker & Docker Compose (v20.10+)
-- Node.js (v16+)
-- Python (v3.9+)
-- PostgreSQL (v13+)
 
 ## Installation
 
